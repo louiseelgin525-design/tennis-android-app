@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -583,6 +584,24 @@ private fun saveBitmapAvatar(
     val file = File(dir, "player_${playerId}_${System.currentTimeMillis()}.jpg")
     FileOutputStream(file).use { stream ->
         bitmap.compress(Bitmap.CompressFormat.JPEG, 88, stream)
+    }
+
+    return file.absolutePath
+}
+
+private fun saveUriAvatar(
+    context: Context,
+    uri: Uri,
+    playerId: Int
+): String {
+    val dir = File(context.filesDir, "avatars")
+    if (!dir.exists()) dir.mkdirs()
+
+    val file = File(dir, "player_${playerId}_${System.currentTimeMillis()}.jpg")
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        FileOutputStream(file).use { output ->
+            input.copyTo(output)
+        }
     }
 
     return file.absolutePath
@@ -1981,7 +2000,8 @@ private fun PlayerRegistrationDialog(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
-            avatarUri = uri.toString()
+            val id = player?.id ?: ((existingPlayers.maxOfOrNull { it.id } ?: 0) + 1)
+            avatarUri = saveUriAvatar(context, uri, id)
         }
     }
 
@@ -2002,17 +2022,24 @@ private fun PlayerRegistrationDialog(
                     .padding(20.dp)
             ) {
                 // Header
-                Row(
+                Box(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        if (isEditing) "Карточка игрока" else "Регистрация игрока",
-                        style = AppTypography.displayLarge.copy(fontSize = 28.sp),
-                        color = TextDark
+                        if (isEditing) "Профиль игрока" else "Регистрация игрока",
+                        style = AppTypography.displayLarge.copy(
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        color = TextDark,
+                        textAlign = TextAlign.Center
                     )
-                    IconButton(onClick = onDismiss) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    ) {
                         Text("✕", fontSize = 24.sp, color = TextGray)
                     }
                 }
@@ -2145,17 +2172,24 @@ private fun PlayerRegistrationDialog(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Text("Медали", style = AppTypography.titleLarge, color = TextDark)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Медали",
+                        style = AppTypography.titleLarge,
+                        color = TextDark,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatInputField("🥇 Золото", goldText, Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatInputField("🥇", goldText, Modifier.weight(1f)) {
                             goldText = it
                         }
-                        StatInputField("🥈 Серебро", silverText, Modifier.weight(1f)) {
+                        StatInputField("🥈", silverText, Modifier.weight(1f)) {
                             silverText = it
                         }
-                        StatInputField("🥉 Бронза", bronzeText, Modifier.weight(1f)) {
+                        StatInputField("🥉", bronzeText, Modifier.weight(1f)) {
                             bronzeText = it
                         }
                     }
@@ -3026,11 +3060,23 @@ fun PlayerNameInputField(
                                     showSuggestions = false
                                 }
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(player.fullName, color = TextDark, fontWeight = FontWeight.Medium)
-                            Text(formatRating(player.rating), color = AppleBlue, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = player.fullName,
+                                modifier = Modifier.weight(1f),
+                                color = TextDark,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = formatRating(player.rating),
+                                color = AppleBlue,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
                         }
                         if (index != suggestions.lastIndex) HorizontalDivider(color = BorderGray)
                     }
@@ -5103,6 +5149,7 @@ private fun RoundRobinScoreDialog(
 ) {
     val p1 = getClubPlayerByName(firstPlayer, clubPlayers)
     val p2 = getClubPlayerByName(secondPlayer, clubPlayers)
+    var showWithdrawalDialog by remember { mutableStateOf(false) }
 
     val p1Wins = if (bestOfThreeWins) listOf("3:0", "3:1", "3:2") else listOf("2:0", "2:1")
     val p2Wins = p1Wins.map(::reverseScore)
@@ -5178,9 +5225,57 @@ private fun RoundRobinScoreDialog(
                     Text("ТЕХНИЧЕСКИЙ РЕЗУЛЬТАТ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        TechnicalButton(text = "L (Снялся)", modifier = Modifier.weight(1f)) { onTechnicalLoss(true) }
-                        TechnicalButton(text = "L (Снялся)", modifier = Modifier.weight(1f)) { onTechnicalLoss(false) }
+                    TechnicalButton(
+                        text = "L (Снялся с турнира)",
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        showWithdrawalDialog = true
+                    }
+
+                    if (showWithdrawalDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showWithdrawalDialog = false },
+                            title = { Text("Кто снялся?", style = AppTypography.titleLarge) },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text("Все несыгранные матчи выбранного игрока будут отмечены как техническое поражение (L).", style = AppTypography.bodyMedium)
+
+                                    Button(
+                                        onClick = {
+                                            onTechnicalLoss(true)
+                                            showWithdrawalDialog = false
+                                        },
+                                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = BlueBadgeBg, contentColor = AppleBlue),
+                                        shape = RoundedCornerShape(12.dp),
+                                        elevation = null
+                                    ) {
+                                        Text(firstPlayer, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            onTechnicalLoss(false)
+                                            showWithdrawalDialog = false
+                                        },
+                                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = BlueBadgeBg, contentColor = AppleBlue),
+                                        shape = RoundedCornerShape(12.dp),
+                                        elevation = null
+                                    ) {
+                                        Text(secondPlayer, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            },
+                            confirmButton = {},
+                            dismissButton = {
+                                TextButton(onClick = { showWithdrawalDialog = false }) {
+                                    Text("Отмена", color = TextGray)
+                                }
+                            },
+                            containerColor = CardWhite,
+                            shape = RoundedCornerShape(24.dp)
+                        )
                     }
 
                     if (existingScore != null) {
@@ -5204,19 +5299,22 @@ private fun PlayerScoreCard(player: ClubPlayer, modifier: Modifier = Modifier) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         PlayerAvatar(player = player, size = 54.dp)
         Spacer(modifier = Modifier.width(12.dp))
-        Column {
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 player.fullName,
                 style = AppTypography.labelLarge.copy(fontSize = 15.sp),
                 color = TextDark,
-                maxLines = 2,
-                lineHeight = 18.sp
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 formatRating(player.rating),
                 style = AppTypography.bodyMedium,
-                color = TextGray,
-                fontWeight = FontWeight.Normal
+                color = AppleBlue,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
             )
         }
     }
