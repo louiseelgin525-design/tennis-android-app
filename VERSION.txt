@@ -1,0 +1,4 @@
+TennisTourney Jules handoff
+Created: 2026-07-04 07:47:06
+CURRENT CODE: project_files/app/src/main/java/com/example/tennistourney/MainActivity.kt
+Current source file: MainActivity_results_no_rotation_crash.kt
