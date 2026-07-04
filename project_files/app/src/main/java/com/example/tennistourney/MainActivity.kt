@@ -1193,6 +1193,7 @@ class TournamentDraft {
     val matchScores = mutableStateMapOf<Pair<Int, Int>, String>()
     val activeRoundRobinMatches = mutableStateListOf<Pair<Int, Int>?>()
     val withdrawnPlayers = mutableStateListOf<Int>()
+    val lastFinishedPlayers = mutableStateListOf<Int>()
 
     // Изменение рейтинга после завершения турнира
     var ratingApplied by mutableStateOf(false)
@@ -3460,6 +3461,7 @@ private fun refreshActiveRoundRobinMatches(
     }
 
     val currentPairs = draft.activeRoundRobinMatches.filterNotNull().toSet()
+    val lastFinished = draft.lastFinishedPlayers.toSet()
 
     val candidates = mutableListOf<Triple<Int, Int, Int>>()
     for (f in 0 until playerCount) {
@@ -3469,7 +3471,9 @@ private fun refreshActiveRoundRobinMatches(
 
             val pair = f to s
             if (!draft.matchScores.containsKey(pair) && !currentPairs.contains(pair)) {
-                val weight = matchesPlayed[f] + matchesPlayed[s]
+                val p1Penalty = if (f in lastFinished) 20 else 0
+                val p2Penalty = if (s in lastFinished) 20 else 0
+                val weight = (matchesPlayed[f] + matchesPlayed[s] + p1Penalty + p2Penalty)
                 val distance = kotlin.math.abs(f - s)
                 candidates.add(Triple(f, s, weight * 1000 - distance))
             }
@@ -3603,9 +3607,21 @@ fun RoundRobinScreen(
     val pointsByPlayer = standings.associate { stat -> stat.index to stat.points }
     val activePlayers = draft.activeRoundRobinMatches.filterNotNull().flatMap { listOf(it.first, it.second) }.toSet()
 
-    val queueMatches = remember(draft.matchScores.size, draft.activeRoundRobinMatches.size, draft.withdrawnPlayers.size) {
+    val queueMatches = remember(draft.matchScores.size, draft.activeRoundRobinMatches.size, draft.withdrawnPlayers.size, draft.lastFinishedPlayers.size) {
         val assigned = draft.activeRoundRobinMatches.filterNotNull().map { normalizedPair(it.first, it.second) }.toSet()
         val withdrawn = draft.withdrawnPlayers.toSet()
+        val lastFinished = draft.lastFinishedPlayers.toSet()
+
+        val matchesPlayed = IntArray(playerCount)
+        for (f in 0 until playerCount) {
+            for (s in f + 1 until playerCount) {
+                if (draft.matchScores.containsKey(f to s)) {
+                    matchesPlayed[f]++
+                    matchesPlayed[s]++
+                }
+            }
+        }
+
         val queue = mutableListOf<Pair<Int, Int>>()
         for (f in 0 until playerCount) {
             for (s in f + 1 until playerCount) {
@@ -3616,7 +3632,14 @@ fun RoundRobinScreen(
                 }
             }
         }
-        queue
+
+        queue.sortedBy { pair ->
+            val p1Penalty = if (pair.first in lastFinished) 20 else 0
+            val p2Penalty = if (pair.second in lastFinished) 20 else 0
+            val weight = (matchesPlayed[pair.first] + matchesPlayed[pair.second] + p1Penalty + p2Penalty)
+            val distance = kotlin.math.abs(pair.first - pair.second)
+            weight * 1000 - distance
+        }
     }
 
     var selectedPair by remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -3900,6 +3923,9 @@ fun RoundRobinScreen(
                     draft.matchScores[first to second] = score
                     draft.matchScores[second to first] = reverseScore(score)
 
+                    draft.lastFinishedPlayers.clear()
+                    draft.lastFinishedPlayers.addAll(listOf(first, second))
+
                     val normalized = normalizedPair(first, second)
                     val idx = draft.activeRoundRobinMatches.indexOf(normalized)
                     if (idx != -1) {
@@ -3928,6 +3954,9 @@ fun RoundRobinScreen(
                     if (withdrawnIndex !in draft.withdrawnPlayers) {
                         draft.withdrawnPlayers.add(withdrawnIndex)
                     }
+
+                    draft.lastFinishedPlayers.clear()
+                    draft.lastFinishedPlayers.addAll(listOf(first, second))
 
                     rebuildTechnicalResults(
                         draft = draft,
