@@ -4506,10 +4506,18 @@ private fun CompactActiveTablesPanel(
         .fillMaxWidth()
         .wrapContentHeight()
 
-    val content = @Composable {
+    val content = @Composable { scope: Any? ->
+        val activeTableModifier = if (isVertical) {
+            Modifier.fillMaxWidth()
+        } else if (scope is RowScope) {
+            with(scope) { Modifier.weight(1f) }
+        } else {
+            Modifier.fillMaxWidth()
+        }
+
         // КТО ИГРАЕТ СЕЙЧАС (Active Tables)
         Card(
-            modifier = if (isVertical) Modifier.fillMaxWidth() else Modifier.weight(1f),
+            modifier = activeTableModifier,
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, BorderGray)
@@ -4546,7 +4554,7 @@ private fun CompactActiveTablesPanel(
 
         // ОЧЕРЕДЬ К СТОЛАМ (Queue)
         Card(
-            modifier = if (isVertical) Modifier.fillMaxWidth() else Modifier.weight(1f),
+            modifier = activeTableModifier,
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, BorderGray)
@@ -4578,14 +4586,14 @@ private fun CompactActiveTablesPanel(
 
     if (isVertical) {
         Column(modifier = containerModifier) {
-            content()
+            content(null)
         }
     } else {
         Row(
             modifier = containerModifier,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            content()
+            content(this)
         }
     }
 }
@@ -5034,7 +5042,7 @@ private fun RoundRobinTable(
     scores: Map<Pair<Int, Int>, String>,
     placesByPlayer: Map<Int, Int>,
     pointsByPlayer: Map<Int, Int>,
-    activeMatches: List<Pair<Int, Int>>,
+    activeMatches: List<Pair<Int, Int>?>,
     activePlayers: Set<Int>,
     withdrawnPlayers: Set<Int>,
     selectedPair: Pair<Int, Int>?,
