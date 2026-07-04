@@ -1198,6 +1198,7 @@ class TournamentDraft {
     // Изменение рейтинга после завершения турнира
     var ratingApplied by mutableStateOf(false)
     var historySaved by mutableStateOf(false)
+    var bonusesAwarded by mutableStateOf(false)
     val ratingChanges = mutableStateListOf<RatingChange>()
     val matchImpacts = mutableStateListOf<MatchRatingImpact>()
 
@@ -1360,6 +1361,7 @@ fun TennisApp() {
         draft.matchImpacts.clear()
         draft.matchImpacts.addAll(result.matchImpacts)
         draft.ratingApplied = true
+        draft.bonusesAwarded = true
     }
 
     fun saveHistoryFromCurrentTournament() {
@@ -1672,9 +1674,15 @@ fun PlayerBaseScreen(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text("Регистрация игроков", style = AppTypography.displayLarge, color = TextDark)
                 Text(
-                    "${clubPlayers.size} игроков • ФИО, рейтинг, статистика, аватар",
+                    "Регистрация игроков",
+                    style = AppTypography.displayLarge.copy(fontSize = 26.sp),
+                    color = TextDark,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    "${clubPlayers.size} игроков • ФИО, рейтинг, аватар",
                     style = AppTypography.bodyMedium,
                     color = TextGray
                 )
@@ -1940,13 +1948,14 @@ private fun PlayerRegistrationCard(
 @Composable
 private fun PlayerAvatar(
     player: ClubPlayer,
-    size: Dp
+    size: Dp,
+    modifier: Modifier = Modifier
 ) {
     val avatarBitmap = rememberAvatarBitmap(player.avatarUri)
     val fontSize = (size.value * 0.45f).sp
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(size)
             .clip(CircleShape)
             .background(BlueBadgeBg),
@@ -2021,6 +2030,7 @@ private fun PlayerRegistrationDialog(
     var silverText by remember(player?.id) { mutableStateOf((player?.silverMedals ?: 0).toString()) }
     var bronzeText by remember(player?.id) { mutableStateOf((player?.bronzeMedals ?: 0).toString()) }
     var avatarUri by remember(player?.id) { mutableStateOf(player?.avatarUri.orEmpty()) }
+    var showAvatarMenu by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -2059,18 +2069,21 @@ private fun PlayerRegistrationDialog(
             ) {
                 // Header
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         if (isEditing) "Профиль игрока" else "Регистрация игрока",
                         style = AppTypography.displayLarge.copy(
-                            fontSize = 30.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
                             letterSpacing = (-0.5).sp
                         ),
                         color = TextDark,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 40.dp)
                     )
                     IconButton(
                         onClick = onDismiss,
@@ -2080,7 +2093,7 @@ private fun PlayerRegistrationDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Column(
                     modifier = Modifier
@@ -2088,54 +2101,50 @@ private fun PlayerRegistrationDialog(
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                 ) {
-                    // Avatar & Photo Buttons
-                    Row(
+                    // Avatar Circle Clickable
+                    Box(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        contentAlignment = Alignment.Center
                     ) {
-                        PlayerAvatar(
-                            player = ClubPlayer(
-                                id = player?.id ?: 0,
-                                fullName = fullName.ifBlank { "Игрок" },
-                                rating = ratingText.replace(",", ".").toDoubleOrNull() ?: 100.0,
-                                avatarUri = avatarUri
-                            ),
-                            size = 110.dp
-                        )
+                        Box {
+                            PlayerAvatar(
+                                player = ClubPlayer(
+                                    id = player?.id ?: 0,
+                                    fullName = fullName.ifBlank { "Игрок" },
+                                    rating = ratingText.replace(",", ".").toDoubleOrNull() ?: 100.0,
+                                    avatarUri = avatarUri
+                                ),
+                                size = 120.dp,
+                                modifier = Modifier.clickable { showAvatarMenu = true }
+                            )
 
-                        Spacer(modifier = Modifier.width(20.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Button(
-                                onClick = { cameraLauncher.launch(null) },
-                                colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                            DropdownMenu(
+                                expanded = showAvatarMenu,
+                                onDismissRequest = { showAvatarMenu = false },
+                                modifier = Modifier.background(CardWhite).border(1.dp, BorderGray, RoundedCornerShape(8.dp))
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("📷 Камера", color = Color.White, fontSize = 16.sp)
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            OutlinedButton(
-                                onClick = { galleryLauncher.launch("image/*") },
-                                border = BorderStroke(1.dp, AppleBlue),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth().height(48.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("🖼 Галерея", color = AppleBlue, fontSize = 16.sp)
-                                }
-                            }
-
-                            if (avatarUri.isNotBlank()) {
-                                TextButton(
-                                    onClick = { avatarUri = "" },
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                ) {
-                                    Text("Убрать аватар", color = SwipeDeleteRed, fontSize = 15.sp)
+                                DropdownMenuItem(
+                                    text = { Text(if (avatarUri.isBlank()) "Снять фото" else "Снять новое фото") },
+                                    onClick = {
+                                        showAvatarMenu = false
+                                        cameraLauncher.launch(null)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Выбрать из галереи") },
+                                    onClick = {
+                                        showAvatarMenu = false
+                                        galleryLauncher.launch("image/*")
+                                    }
+                                )
+                                if (avatarUri.isNotBlank()) {
+                                    DropdownMenuItem(
+                                        text = { Text("Удалить фото", color = SwipeDeleteRed) },
+                                        onClick = {
+                                            showAvatarMenu = false
+                                            avatarUri = ""
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -3674,7 +3683,13 @@ fun RoundRobinScreen(
             tablesCount = draft.tablesCount,
             tournamentIsComplete = tournamentIsComplete,
             onBack = onBack,
-            onFinish = { askPlaceBonusDialog = true }
+            onFinish = {
+                if (draft.bonusesAwarded) {
+                    onFinish(false)
+                } else {
+                    askPlaceBonusDialog = true
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -4599,12 +4614,20 @@ private fun CompactActiveTablesPanel(
                     if (queueMatches.isEmpty()) {
                         Text("Очередь пуста", color = TextGray, modifier = Modifier.padding(top = 8.dp))
                     } else {
-                        queueMatches.forEachIndexed { index, pair ->
+                        queueMatches.take(2).forEachIndexed { index, pair ->
                             QueueMatchRow(
                                 orderNumber = index + 1,
                                 player1Name = playerNames.getOrElse(pair.first) { "" },
                                 player2Name = playerNames.getOrElse(pair.second) { "" },
                                 clubPlayers = clubPlayers
+                            )
+                        }
+                        if (queueMatches.size > 2) {
+                            Text(
+                                "и еще ${queueMatches.size - 2} в ожидании...",
+                                style = AppTypography.bodyMedium,
+                                color = TextGray,
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
@@ -5819,7 +5842,15 @@ fun FinalResultsScreen(
         appendLine("🏓 ${draft.name.ifBlank { "Теннисный турнир" }}")
         appendLine("Итоги турнира:")
         standings.forEachIndexed { place, stat ->
-            appendLine("${place + 1}. ${playerNames.getOrElse(stat.index) { "Игрок" }} — ${stat.points} очк.")
+            appendLine("${place + 1}. ${playerNames.getOrElse(stat.index) { "Игрок" }}")
+        }
+
+        if (draft.matchImpacts.isNotEmpty()) {
+            appendLine()
+            appendLine("Результаты матчей:")
+            draft.matchImpacts.forEach { impact ->
+                appendLine("${impact.player1} [${impact.score}] ${impact.player2}")
+            }
         }
 
         if (draft.ratingChanges.isNotEmpty()) {
@@ -6045,10 +6076,10 @@ private fun CompactTopPlaceCard(
                     playerName,
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    maxLines = 1
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text("$points очк.", color = AppleBlue, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
             }
         }
     }
