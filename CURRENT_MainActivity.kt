@@ -2857,6 +2857,23 @@ fun CreateTournamentScreen(
                                             startError = null
                                         }
                                     )
+
+                                    if (draft.playerFields.size > 2) {
+                                        IconButton(
+                                            onClick = {
+                                                draft.playerFields.removeAt(index)
+                                                draft.playersCount--
+                                                startError = null
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = TrashIcon,
+                                                contentDescription = "Удалить",
+                                                tint = SwipeDeleteRed.copy(alpha = 0.8f),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3366,6 +3383,18 @@ fun RoundRobinScreen(
         // Блок итогов (Current Results and Rating)
         Text("ТЕКУЩИЕ РЕЗУЛЬТАТЫ И РЕЙТИНГ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
         Spacer(modifier = Modifier.height(8.dp))
+
+        val liveRatingResult = remember(draft.matchScores.size) {
+            applyRoundRobinRatings(
+                existingPlayers = clubPlayers,
+                playerNames = playerNames,
+                scores = draft.matchScores,
+                tournamentCoefficient = draft.ratingCoefficient,
+                applyPlaceBonuses = false
+            )
+        }
+        val ratingChangesMap = liveRatingResult.changes.associateBy { it.fullName.lowercase() }
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = CardWhite),
@@ -3382,10 +3411,26 @@ fun RoundRobinScreen(
                         PlayerAvatar(player = pObj ?: ClubPlayer(0, pName), size = 40.dp)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(pName, style = AppTypography.labelLarge, color = TextDark)
-                            Text("RTTF: ${formatRating(pObj?.rating ?: 100.0)}", color = AppleBlue, fontSize = 12.sp)
+                            Text(pName, style = AppTypography.labelLarge, color = TextDark, maxLines = 1)
+                            Text("Рейтинг: ${formatRating(pObj?.rating ?: 100.0)}", color = TextGray, fontSize = 12.sp)
                         }
-                        Text("${stat.points} очк.", fontWeight = FontWeight.Bold, color = TextDark)
+
+                        val rChange = ratingChangesMap[pName.lowercase()]
+                        if (rChange != null) {
+                            val delta = rChange.newRating - rChange.oldRating
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(formatRating(rChange.oldRating), color = TextGray, fontSize = 13.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    formatDelta(delta),
+                                    color = if (delta >= 0) GreenBadgeText else SwipeDeleteRed,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(formatRating(rChange.newRating), color = AppleBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                     if (index < standings.lastIndex) HorizontalDivider(color = BorderGray)
                 }
@@ -4845,14 +4890,22 @@ private fun RoundRobinScoreDialog(
 
     val p1Wins = if (bestOfThreeWins) listOf("3:0", "3:1", "3:2") else listOf("2:0", "2:1")
     val p2Wins = p1Wins.map(::reverseScore)
+    val allScoresP1 = if (bestOfThreeWins) listOf("3:0", "3:1", "3:2", "2:3", "1:3", "0:3") else listOf("2:0", "2:1", "1:2", "0:2")
+    val allScoresP2 = if (bestOfThreeWins) listOf("0:3", "1:3", "2:3", "3:2", "3:1", "3:0") else listOf("0:2", "1:2", "2:1", "2:0")
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(28.dp),
-            modifier = Modifier.fillMaxWidth(0.95f).wrapContentHeight()
+            modifier = Modifier
+                .fillMaxWidth(0.98f)
+                .fillMaxHeight(0.85f)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
                 // Header
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("Ввод результата", style = AppTypography.titleLarge.copy(fontSize = 22.sp), color = TextDark, modifier = Modifier.weight(1f))
@@ -4867,53 +4920,83 @@ private fun RoundRobinScoreDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Players VS Block
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    PlayerScoreCard(player = p1 ?: ClubPlayer(0, firstPlayer), modifier = Modifier.weight(1f))
-                    Text("VS", style = AppTypography.bodyMedium, color = TextGray, modifier = Modifier.padding(horizontal = 16.dp))
-                    PlayerScoreCard(player = p2 ?: ClubPlayer(0, secondPlayer), modifier = Modifier.weight(1f))
-                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    // Players VS Block
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        PlayerScoreCard(player = p1 ?: ClubPlayer(0, firstPlayer), modifier = Modifier.weight(1f))
+                        Text("VS", style = AppTypography.titleLarge, color = TextGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 12.dp))
+                        PlayerScoreCard(player = p2 ?: ClubPlayer(0, secondPlayer), modifier = Modifier.weight(1f))
+                    }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                // Score Buttons Grid
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Left Column (P1 wins)
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        p1Wins.forEachIndexed { index, s ->
-                            val color = if (index == 0) Color(0xFF24A148) else Color(0xFFE4F8EB)
-                            val textColor = if (index == 0) Color.White else Color(0xFF24A148)
-                            ScoreButton(text = s, bgColor = color, textColor = textColor) { onSave(s) }
+                    // Score Buttons Grid
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        // Left Column
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            allScoresP1.forEach { s ->
+                                val parsed = parseScore(s) ?: return@forEach
+                                val isWin = parsed.first > parsed.second
+                                val isClear = (bestOfThreeWins && parsed.first == 3 && parsed.second == 0) || (!bestOfThreeWins && parsed.first == 2 && parsed.second == 0)
+
+                                val color = when {
+                                    isWin && isClear -> Color(0xFF24A148)
+                                    isWin -> Color(0xFFE4F8EB)
+                                    !isWin && isClear -> Color(0xFFFF3B30)
+                                    else -> Color(0xFFFFEBEE)
+                                }
+                                val textColor = if (isWin && isClear || !isWin && isClear) Color.White else if (isWin) Color(0xFF24A148) else Color(0xFFFF3B30)
+
+                                ScoreButton(text = s, bgColor = color, textColor = textColor) { onSave(s) }
+                            }
+                        }
+                        // Right Column
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            allScoresP2.forEach { s ->
+                                val parsed = parseScore(s) ?: return@forEach
+                                val isWin = parsed.second > parsed.first
+                                val isClear = (bestOfThreeWins && parsed.second == 3 && parsed.first == 0) || (!bestOfThreeWins && parsed.second == 2 && parsed.first == 0)
+
+                                val color = when {
+                                    isWin && isClear -> Color(0xFF24A148)
+                                    isWin -> Color(0xFFE4F8EB)
+                                    !isWin && isClear -> Color(0xFFFF3B30)
+                                    else -> Color(0xFFFFEBEE)
+                                }
+                                val textColor = if (isWin && isClear || !isWin && isClear) Color.White else if (isWin) Color(0xFF24A148) else Color(0xFFFF3B30)
+
+                                ScoreButton(text = s, bgColor = color, textColor = textColor) { onSave(s) }
+                            }
                         }
                     }
-                    // Right Column (P2 wins)
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        p2Wins.forEachIndexed { index, s ->
-                            val color = if (index == 0) Color(0xFFFF3B30) else Color(0xFFFFEBEE)
-                            val textColor = if (index == 0) Color.White else Color(0xFFFF3B30)
-                            ScoreButton(text = s, bgColor = color, textColor = textColor) { onSave(s) }
-                        }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                    HorizontalDivider(color = BorderGray)
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text("ТЕХНИЧЕСКИЙ РЕЗУЛЬТАТ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        TechnicalButton(text = "W (победа)", modifier = Modifier.weight(1f)) { onSave("W") }
+                        TechnicalButton(text = "L (поражение)", modifier = Modifier.weight(1f)) { onSave("L") }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = BorderGray)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text("Технический результат", style = AppTypography.bodyMedium, color = TextGray)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TechnicalButton(text = "W (победа)", modifier = Modifier.weight(1f)) { onSave("W") }
-                    TechnicalButton(text = "L (поражение)", modifier = Modifier.weight(1f)) { onSave("L") }
-                }
-
-                if (existingScore != null) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TextButton(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
-                        Text("Удалить текущий результат", color = SwipeDeleteRed)
+                    if (existingScore != null) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        TextButton(
+                            onClick = onDelete,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.textButtonColors(contentColor = SwipeDeleteRed)
+                        ) {
+                            Text("Удалить текущий результат", style = AppTypography.labelLarge)
+                        }
                     }
                 }
             }
