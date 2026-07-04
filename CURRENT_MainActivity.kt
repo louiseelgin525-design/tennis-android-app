@@ -1152,8 +1152,8 @@ private fun tournamentStartError(
         return "Сначала зарегистрируйте игроков в базе. Без регистрации игрок не может участвовать."
     }
 
-    if (!draft.isListGenerated || draft.playerFields.size < 2) {
-        return "Сначала сгенерируйте список игроков."
+    if (draft.playerFields.size < 2) {
+        return "Недостаточно игроков для начала турнира."
     }
 
     val playerNames = draft.playerFields.map { normalizePlayerName(it.name) }
@@ -2585,6 +2585,15 @@ fun CreateTournamentScreen(
 ) {
     var startError by remember { mutableStateOf<String?>(null) }
 
+    LaunchedEffect(draft.playersCount) {
+        while (draft.playerFields.size < draft.playersCount) {
+            draft.playerFields.add(PlayerField(draft.nextFieldId++, ""))
+        }
+        while (draft.playerFields.size > draft.playersCount) {
+            draft.playerFields.removeAt(draft.playerFields.lastIndex)
+        }
+    }
+
     val normalizedNames = draft.playerFields.map { normalizePlayerName(it.name) }
     val duplicateKeys = normalizedNames
         .filter { it.isNotBlank() }
@@ -2681,7 +2690,7 @@ fun CreateTournamentScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .border(1.dp, BorderGray, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
                             ) {
                                 Text(
                                     "–",
@@ -2689,16 +2698,8 @@ fun CreateTournamentScreen(
                                     color = if (draft.playersCount > 2) TextGray else BorderGray,
                                     modifier = Modifier.clickable(enabled = draft.playersCount > 2) {
                                         draft.playersCount--
-
                                         val maximumTables = (draft.playersCount / 2).coerceIn(1, 5)
-                                        if (draft.tablesCount > maximumTables) {
-                                            draft.tablesCount = maximumTables
-                                        }
-
-                                        if (draft.isListGenerated && draft.playerFields.isNotEmpty()) {
-                                            draft.playerFields.removeAt(draft.playerFields.lastIndex)
-                                        }
-
+                                        if (draft.tablesCount > maximumTables) draft.tablesCount = maximumTables
                                         startError = null
                                     }
                                 )
@@ -2707,7 +2708,7 @@ fun CreateTournamentScreen(
                                     "${draft.playersCount}",
                                     style = AppTypography.titleLarge,
                                     color = TextDark,
-                                    modifier = Modifier.padding(horizontal = 22.dp)
+                                    modifier = Modifier.padding(horizontal = 20.dp)
                                 )
 
                                 Text(
@@ -2716,51 +2717,21 @@ fun CreateTournamentScreen(
                                     color = TextGray,
                                     modifier = Modifier.clickable {
                                         draft.playersCount++
-
-                                        if (draft.isListGenerated) {
-                                            draft.playerFields.add(PlayerField(draft.nextFieldId++, ""))
-                                        }
-
                                         startError = null
                                     }
                                 )
                             }
 
-                            Button(
-                                onClick = {
-                                    draft.playerFields.clear()
-                                    draft.matchScores.clear()
-                                    draft.activeRoundRobinMatches.clear()
-                                    draft.withdrawnPlayers.clear()
-                                    draft.ratingApplied = false
-                                    draft.historySaved = false
-                                    draft.ratingChanges.clear()
-                                    repeat(draft.playersCount) {
-                                        draft.playerFields.add(PlayerField(draft.nextFieldId++, ""))
-                                    }
-                                    draft.isListGenerated = true
-                                    startError = null
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
-                                shape = RoundedCornerShape(12.dp)
+                            Row(
+                                modifier = Modifier.width(180.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text("✨ Список игроков", style = AppTypography.labelLarge, color = Color.White)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Text("🏆 До скольки побед", style = AppTypography.titleLarge, color = TextDark)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            SegmentBtn("2 победы", !draft.bestOf3, Modifier.weight(1f)) {
-                                draft.bestOf3 = false
-                            }
-                            SegmentBtn("3 победы", draft.bestOf3, Modifier.weight(1f)) {
-                                draft.bestOf3 = true
+                                SegmentBtn("до 2", !draft.bestOf3, Modifier.weight(1f)) {
+                                    draft.bestOf3 = false
+                                }
+                                SegmentBtn("до 3", draft.bestOf3, Modifier.weight(1f)) {
+                                    draft.bestOf3 = true
+                                }
                             }
                         }
 
@@ -2842,211 +2813,100 @@ fun CreateTournamentScreen(
                 }
             }
 
-            if (draft.isListGenerated) {
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = CardWhite),
-                        shape = RoundedCornerShape(18.dp),
-                        border = BorderStroke(1.dp, BorderGray),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text("👥 Игроки", style = AppTypography.titleLarge, color = TextDark)
-                                    Text(
-                                        "Свайп здесь отключён. Удаление — только кнопкой справа.",
-                                        style = AppTypography.bodyMedium,
-                                        color = TextGray
-                                    )
-                                }
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = CardWhite),
+                    shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(1.dp, BorderGray),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("👥 Игроки", style = AppTypography.titleLarge, color = TextDark)
+                            Text("${draft.playerFields.size}", style = AppTypography.titleLarge, color = AppleBlue)
+                        }
 
-                                Text(
-                                    "${draft.playerFields.size}",
-                                    style = AppTypography.titleLarge,
-                                    color = AppleBlue
-                                )
-                            }
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                            if (clubPlayers.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = BlueBadgeBg),
-                                    shape = RoundedCornerShape(12.dp)
+                        draft.playerFields.forEachIndexed { index, field ->
+                            key(field.id) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                                 ) {
                                     Text(
-                                        "Введите 2 буквы и выберите игрока из базы",
-                                        style = AppTypography.bodyMedium,
-                                        color = BlueBadgeText,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        "${index + 1}",
+                                        style = AppTypography.labelLarge,
+                                        color = TextGray,
+                                        modifier = Modifier.width(24.dp)
+                                    )
+
+                                    PlayerNameInputField(
+                                        value = field.name,
+                                        clubPlayers = clubPlayers,
+                                        modifier = Modifier.weight(1f),
+                                        onValueChange = { newName ->
+                                            val idx = draft.playerFields.indexOf(field)
+                                            if (idx != -1) {
+                                                draft.playerFields[idx] = field.copy(name = newName)
+                                            }
+                                            startError = null
+                                        }
                                     )
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            draft.playerFields.forEachIndexed { index, field ->
-                                key(field.id) {
-                                    val cleanName = normalizePlayerName(field.name)
-                                    val isDuplicate = cleanName.isNotBlank() &&
-                                        duplicateKeys.contains(cleanName.lowercase())
-                                    val hasProblem = cleanName.isBlank() || isDuplicate
-
-                                    Card(
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = if (hasProblem) Color(0xFFFFFBFE) else CardWhite
-                                        ),
-                                        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(
-                                            width = 1.dp,
-                                            color = if (hasProblem) SwipeDeleteRed.copy(alpha = 0.35f) else BorderGray
-                                        ),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(bottom = 10.dp)
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.Top,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(12.dp)
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(34.dp)
-                                                    .clip(RoundedCornerShape(12.dp))
-                                                    .background(if (hasProblem) CellLostBg else BlueBadgeBg),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    "${index + 1}",
-                                                    style = AppTypography.labelLarge,
-                                                    color = if (hasProblem) CellLostText else AppleBlue
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.width(10.dp))
-
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                PlayerNameInputField(
-                                                    value = field.name,
-                                                    clubPlayers = clubPlayers,
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    onValueChange = { newName ->
-                                                        val idx = draft.playerFields.indexOf(field)
-                                                        if (idx != -1) {
-                                                            draft.playerFields[idx] = field.copy(name = newName)
-                                                        }
-                                                        startError = null
-                                                    }
-                                                )
-
-                                                if (hasProblem) {
-                                                    Spacer(modifier = Modifier.height(4.dp))
-                                                    Text(
-                                                        if (cleanName.isBlank()) {
-                                                            "Заполните ФИО игрока"
-                                                        } else {
-                                                            "Этот игрок уже есть в списке"
-                                                        },
-                                                        style = AppTypography.bodyMedium,
-                                                        color = CellLostText
-                                                    )
-                                                }
-                                            }
-
-                                            if (draft.playerFields.size > 2) {
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                IconButton(
-                                                    onClick = {
-                                                        draft.playerFields.remove(field)
-                                                        draft.playersCount = draft.playerFields.size
-
-                                                        val maximumTablesNow = (draft.playersCount / 2).coerceIn(1, 5)
-                                                        if (draft.tablesCount > maximumTablesNow) {
-                                                            draft.tablesCount = maximumTablesNow
-                                                        }
-
-                                                        startError = null
-                                                    },
-                                                    modifier = Modifier
-                                                        .size(44.dp)
-                                                        .clip(RoundedCornerShape(14.dp))
-                                                        .background(CellLostBg)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = TrashIcon,
-                                                        contentDescription = "Удалить",
-                                                        tint = SwipeDeleteRed,
-                                                        modifier = Modifier.size(22.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Text(
-                                "+ Добавить игрока",
-                                style = AppTypography.labelLarge,
-                                color = AppleBlue,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(1.dp, AppleBlue.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .clickable {
-                                        draft.playerFields.add(PlayerField(draft.nextFieldId++, ""))
-                                        draft.playersCount = draft.playerFields.size
-                                        startError = null
-                                    }
-                                    .padding(14.dp)
-                            )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "+ Добавить игрока",
+                            style = AppTypography.labelLarge,
+                            color = AppleBlue,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    draft.playersCount++
+                                    draft.playerFields.add(PlayerField(draft.nextFieldId++, ""))
+                                    startError = null
+                                }
+                                .padding(12.dp)
+                        )
                     }
                 }
             }
         }
 
-        if (draft.isListGenerated) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = CardWhite),
-                shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    startError?.let { error ->
-                        Text(
-                            error,
-                            style = AppTypography.bodyMedium,
-                            color = CellLostText,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
+        Card(
+            colors = CardDefaults.cardColors(containerColor = CardWhite),
+            shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                startError?.let { error ->
+                    Text(
+                        error,
+                        style = AppTypography.bodyMedium,
+                        color = CellLostText,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
 
-                    Button(
-                        onClick = {
-                            val error = tournamentStartError(draft, clubPlayers)
-
-                            if (error == null) {
-                                onStartTournament()
-                            } else {
-                                startError = error
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(58.dp)
-                    ) {
-                        Text("🏆 Создать турнир", style = AppTypography.labelLarge, color = Color.White)
-                    }
+                Button(
+                    onClick = {
+                        val error = tournamentStartError(draft, clubPlayers)
+                        if (error == null) onStartTournament() else startError = error
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth().height(58.dp)
+                ) {
+                    Text("🏆 Создать турнир", style = AppTypography.labelLarge, color = Color.White)
                 }
             }
         }
@@ -3073,24 +2933,17 @@ fun PlayerNameInputField(
 
     val suggestions = remember(query, clubPlayers) {
         val cleanQuery = normalizePlayerName(query).lowercase()
-
         if (cleanQuery.length < 2) {
             emptyList()
         } else {
             clubPlayers
-                .filter { player ->
-                    player.fullName.lowercase().contains(cleanQuery)
-                }
-                .sortedWith(
-                    compareBy<ClubPlayer> {
-                        !it.fullName.lowercase().startsWith(cleanQuery)
-                    }.thenByDescending { it.rating }
-                )
+                .filter { it.fullName.lowercase().contains(cleanQuery) }
+                .sortedWith(compareBy<ClubPlayer> { !it.fullName.lowercase().startsWith(cleanQuery) }.thenByDescending { it.rating })
                 .take(6)
         }
     }
 
-    Column(modifier = modifier) {
+    Box(modifier = modifier) {
         OutlinedTextField(
             value = query,
             onValueChange = { newValue ->
@@ -3098,82 +2951,26 @@ fun PlayerNameInputField(
                 onValueChange(newValue)
                 showSuggestions = true
             },
-            placeholder = {
-                Text(
-                    if (clubPlayers.isEmpty()) {
-                        "Сначала зарегистрируйте игроков"
-                    } else {
-                        "Найти игрока из базы"
-                    }
-                )
-            },
-            leadingIcon = {
-                if (exactPlayer != null) {
-                    PlayerAvatar(
-                        player = exactPlayer,
-                        size = 28.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = SearchIcon,
-                        contentDescription = "Поиск",
-                        tint = TextGray,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            trailingIcon = {
-                if (exactPlayer != null) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = GreenBadgeBg),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            "выбран",
-                            color = GreenBadgeText,
-                            style = AppTypography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                        )
-                    }
-                }
-            },
+            placeholder = { Text("Фамилия Имя") },
             enabled = clubPlayers.isNotEmpty(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 58.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = if (exactPlayer == null && query.isNotBlank()) {
-                    SwipeDeleteRed.copy(alpha = 0.45f)
-                } else {
-                    BorderGray
-                },
+                unfocusedBorderColor = if (exactPlayer == null && query.isNotBlank()) SwipeDeleteRed.copy(alpha = 0.4f) else BorderGray,
                 focusedBorderColor = AppleBlue,
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White,
-                disabledContainerColor = BgLight,
-                disabledBorderColor = BorderGray
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent
             ),
-            shape = RoundedCornerShape(14.dp),
-            singleLine = true
+            shape = RoundedCornerShape(8.dp),
+            singleLine = true,
+            textStyle = AppTypography.bodyMedium
         )
 
-        if (query.isNotBlank() && exactPlayer == null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                "Выберите игрока из базы. Вручную вписать нельзя.",
-                color = CellLostText,
-                style = AppTypography.bodyMedium
-            )
-        }
-
         if (showSuggestions && suggestions.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(6.dp))
-
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, AppleBlue.copy(alpha = 0.25f)),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, BorderGray),
+                modifier = Modifier.fillMaxWidth().padding(top = 50.dp)
             ) {
                 Column {
                     suggestions.forEachIndexed { index, player ->
@@ -3186,55 +2983,13 @@ fun PlayerNameInputField(
                                     showSuggestions = false
                                 }
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            PlayerAvatar(
-                                player = player,
-                                size = 38.dp
-                            )
-
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    player.fullName,
-                                    color = TextDark,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 17.sp,
-                                    maxLines = 2
-                                )
-
-                                Spacer(modifier = Modifier.height(3.dp))
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Card(
-                                        colors = CardDefaults.cardColors(containerColor = BlueBadgeBg),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            "рейтинг ${formatRating(player.rating)}",
-                                            color = AppleBlue,
-                                            style = AppTypography.bodyMedium,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    Text(
-                                        "ID ${player.id}",
-                                        color = TextGray,
-                                        style = AppTypography.bodyMedium
-                                    )
-                                }
-                            }
-
-                            Text("Выбрать", color = AppleBlue, fontWeight = FontWeight.SemiBold)
+                            Text(player.fullName, color = TextDark, fontWeight = FontWeight.Medium)
+                            Text(formatRating(player.rating), color = AppleBlue, fontWeight = FontWeight.Bold)
                         }
-
-                        if (index != suggestions.lastIndex) {
-                            HorizontalDivider(color = BorderGray)
-                        }
+                        if (index != suggestions.lastIndex) HorizontalDivider(color = BorderGray)
                     }
                 }
             }
