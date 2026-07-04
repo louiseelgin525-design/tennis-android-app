@@ -343,6 +343,76 @@ val MoreIcon: ImageVector
         return _MoreIcon!!
     }
 
+private var _TableIcon: ImageVector? = null
+val TableIcon: ImageVector
+    get() {
+        if (_TableIcon != null) return _TableIcon!!
+        _TableIcon = ImageVector.Builder(
+            name = "TableIcon",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(AppleBlue)) {
+                moveTo(19f, 5f)
+                horizontalLineTo(5f)
+                curveTo(3.9f, 5f, 3f, 5.9f, 3f, 7f)
+                verticalLineTo(17f)
+                curveTo(3f, 18.1f, 3.9f, 19f, 5f, 19f)
+                horizontalLineTo(19f)
+                curveTo(20.1f, 19f, 21f, 18.1f, 21f, 17f)
+                verticalLineTo(7f)
+                curveTo(21f, 5.9f, 20.1f, 5f, 19f, 5f)
+                close()
+                moveTo(19f, 7f)
+                verticalLineTo(9f)
+                horizontalLineTo(5f)
+                verticalLineTo(7f)
+                horizontalLineTo(19f)
+                close()
+                moveTo(5f, 17f)
+                verticalLineTo(11f)
+                horizontalLineTo(19f)
+                verticalLineTo(17f)
+                horizontalLineTo(5f)
+                close()
+            }
+        }.build()
+        return _TableIcon!!
+    }
+
+private var _CheckCircleIcon: ImageVector? = null
+val CheckCircleIcon: ImageVector
+    get() {
+        if (_CheckCircleIcon != null) return _CheckCircleIcon!!
+        _CheckCircleIcon = ImageVector.Builder(
+            name = "CheckCircleIcon",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(AppleBlue)) {
+                moveTo(12f, 2f)
+                curveTo(6.48f, 2f, 2f, 6.48f, 2f, 12f)
+                curveTo(2f, 17.52f, 6.48f, 22f, 12f, 22f)
+                curveTo(17.52f, 22f, 22f, 17.52f, 22f, 12f)
+                curveTo(22f, 6.48f, 17.52f, 2f, 12f, 2f)
+                close()
+                moveTo(10f, 17f)
+                lineTo(5f, 12f)
+                lineTo(6.41f, 10.59f)
+                lineTo(10f, 14.17f)
+                lineTo(17.59f, 6.58f)
+                lineTo(19f, 8f)
+                lineTo(10f, 17f)
+                close()
+            }
+        }.build()
+        return _CheckCircleIcon!!
+    }
+
 @Composable
 fun AppBackButton(onClick: () -> Unit) {
     IconButton(
@@ -1817,6 +1887,7 @@ private fun PlayerAvatar(
     size: Dp
 ) {
     val avatarBitmap = rememberAvatarBitmap(player.avatarUri)
+    val fontSize = (size.value * 0.45f).sp
 
     Box(
         modifier = Modifier
@@ -1837,7 +1908,7 @@ private fun PlayerAvatar(
                 player.fullName.firstOrNull()?.uppercase() ?: "И",
                 color = AppleBlue,
                 fontWeight = FontWeight.Bold,
-                fontSize = 24.sp
+                fontSize = fontSize
             )
         }
     }
@@ -3928,8 +3999,8 @@ private fun SimpleRoundRobinTopBar(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TopBarChip(text = "$tablesCount стола", icon = "🏓")
-            TopBarChip(text = "Очки считаются автоматически", icon = "⚙️")
+            TopBarChip(text = "$tablesCount стола", icon = TableIcon)
+            TopBarChip(text = "Очки считаются автоматически", icon = CheckCircleIcon)
 
             if (tournamentIsComplete) {
                 Button(
@@ -3950,7 +4021,7 @@ private fun SimpleRoundRobinTopBar(
 }
 
 @Composable
-private fun TopBarChip(text: String, icon: String) {
+private fun TopBarChip(text: String, icon: ImageVector) {
     Card(
         colors = CardDefaults.cardColors(containerColor = BlueBadgeBg),
         shape = RoundedCornerShape(10.dp)
@@ -3959,7 +4030,7 @@ private fun TopBarChip(text: String, icon: String) {
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(icon, fontSize = 14.sp)
+            Icon(imageVector = icon, contentDescription = null, tint = AppleBlue, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
             Text(text, color = AppleBlue, style = AppTypography.bodyMedium, fontWeight = FontWeight.Medium)
         }
@@ -4740,10 +4811,10 @@ private fun RoundRobinTable(
     val horizontalScroll = rememberScrollState()
 
     val scale = tableScale.coerceIn(0.85f, 1.35f)
-    val rowHeight = (54f * scale).dp
+    val rowHeight = (64f * scale).dp
     val headerHeight = (42f * scale).dp
-    val scoreColumnWidth = (58f * scale).dp
-    val leftColumnWidth = (260f * scale).coerceIn(220f, 360f).dp
+    val scoreColumnWidth = (68f * scale).dp
+    val leftColumnWidth = (320f * scale).coerceIn(240f, 440f).dp
     val pointsColumnWidth = (66f * scale).dp
 
     val cleanSearch = normalizePlayerName(searchQuery).lowercase()
@@ -4909,20 +4980,20 @@ private fun RoundRobinTable(
                             ?.plus(1)
 
                         val backgroundColor = when {
-                            isDiagonal -> Color(0xFFF2F4F7)
+                            isDiagonal -> Color(0xFFF0F0F2)
                             technicalWin -> GreenBadgeBg
                             technicalLoss -> CellLostBg
                             isActive -> GreenBadgeBg
                             isSearchCross -> Color(0xFFFFFAE6)
-                            else -> CardWhite
+                            else -> Color.Transparent
                         }
 
                         val scoreColor = when {
-                            technicalWin -> GreenBadgeText
-                            technicalLoss -> CellLostText
-                            parsed != null && parsed.first > parsed.second -> GreenBadgeText
-                            parsed != null -> SwipeDeleteRed
-                            isActive -> GreenBadgeText
+                            technicalWin -> Color(0xFF24A148)
+                            technicalLoss -> Color(0xFFFF3B30)
+                            parsed != null && parsed.first > parsed.second -> Color(0xFF24A148)
+                            parsed != null -> Color(0xFFFF3B30)
+                            isActive -> Color(0xFF24A148)
                             else -> TextGray
                         }
 
@@ -4944,7 +5015,7 @@ private fun RoundRobinTable(
                                     color = when {
                                         isDiagonal -> Color.Transparent
                                         isSelected -> AppleBlue
-                                        isActive -> GreenBadgeText
+                                        isActive -> Color(0xFF24A148)
                                         isSearchCross -> Color(0xFFFFD54F)
                                         else -> BorderGray
                                     }
