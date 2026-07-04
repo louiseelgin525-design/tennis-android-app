@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -1128,7 +1129,7 @@ class TournamentDraft {
 
     // Состояние Кругового турнира
     val matchScores = mutableStateMapOf<Pair<Int, Int>, String>()
-    val activeRoundRobinMatches = mutableStateListOf<Pair<Int, Int>>()
+    val activeRoundRobinMatches = mutableStateListOf<Pair<Int, Int>?>()
     val withdrawnPlayers = mutableStateListOf<Int>()
 
     // Изменение рейтинга после завершения турнира
@@ -1984,27 +1985,39 @@ private fun PlayerRegistrationDialog(
         }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             colors = CardDefaults.cardColors(containerColor = CardWhite),
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .fillMaxHeight(0.92f)
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxSize()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(20.dp)
             ) {
-                Text(
-                    if (isEditing) "Карточка игрока" else "Регистрация игрока",
-                    style = AppTypography.displayLarge,
-                    color = TextDark,
-                    maxLines = 2
-                )
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        if (isEditing) "Карточка игрока" else "Регистрация игрока",
+                        style = AppTypography.displayLarge.copy(fontSize = 28.sp),
+                        color = TextDark
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Text("✕", fontSize = 24.sp, color = TextGray)
+                    }
+                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Column(
                     modifier = Modifier
@@ -2012,6 +2025,7 @@ private fun PlayerRegistrationDialog(
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                 ) {
+                    // Avatar & Photo Buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -2023,41 +2037,48 @@ private fun PlayerRegistrationDialog(
                                 rating = ratingText.replace(",", ".").toDoubleOrNull() ?: 100.0,
                                 avatarUri = avatarUri
                             ),
-                            size = 92.dp
+                            size = 110.dp
                         )
 
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(20.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Button(
                                 onClick = { cameraLauncher.launch(null) },
                                 colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(48.dp)
                             ) {
-                                Text("📷 Камера", color = Color.White)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("📷 Камера", color = Color.White, fontSize = 16.sp)
+                                }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             OutlinedButton(
                                 onClick = { galleryLauncher.launch("image/*") },
                                 border = BorderStroke(1.dp, AppleBlue),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(48.dp)
                             ) {
-                                Text("🖼 Галерея", color = AppleBlue)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🖼 Галерея", color = AppleBlue, fontSize = 16.sp)
+                                }
                             }
 
                             if (avatarUri.isNotBlank()) {
-                                TextButton(onClick = { avatarUri = "" }) {
-                                    Text("Убрать аватар", color = SwipeDeleteRed)
+                                TextButton(
+                                    onClick = { avatarUri = "" },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Убрать аватар", color = SwipeDeleteRed, fontSize = 15.sp)
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     OutlinedTextField(
                         value = fullName,
@@ -2078,7 +2099,7 @@ private fun PlayerRegistrationDialog(
                         singleLine = true
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Card(
                         colors = CardDefaults.cardColors(containerColor = BlueBadgeBg),
@@ -2089,31 +2110,31 @@ private fun PlayerRegistrationDialog(
                             "Важно: если «турниров сыграл» = 6, игрок уже не считается новичком в рейтинге.",
                             color = BlueBadgeText,
                             style = AppTypography.bodyMedium,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text("Рейтинг и опыт", style = AppTypography.titleLarge, color = TextDark)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     StatInputField("Текущий рейтинг", ratingText, Modifier.fillMaxWidth()) {
                         ratingText = it
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     StatInputField("Сколько турниров уже сыграл", tournamentsText, Modifier.fillMaxWidth()) {
                         tournamentsText = it
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text("Игры", style = AppTypography.titleLarge, color = TextDark)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatInputField("Победы", winsText, Modifier.weight(1f)) {
                             winsText = it
                         }
@@ -2122,12 +2143,12 @@ private fun PlayerRegistrationDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text("Медали", style = AppTypography.titleLarge, color = TextDark)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatInputField("🥇 Золото", goldText, Modifier.weight(1f)) {
                             goldText = it
                         }
@@ -2139,10 +2160,10 @@ private fun PlayerRegistrationDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text("Статистика с соперниками", style = AppTypography.titleLarge, color = TextDark)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     val stats = decodeOpponentStats(player?.opponentStats.orEmpty())
                         .toList()
@@ -2158,7 +2179,7 @@ private fun PlayerRegistrationDialog(
                                 "Появится автоматически после сыгранных матчей.",
                                 color = TextGray,
                                 style = AppTypography.bodyMedium,
-                                modifier = Modifier.padding(12.dp)
+                                modifier = Modifier.padding(16.dp)
                             )
                         }
                     } else {
@@ -2166,19 +2187,21 @@ private fun PlayerRegistrationDialog(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
+                                    .padding(vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     opponent,
                                     modifier = Modifier.weight(1f),
                                     color = TextDark,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    style = AppTypography.bodyMedium
                                 )
                                 Text(
                                     "${result.first}-${result.second}",
                                     color = AppleBlue,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    style = AppTypography.bodyMedium
                                 )
                             }
                             HorizontalDivider(color = BorderGray)
@@ -2186,26 +2209,29 @@ private fun PlayerRegistrationDialog(
                     }
 
                     errorText?.let {
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(it, color = CellLostText, style = AppTypography.bodyMedium)
                     }
+
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
+                // Bottom Buttons
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        .height(60.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                         border = BorderStroke(1.dp, BorderGray),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Отмена", color = TextGray)
+                        Text("Отмена", color = TextGray, fontSize = 17.sp)
                     }
 
                     Button(
@@ -2253,11 +2279,11 @@ private fun PlayerRegistrationDialog(
                                 }
                             }
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                         colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Сохранить", color = Color.White)
+                        Text("Сохранить", color = Color.White, fontSize = 17.sp)
                     }
                 }
             }
@@ -3144,27 +3170,37 @@ private fun refreshActiveRoundRobinMatches(
 
     val withdrawnSet = draft.withdrawnPlayers.toSet()
 
-    val validAssignments = draft.activeRoundRobinMatches
-        .filter { pair ->
-            pair.first in 0 until playerCount &&
-                pair.second in 0 until playerCount &&
-                pair.first !in withdrawnSet &&
-                pair.second !in withdrawnSet &&
-                !draft.matchScores.containsKey(normalizedPair(pair.first, pair.second))
-        }
-        .map { normalizedPair(it.first, it.second) }
-        .distinct()
+    // 1. Maintain the list size equal to tables count, filling with nulls
+    while (draft.activeRoundRobinMatches.size < effectiveTablesCount) {
+        draft.activeRoundRobinMatches.add(null)
+    }
+    while (draft.activeRoundRobinMatches.size > effectiveTablesCount) {
+        draft.activeRoundRobinMatches.removeAt(draft.activeRoundRobinMatches.lastIndex)
+    }
 
-    draft.activeRoundRobinMatches.clear()
-    draft.activeRoundRobinMatches.addAll(validAssignments.take(effectiveTablesCount))
+    // 2. Clear invalid assignments (match played, player withdrawn, etc.)
+    for (i in draft.activeRoundRobinMatches.indices) {
+        val pair = draft.activeRoundRobinMatches[i] ?: continue
+        val invalid = pair.first !in 0 until playerCount ||
+                pair.second !in 0 until playerCount ||
+                pair.first in withdrawnSet ||
+                pair.second in withdrawnSet ||
+                draft.matchScores.containsKey(normalizedPair(pair.first, pair.second))
+
+        if (invalid) {
+            draft.activeRoundRobinMatches[i] = null
+        }
+    }
 
     val busyPlayers = draft.activeRoundRobinMatches
+        .filterNotNull()
         .flatMap { listOf(it.first, it.second) }
         .toMutableSet()
 
-    if (draft.activeRoundRobinMatches.size >= effectiveTablesCount) return
+    // 3. Find candidates for empty slots
+    val emptySlots = draft.activeRoundRobinMatches.indices.filter { draft.activeRoundRobinMatches[it] == null }
+    if (emptySlots.isEmpty()) return
 
-    // Подсчет сыгранных матчей для каждого игрока
     val matchesPlayed = IntArray(playerCount)
     for (f in 0 until playerCount) {
         for (s in f + 1 until playerCount) {
@@ -3175,6 +3211,8 @@ private fun refreshActiveRoundRobinMatches(
         }
     }
 
+    val currentPairs = draft.activeRoundRobinMatches.filterNotNull().toSet()
+
     val candidates = mutableListOf<Triple<Int, Int, Int>>()
     for (f in 0 until playerCount) {
         if (f in withdrawnSet) continue
@@ -3182,7 +3220,7 @@ private fun refreshActiveRoundRobinMatches(
             if (s in withdrawnSet) continue
 
             val pair = f to s
-            if (!draft.matchScores.containsKey(pair) && !draft.activeRoundRobinMatches.contains(pair)) {
+            if (!draft.matchScores.containsKey(pair) && !currentPairs.contains(pair)) {
                 val weight = matchesPlayed[f] + matchesPlayed[s]
                 val distance = kotlin.math.abs(f - s)
                 candidates.add(Triple(f, s, weight * 1000 - distance))
@@ -3190,16 +3228,18 @@ private fun refreshActiveRoundRobinMatches(
         }
     }
 
-    // Сортируем: сначала те, у кого меньше матчей (weight), затем те, кто дальше друг от друга (distance)
     candidates.sortBy { it.third }
 
-    for (match in candidates) {
-        if (draft.activeRoundRobinMatches.size >= effectiveTablesCount) break
-
-        if (match.first !in busyPlayers && match.second !in busyPlayers) {
-            draft.activeRoundRobinMatches.add(match.first to match.second)
-            busyPlayers.add(match.first)
-            busyPlayers.add(match.second)
+    var nextCandidateIdx = 0
+    for (slotIdx in emptySlots) {
+        while (nextCandidateIdx < candidates.size) {
+            val candidate = candidates[nextCandidateIdx++]
+            if (candidate.first !in busyPlayers && candidate.second !in busyPlayers) {
+                draft.activeRoundRobinMatches[slotIdx] = candidate.first to candidate.second
+                busyPlayers.add(candidate.first)
+                busyPlayers.add(candidate.second)
+                break
+            }
         }
     }
 }
@@ -3313,10 +3353,10 @@ fun RoundRobinScreen(
         .mapIndexed { place, stat -> stat.index to place + 1 }
         .toMap()
     val pointsByPlayer = standings.associate { stat -> stat.index to stat.points }
-    val activePlayers = draft.activeRoundRobinMatches.flatMap { listOf(it.first, it.second) }.toSet()
+    val activePlayers = draft.activeRoundRobinMatches.filterNotNull().flatMap { listOf(it.first, it.second) }.toSet()
 
     val queueMatches = remember(draft.matchScores.size, draft.activeRoundRobinMatches.size, draft.withdrawnPlayers.size) {
-        val assigned = draft.activeRoundRobinMatches.map { normalizedPair(it.first, it.second) }.toSet()
+        val assigned = draft.activeRoundRobinMatches.filterNotNull().map { normalizedPair(it.first, it.second) }.toSet()
         val withdrawn = draft.withdrawnPlayers.toSet()
         val queue = mutableListOf<Pair<Int, Int>>()
         for (f in 0 until playerCount) {
@@ -3464,13 +3504,14 @@ fun RoundRobinScreen(
                 }
 
                 // Правая колонка: Столы + Очередь
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
                     CompactActiveTablesPanel(
                         assignments = draft.activeRoundRobinMatches,
                         queueMatches = queueMatches,
                         playerNames = playerNames,
                         clubPlayers = clubPlayers,
                         configuredTablesCount = draft.tablesCount,
+                        isVertical = true,
                         onMatchClick = { pair -> selectedPair = pair }
                     )
                 }
@@ -3595,7 +3636,7 @@ fun RoundRobinScreen(
 
         if (first in playerNames.indices && second in playerNames.indices && first != second) {
             val tableNumber = draft.activeRoundRobinMatches
-                .indexOf(normalizedPair(first, second))
+                .indexOfFirst { it != null && normalizedPair(it.first, it.second) == normalizedPair(first, second) }
                 .takeIf { it >= 0 }
                 ?.plus(1)
 
@@ -3612,7 +3653,10 @@ fun RoundRobinScreen(
                     draft.matchScores[second to first] = reverseScore(score)
 
                     val normalized = normalizedPair(first, second)
-                    draft.activeRoundRobinMatches.remove(normalized)
+                    val idx = draft.activeRoundRobinMatches.indexOf(normalized)
+                    if (idx != -1) {
+                        draft.activeRoundRobinMatches[idx] = null
+                    }
                     refreshActiveRoundRobinMatches(
                         draft = draft,
                         playerCount = playerNames.size,
@@ -4202,22 +4246,22 @@ private fun CompactTopChip(
 
 @Composable
 private fun CompactActiveTablesPanel(
-    assignments: List<Pair<Int, Int>>,
+    assignments: List<Pair<Int, Int>?>,
     queueMatches: List<Pair<Int, Int>>,
     playerNames: List<String>,
     clubPlayers: List<ClubPlayer>,
     configuredTablesCount: Int,
+    isVertical: Boolean = false,
     onMatchClick: (Pair<Int, Int>) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    val containerModifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+
+    val content = @Composable {
         // КТО ИГРАЕТ СЕЙЧАС (Active Tables)
         Card(
-            modifier = Modifier.weight(1f),
+            modifier = if (isVertical) Modifier.fillMaxWidth() else Modifier.weight(1f),
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, BorderGray)
@@ -4226,28 +4270,35 @@ private fun CompactActiveTablesPanel(
                 Text("КТО ИГРАЕТ СЕЙЧАС", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (assignments.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                val activeAssignments = assignments.filterNotNull()
+                if (activeAssignments.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
                         Text("Нет активных матчей", color = TextGray)
                     }
                 } else {
                     assignments.forEachIndexed { index, pair ->
-                        ActiveTableCard(
-                            tableNumber = index + 1,
-                            player1 = playerNames.getOrElse(pair.first) { "" },
-                            player2 = playerNames.getOrElse(pair.second) { "" },
-                            clubPlayers = clubPlayers,
-                            onClick = { onMatchClick(pair) }
-                        )
-                        if (index < assignments.lastIndex) Spacer(modifier = Modifier.height(8.dp))
+                        if (pair != null) {
+                            ActiveTableCard(
+                                tableNumber = index + 1,
+                                player1 = playerNames.getOrElse(pair.first) { "" },
+                                player2 = playerNames.getOrElse(pair.second) { "" },
+                                clubPlayers = clubPlayers,
+                                onClick = { onMatchClick(pair) }
+                            )
+                            if (index < assignments.lastIndex) Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
                 }
             }
         }
 
+        if (isVertical) {
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         // ОЧЕРЕДЬ К СТОЛАМ (Queue)
         Card(
-            modifier = Modifier.weight(1f),
+            modifier = if (isVertical) Modifier.fillMaxWidth() else Modifier.weight(1f),
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, BorderGray)
@@ -4274,6 +4325,19 @@ private fun CompactActiveTablesPanel(
                     }
                 }
             }
+        }
+    }
+
+    if (isVertical) {
+        Column(modifier = containerModifier) {
+            content()
+        }
+    } else {
+        Row(
+            modifier = containerModifier,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            content()
         }
     }
 }
@@ -4740,6 +4804,8 @@ private fun RoundRobinTable(
     val leftColumnWidth = (280f * scale).coerceIn(220f, 400f).dp
     val pointsColumnWidth = (66f * scale).dp
 
+    val normalizedActiveMatches = activeMatches.map { if (it != null) normalizedPair(it.first, it.second) else null }
+
     val cleanSearch = normalizePlayerName(searchQuery).lowercase()
     val matchedPlayers = if (cleanSearch.isBlank()) {
         emptySet()
@@ -4886,7 +4952,7 @@ private fun RoundRobinTable(
                         val score = scores[playerIndex to opponentIndex]
                         val parsed = parseScore(score)
                         val normalized = normalizedPair(playerIndex, opponentIndex)
-                        val isActive = !isDiagonal && normalized in activeMatches
+                        val isActive = !isDiagonal && normalized in normalizedActiveMatches
                         val isSelected = !isDiagonal &&
                             selectedPair?.let {
                                 normalizedPair(it.first, it.second) == normalized
@@ -4895,7 +4961,7 @@ private fun RoundRobinTable(
 
                         val technicalWin = score == "W"
                         val technicalLoss = score == "L"
-                        val activeTableNumber = activeMatches
+                        val activeTableNumber = normalizedActiveMatches
                             .indexOf(normalized)
                             .takeIf { it >= 0 }
                             ?.plus(1)
@@ -5097,9 +5163,9 @@ private fun RoundRobinScoreDialog(
                         // Right Column (P2 wins)
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             p2Wins.forEachIndexed { index, s ->
-                                // Both are light red according to TZ
-                                val finalColor = Color(0xFFFFEBEE)
-                                val finalTextColor = Color(0xFFFF3B30)
+                                // Use dark red for primary winning score (0:2 or 0:3), light red for others
+                                val finalColor = if (index == 0) Color(0xFFFF3B30) else Color(0xFFFFEBEE)
+                                val finalTextColor = if (index == 0) Color.White else Color(0xFFFF3B30)
                                 ScoreButton(text = s, bgColor = finalColor, textColor = finalTextColor) { onSave(s) }
                             }
                         }
