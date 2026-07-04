@@ -3129,7 +3129,8 @@ private fun completedRoundRobinMatches(
 
 /**
  * Оставляет незавершённые назначения на столы и добавляет новые пары.
- * Один игрок не может находиться сразу за двумя столами.
+ * Приоритет отдается игрокам с наименьшим количеством сыгранных матчей.
+ * Вторая метрика — расстояние между игроками в таблице.
  */
 private fun refreshActiveRoundRobinMatches(
     draft: TournamentDraft,
@@ -3140,10 +3141,15 @@ private fun refreshActiveRoundRobinMatches(
         minimumValue = 1,
         maximumValue = maxOf(1, playerCount / 2)
     )
+
+    val withdrawnSet = draft.withdrawnPlayers.toSet()
+
     val validAssignments = draft.activeRoundRobinMatches
         .filter { pair ->
             pair.first in 0 until playerCount &&
                 pair.second in 0 until playerCount &&
+                pair.first !in withdrawnSet &&
+                pair.second !in withdrawnSet &&
                 !draft.matchScores.containsKey(normalizedPair(pair.first, pair.second))
         }
         .map { normalizedPair(it.first, it.second) }
@@ -3158,20 +3164,42 @@ private fun refreshActiveRoundRobinMatches(
 
     if (draft.activeRoundRobinMatches.size >= effectiveTablesCount) return
 
-    for (first in 0 until playerCount) {
-        for (second in first + 1 until playerCount) {
-            if (draft.activeRoundRobinMatches.size >= effectiveTablesCount) return
-
-            val pair = first to second
-            val alreadyAssigned = pair in draft.activeRoundRobinMatches
-            val alreadyPlayed = draft.matchScores.containsKey(pair)
-            val playerIsBusy = first in busyPlayers || second in busyPlayers
-
-            if (!alreadyAssigned && !alreadyPlayed && !playerIsBusy) {
-                draft.activeRoundRobinMatches.add(pair)
-                busyPlayers.add(first)
-                busyPlayers.add(second)
+    // Подсчет сыгранных матчей для каждого игрока
+    val matchesPlayed = IntArray(playerCount)
+    for (f in 0 until playerCount) {
+        for (s in f + 1 until playerCount) {
+            if (draft.matchScores.containsKey(f to s)) {
+                matchesPlayed[f]++
+                matchesPlayed[s]++
             }
+        }
+    }
+
+    val candidates = mutableListOf<Triple<Int, Int, Int>>()
+    for (f in 0 until playerCount) {
+        if (f in withdrawnSet) continue
+        for (s in f + 1 until playerCount) {
+            if (s in withdrawnSet) continue
+
+            val pair = f to s
+            if (!draft.matchScores.containsKey(pair) && !draft.activeRoundRobinMatches.contains(pair)) {
+                val weight = matchesPlayed[f] + matchesPlayed[s]
+                val distance = kotlin.math.abs(f - s)
+                candidates.add(Triple(f, s, weight * 1000 - distance))
+            }
+        }
+    }
+
+    // Сортируем: сначала те, у кого меньше матчей (weight), затем те, кто дальше друг от друга (distance)
+    candidates.sortBy { it.third }
+
+    for (match in candidates) {
+        if (draft.activeRoundRobinMatches.size >= effectiveTablesCount) break
+
+        if (match.first !in busyPlayers && match.second !in busyPlayers) {
+            draft.activeRoundRobinMatches.add(match.first to match.second)
+            busyPlayers.add(match.first)
+            busyPlayers.add(match.second)
         }
     }
 }
@@ -3340,99 +3368,208 @@ fun RoundRobinScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        CompactActiveTablesPanel(
-            assignments = draft.activeRoundRobinMatches,
-            queueMatches = queueMatches,
-            playerNames = playerNames,
-            clubPlayers = clubPlayers,
-            configuredTablesCount = draft.tablesCount,
-            onMatchClick = { pair -> selectedPair = pair }
-        )
+        val isCompactTournament = playerCount <= 6
 
-        Spacer(modifier = Modifier.height(12.dp))
+        if (isCompactTournament) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Левая колонка: Таблица + Результаты
+                Column(modifier = Modifier.width(IntrinsicSize.Min)) {
+                    Card(
+                        modifier = Modifier.wrapContentWidth(),
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, BorderGray)
+                    ) {
+                        RoundRobinTable(
+                            playerNames = playerNames,
+                            clubPlayers = clubPlayers,
+                            scores = draft.matchScores,
+                            placesByPlayer = placesByPlayer,
+                            pointsByPlayer = pointsByPlayer,
+                            activeMatches = draft.activeRoundRobinMatches,
+                            activePlayers = activePlayers,
+                            withdrawnPlayers = draft.withdrawnPlayers.toSet(),
+                            selectedPair = selectedPair,
+                            searchQuery = "",
+                            tableScale = tableScale,
+                            onCellClick = { first, second ->
+                                selectedPair = first to second
+                            },
+                            onPlayerClick = { playerIndex ->
+                                statusPlayerIndex = playerIndex
+                            }
+                        )
+                    }
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = CardWhite),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, BorderGray)
-        ) {
-            RoundRobinTable(
-                playerNames = playerNames,
-                clubPlayers = clubPlayers,
-                scores = draft.matchScores,
-                placesByPlayer = placesByPlayer,
-                pointsByPlayer = pointsByPlayer,
-                activeMatches = draft.activeRoundRobinMatches,
-                activePlayers = activePlayers,
-                withdrawnPlayers = draft.withdrawnPlayers.toSet(),
-                selectedPair = selectedPair,
-                searchQuery = "",
-                tableScale = tableScale,
-                onCellClick = { first, second ->
-                    selectedPair = first to second
-                },
-                onPlayerClick = { playerIndex ->
-                    statusPlayerIndex = playerIndex
-                }
-            )
-        }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+                    Text("ТЕКУЩИЕ РЕЗУЛЬТАТЫ И РЕЙТИНГ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-        // Блок итогов (Current Results and Rating)
-        Text("ТЕКУЩИЕ РЕЗУЛЬТАТЫ И РЕЙТИНГ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
-        Spacer(modifier = Modifier.height(8.dp))
+                    val liveRatingResult = remember(draft.matchScores.size) {
+                        applyRoundRobinRatings(
+                            existingPlayers = clubPlayers,
+                            playerNames = playerNames,
+                            scores = draft.matchScores,
+                            tournamentCoefficient = draft.ratingCoefficient,
+                            applyPlaceBonuses = false
+                        )
+                    }
+                    val ratingChangesMap = liveRatingResult.changes.associateBy { it.fullName.lowercase() }
 
-        val liveRatingResult = remember(draft.matchScores.size) {
-            applyRoundRobinRatings(
-                existingPlayers = clubPlayers,
-                playerNames = playerNames,
-                scores = draft.matchScores,
-                tournamentCoefficient = draft.ratingCoefficient,
-                applyPlaceBonuses = false
-            )
-        }
-        val ratingChangesMap = liveRatingResult.changes.associateBy { it.fullName.lowercase() }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, BorderGray)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            standings.forEachIndexed { index, stat ->
+                                val pName = playerNames.getOrElse(stat.index) { "" }
+                                val pObj = getClubPlayerByName(pName, clubPlayers)
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = CardWhite),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, BorderGray)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                standings.forEachIndexed { index, stat ->
-                    val pName = playerNames.getOrElse(stat.index) { "" }
-                    val pObj = getClubPlayerByName(pName, clubPlayers)
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                                    Text("${index + 1}", modifier = Modifier.width((24f * tableScale).dp), color = AppleBlue, fontWeight = FontWeight.Bold)
+                                    PlayerAvatar(player = pObj ?: ClubPlayer(0, pName), size = (32f * tableScale).dp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(pName, style = AppTypography.labelLarge.copy(fontSize = (13f * tableScale).sp), color = TextDark, maxLines = 1)
+                                        Text("Рейтинг: ${formatRating(pObj?.rating ?: 100.0)}", color = TextGray, fontSize = (11f * tableScale).sp)
+                                    }
 
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-                        Text("${index + 1}", modifier = Modifier.width(28.dp), color = AppleBlue, fontWeight = FontWeight.Bold)
-                        PlayerAvatar(player = pObj ?: ClubPlayer(0, pName), size = 40.dp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(pName, style = AppTypography.labelLarge, color = TextDark, maxLines = 1)
-                            Text("Рейтинг: ${formatRating(pObj?.rating ?: 100.0)}", color = TextGray, fontSize = 12.sp)
-                        }
-
-                        val rChange = ratingChangesMap[pName.lowercase()]
-                        if (rChange != null) {
-                            val delta = rChange.newRating - rChange.oldRating
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(formatRating(rChange.oldRating), color = TextGray, fontSize = 13.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    formatDelta(delta),
-                                    color = if (delta >= 0) GreenBadgeText else SwipeDeleteRed,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(formatRating(rChange.newRating), color = AppleBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    val rChange = ratingChangesMap[pName.lowercase()]
+                                    if (rChange != null) {
+                                        val delta = rChange.newRating - rChange.oldRating
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(formatRating(rChange.oldRating), color = TextGray, fontSize = (11f * tableScale).sp)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                formatDelta(delta),
+                                                color = if (delta >= 0) GreenBadgeText else SwipeDeleteRed,
+                                                fontSize = (11f * tableScale).sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(formatRating(rChange.newRating), color = AppleBlue, fontSize = (12f * tableScale).sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                                if (index < standings.lastIndex) HorizontalDivider(color = BorderGray)
                             }
                         }
                     }
-                    if (index < standings.lastIndex) HorizontalDivider(color = BorderGray)
+                }
+
+                // Правая колонка: Столы + Очередь
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    CompactActiveTablesPanel(
+                        assignments = draft.activeRoundRobinMatches,
+                        queueMatches = queueMatches,
+                        playerNames = playerNames,
+                        clubPlayers = clubPlayers,
+                        configuredTablesCount = draft.tablesCount,
+                        onMatchClick = { pair -> selectedPair = pair }
+                    )
+                }
+            }
+        } else {
+            // Большой турнир (Классическая вертикальная верстка)
+            CompactActiveTablesPanel(
+                assignments = draft.activeRoundRobinMatches,
+                queueMatches = queueMatches,
+                playerNames = playerNames,
+                clubPlayers = clubPlayers,
+                configuredTablesCount = draft.tablesCount,
+                onMatchClick = { pair -> selectedPair = pair }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = CardWhite),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, BorderGray)
+            ) {
+                RoundRobinTable(
+                    playerNames = playerNames,
+                    clubPlayers = clubPlayers,
+                    scores = draft.matchScores,
+                    placesByPlayer = placesByPlayer,
+                    pointsByPlayer = pointsByPlayer,
+                    activeMatches = draft.activeRoundRobinMatches,
+                    activePlayers = activePlayers,
+                    withdrawnPlayers = draft.withdrawnPlayers.toSet(),
+                    selectedPair = selectedPair,
+                    searchQuery = "",
+                    tableScale = tableScale,
+                    onCellClick = { first, second ->
+                        selectedPair = first to second
+                    },
+                    onPlayerClick = { playerIndex ->
+                        statusPlayerIndex = playerIndex
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("ТЕКУЩИЕ РЕЗУЛЬТАТЫ И РЕЙТИНГ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val liveRatingResult = remember(draft.matchScores.size) {
+                applyRoundRobinRatings(
+                    existingPlayers = clubPlayers,
+                    playerNames = playerNames,
+                    scores = draft.matchScores,
+                    tournamentCoefficient = draft.ratingCoefficient,
+                    applyPlaceBonuses = false
+                )
+            }
+            val ratingChangesMap = liveRatingResult.changes.associateBy { it.fullName.lowercase() }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = CardWhite),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, BorderGray)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    standings.forEachIndexed { index, stat ->
+                        val pName = playerNames.getOrElse(stat.index) { "" }
+                        val pObj = getClubPlayerByName(pName, clubPlayers)
+
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                            Text("${index + 1}", modifier = Modifier.width(28.dp), color = AppleBlue, fontWeight = FontWeight.Bold)
+                            PlayerAvatar(player = pObj ?: ClubPlayer(0, pName), size = 40.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(pName, style = AppTypography.labelLarge, color = TextDark, maxLines = 1)
+                                Text("Рейтинг: ${formatRating(pObj?.rating ?: 100.0)}", color = TextGray, fontSize = 12.sp)
+                            }
+
+                            val rChange = ratingChangesMap[pName.lowercase()]
+                            if (rChange != null) {
+                                val delta = rChange.newRating - rChange.oldRating
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(formatRating(rChange.oldRating), color = TextGray, fontSize = 13.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        formatDelta(delta),
+                                        color = if (delta >= 0) GreenBadgeText else SwipeDeleteRed,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(formatRating(rChange.newRating), color = AppleBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                        if (index < standings.lastIndex) HorizontalDivider(color = BorderGray)
+                    }
                 }
             }
         }
@@ -3492,6 +3629,18 @@ fun RoundRobinScreen(
                         playerCount = playerNames.size
                     )
 
+                    selectedPair = null
+                },
+                onTechnicalLoss = { isFirst ->
+                    val withdrawnIndex = if (isFirst) first else second
+                    if (withdrawnIndex !in draft.withdrawnPlayers) {
+                        draft.withdrawnPlayers.add(withdrawnIndex)
+                    }
+
+                    rebuildTechnicalResults(
+                        draft = draft,
+                        playerCount = playerNames.size
+                    )
                     selectedPair = null
                 }
             )
@@ -4606,7 +4755,7 @@ private fun RoundRobinTable(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.wrapContentWidth()
     ) {
         Column(
             modifier = Modifier
@@ -4883,15 +5032,14 @@ private fun RoundRobinScoreDialog(
     existingScore: String?,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onTechnicalLoss: (isFirstPlayer: Boolean) -> Unit
 ) {
     val p1 = getClubPlayerByName(firstPlayer, clubPlayers)
     val p2 = getClubPlayerByName(secondPlayer, clubPlayers)
 
     val p1Wins = if (bestOfThreeWins) listOf("3:0", "3:1", "3:2") else listOf("2:0", "2:1")
     val p2Wins = p1Wins.map(::reverseScore)
-    val allScoresP1 = if (bestOfThreeWins) listOf("3:0", "3:1", "3:2", "2:3", "1:3", "0:3") else listOf("2:0", "2:1", "1:2", "0:2")
-    val allScoresP2 = if (bestOfThreeWins) listOf("0:3", "1:3", "2:3", "3:2", "3:1", "3:0") else listOf("0:2", "1:2", "2:1", "2:0")
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -4938,40 +5086,21 @@ private fun RoundRobinScoreDialog(
 
                     // Score Buttons Grid
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        // Left Column
+                        // Left Column (P1 wins)
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            allScoresP1.forEach { s ->
-                                val parsed = parseScore(s) ?: return@forEach
-                                val isWin = parsed.first > parsed.second
-                                val isClear = (bestOfThreeWins && parsed.first == 3 && parsed.second == 0) || (!bestOfThreeWins && parsed.first == 2 && parsed.second == 0)
-
-                                val color = when {
-                                    isWin && isClear -> Color(0xFF24A148)
-                                    isWin -> Color(0xFFE4F8EB)
-                                    !isWin && isClear -> Color(0xFFFF3B30)
-                                    else -> Color(0xFFFFEBEE)
-                                }
-                                val textColor = if (isWin && isClear || !isWin && isClear) Color.White else if (isWin) Color(0xFF24A148) else Color(0xFFFF3B30)
-
+                            p1Wins.forEachIndexed { index, s ->
+                                val color = if (index == 0) Color(0xFF24A148) else Color(0xFFE4F8EB)
+                                val textColor = if (index == 0) Color.White else Color(0xFF24A148)
                                 ScoreButton(text = s, bgColor = color, textColor = textColor) { onSave(s) }
                             }
                         }
-                        // Right Column
+                        // Right Column (P2 wins)
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            allScoresP2.forEach { s ->
-                                val parsed = parseScore(s) ?: return@forEach
-                                val isWin = parsed.second > parsed.first
-                                val isClear = (bestOfThreeWins && parsed.second == 3 && parsed.first == 0) || (!bestOfThreeWins && parsed.second == 2 && parsed.first == 0)
-
-                                val color = when {
-                                    isWin && isClear -> Color(0xFF24A148)
-                                    isWin -> Color(0xFFE4F8EB)
-                                    !isWin && isClear -> Color(0xFFFF3B30)
-                                    else -> Color(0xFFFFEBEE)
-                                }
-                                val textColor = if (isWin && isClear || !isWin && isClear) Color.White else if (isWin) Color(0xFF24A148) else Color(0xFFFF3B30)
-
-                                ScoreButton(text = s, bgColor = color, textColor = textColor) { onSave(s) }
+                            p2Wins.forEachIndexed { index, s ->
+                                // Both are light red according to TZ
+                                val finalColor = Color(0xFFFFEBEE)
+                                val finalTextColor = Color(0xFFFF3B30)
+                                ScoreButton(text = s, bgColor = finalColor, textColor = finalTextColor) { onSave(s) }
                             }
                         }
                     }
@@ -4984,8 +5113,8 @@ private fun RoundRobinScoreDialog(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        TechnicalButton(text = "W (победа)", modifier = Modifier.weight(1f)) { onSave("W") }
-                        TechnicalButton(text = "L (поражение)", modifier = Modifier.weight(1f)) { onSave("L") }
+                        TechnicalButton(text = "L (Снялся)", modifier = Modifier.weight(1f)) { onTechnicalLoss(true) }
+                        TechnicalButton(text = "L (Снялся)", modifier = Modifier.weight(1f)) { onTechnicalLoss(false) }
                     }
 
                     if (existingScore != null) {
@@ -5006,11 +5135,24 @@ private fun RoundRobinScoreDialog(
 
 @Composable
 private fun PlayerScoreCard(player: ClubPlayer, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        PlayerAvatar(player = player, size = 64.dp)
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(player.fullName, style = AppTypography.labelLarge, color = TextDark, textAlign = TextAlign.Center, maxLines = 2)
-        Text(formatRating(player.rating), style = AppTypography.bodyMedium, color = AppleBlue, fontWeight = FontWeight.Bold)
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        PlayerAvatar(player = player, size = 54.dp)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(
+                player.fullName,
+                style = AppTypography.labelLarge.copy(fontSize = 15.sp),
+                color = TextDark,
+                maxLines = 2,
+                lineHeight = 18.sp
+            )
+            Text(
+                formatRating(player.rating),
+                style = AppTypography.bodyMedium,
+                color = TextGray,
+                fontWeight = FontWeight.Normal
+            )
+        }
     }
 }
 
