@@ -3517,9 +3517,11 @@ fun RoundRobinScreen(
 
     val queueMatches = remember(draft.matchScores.size, draft.activeRoundRobinMatches.size, draft.withdrawnPlayers.size) {
         val assigned = draft.activeRoundRobinMatches.map { normalizedPair(it.first, it.second) }.toSet()
+        val withdrawn = draft.withdrawnPlayers.toSet()
         val queue = mutableListOf<Pair<Int, Int>>()
         for (f in 0 until playerCount) {
             for (s in f + 1 until playerCount) {
+                if (f in withdrawn || s in withdrawn) continue
                 val pair = f to s
                 if (!draft.matchScores.containsKey(pair) && !assigned.contains(pair)) {
                     queue.add(pair)
@@ -3552,19 +3554,19 @@ fun RoundRobinScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 8.dp, vertical = 6.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         SimpleRoundRobinTopBar(
             tournamentName = draft.name.ifBlank { "Турнир" },
             participantCount = playerCount,
             bestOfWins = if (draft.bestOf3) 3 else 2,
             tablesCount = draft.tablesCount,
-            clubPlayers = clubPlayers,
             tournamentIsComplete = tournamentIsComplete,
             onBack = onBack,
             onFinish = { askPlaceBonusDialog = true }
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         CompactActiveTablesPanel(
             assignments = draft.activeRoundRobinMatches,
@@ -3575,91 +3577,67 @@ fun RoundRobinScreen(
             onMatchClick = { pair -> selectedPair = pair }
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        if (playerCount <= 6) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val tableWidth = (270f + playerCount * 62f).dp
-
-                Card(
-                    modifier = Modifier
-                        .width(tableWidth)
-                        .fillMaxHeight(),
-                    colors = CardDefaults.cardColors(containerColor = CardWhite),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, BorderGray)
-                ) {
-                    RoundRobinTable(
-                        playerNames = playerNames,
-                        clubPlayers = clubPlayers,
-                        scores = draft.matchScores,
-                        placesByPlayer = placesByPlayer,
-                        pointsByPlayer = pointsByPlayer,
-                        activeMatches = draft.activeRoundRobinMatches,
-                        activePlayers = activePlayers,
-                        withdrawnPlayers = draft.withdrawnPlayers.toSet(),
-                        selectedPair = selectedPair,
-                        searchQuery = "",
-                        tableScale = tableScale,
-                        onCellClick = { first, second ->
-                            selectedPair = first to second
-                        },
-                        onPlayerClick = { playerIndex ->
-                            statusPlayerIndex = playerIndex
-                        }
-                    )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = CardWhite),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, BorderGray)
+        ) {
+            RoundRobinTable(
+                playerNames = playerNames,
+                clubPlayers = clubPlayers,
+                scores = draft.matchScores,
+                placesByPlayer = placesByPlayer,
+                pointsByPlayer = pointsByPlayer,
+                activeMatches = draft.activeRoundRobinMatches,
+                activePlayers = activePlayers,
+                withdrawnPlayers = draft.withdrawnPlayers.toSet(),
+                selectedPair = selectedPair,
+                searchQuery = "",
+                tableScale = tableScale,
+                onCellClick = { first, second ->
+                    selectedPair = first to second
+                },
+                onPlayerClick = { playerIndex ->
+                    statusPlayerIndex = playerIndex
                 }
+            )
+        }
 
-                RoundRobinSidePanel(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    assignments = draft.activeRoundRobinMatches,
-                    playerNames = playerNames,
-                    standings = standings,
-                    pointsByPlayer = pointsByPlayer,
-                    completedMatches = completedMatches,
-                    totalMatches = totalMatches,
-                    onMatchClick = { pair -> selectedPair = pair }
-                )
-            }
-        } else {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                colors = CardDefaults.cardColors(containerColor = CardWhite),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, BorderGray)
-            ) {
-                RoundRobinTable(
-                    playerNames = playerNames,
-                    clubPlayers = clubPlayers,
-                    scores = draft.matchScores,
-                    placesByPlayer = placesByPlayer,
-                    pointsByPlayer = pointsByPlayer,
-                    activeMatches = draft.activeRoundRobinMatches,
-                    activePlayers = activePlayers,
-                    withdrawnPlayers = draft.withdrawnPlayers.toSet(),
-                    selectedPair = selectedPair,
-                    searchQuery = "",
-                    tableScale = tableScale,
-                    onCellClick = { first, second ->
-                        selectedPair = first to second
-                    },
-                    onPlayerClick = { playerIndex ->
-                        statusPlayerIndex = playerIndex
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Блок итогов (Current Results and Rating)
+        Text("ТЕКУЩИЕ РЕЗУЛЬТАТЫ И РЕЙТИНГ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = CardWhite),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, BorderGray)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                standings.forEachIndexed { index, stat ->
+                    val pName = playerNames.getOrElse(stat.index) { "" }
+                    val pObj = getClubPlayerByName(pName, clubPlayers)
+
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                        Text("${index + 1}", modifier = Modifier.width(28.dp), color = AppleBlue, fontWeight = FontWeight.Bold)
+                        PlayerAvatar(player = pObj ?: ClubPlayer(0, pName), size = 40.dp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(pName, style = AppTypography.labelLarge, color = TextDark)
+                            Text("RTTF: ${formatRating(pObj?.rating ?: 100.0)}", color = AppleBlue, fontSize = 12.sp)
+                        }
+                        Text("${stat.points} очк.", fontWeight = FontWeight.Bold, color = TextDark)
                     }
-                )
+                    if (index < standings.lastIndex) HorizontalDivider(color = BorderGray)
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         SimpleRoundRobinBottomBar(
             completedMatches = completedMatches,
@@ -3670,6 +3648,8 @@ fun RoundRobinScreen(
             onZoomIn = { tableScale = (tableScale + 0.08f).coerceAtMost(1.18f) },
             onResetZoom = { tableScale = if (playerCount <= 6) 0.90f else 0.86f }
         )
+
+        Spacer(modifier = Modifier.height(32.dp))
     }
 
     selectedPair?.let { pair ->
@@ -3964,7 +3944,6 @@ private fun SimpleRoundRobinTopBar(
     participantCount: Int,
     bestOfWins: Int,
     tablesCount: Int,
-    clubPlayers: List<ClubPlayer>,
     tournamentIsComplete: Boolean,
     onBack: () -> Unit,
     onFinish: () -> Unit
@@ -4284,12 +4263,12 @@ private fun CompactActiveTablesPanel(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp),
+            .wrapContentHeight(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // КТО ИГРАЕТ СЕЙЧАС (Active Tables)
         Card(
-            modifier = Modifier.weight(1f).fillMaxHeight(),
+            modifier = Modifier.weight(1f),
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, BorderGray)
@@ -4298,24 +4277,20 @@ private fun CompactActiveTablesPanel(
                 Text("КТО ИГРАЕТ СЕЙЧАС", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    if (assignments.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Нет активных матчей", color = TextGray)
-                        }
-                    } else {
-                        assignments.forEachIndexed { index, pair ->
-                            ActiveTableCard(
-                                tableNumber = index + 1,
-                                player1 = playerNames.getOrElse(pair.first) { "" },
-                                player2 = playerNames.getOrElse(pair.second) { "" },
-                                clubPlayers = clubPlayers,
-                                onClick = { onMatchClick(pair) }
-                            )
-                        }
+                if (assignments.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                        Text("Нет активных матчей", color = TextGray)
+                    }
+                } else {
+                    assignments.forEachIndexed { index, pair ->
+                        ActiveTableCard(
+                            tableNumber = index + 1,
+                            player1 = playerNames.getOrElse(pair.first) { "" },
+                            player2 = playerNames.getOrElse(pair.second) { "" },
+                            clubPlayers = clubPlayers,
+                            onClick = { onMatchClick(pair) }
+                        )
+                        if (index < assignments.lastIndex) Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
@@ -4323,7 +4298,7 @@ private fun CompactActiveTablesPanel(
 
         // ОЧЕРЕДЬ К СТОЛАМ (Queue)
         Card(
-            modifier = Modifier.width(360.dp).fillMaxHeight(),
+            modifier = Modifier.weight(1f),
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, BorderGray)
@@ -4333,7 +4308,7 @@ private fun CompactActiveTablesPanel(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Column(
-                    modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (queueMatches.isEmpty()) {
@@ -4363,7 +4338,7 @@ private fun ActiveTableCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.width(220.dp).fillMaxHeight().clickable { onClick() },
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, BorderGray)
@@ -4807,14 +4782,13 @@ private fun RoundRobinTable(
     onCellClick: (Int, Int) -> Unit,
     onPlayerClick: (Int) -> Unit
 ) {
-    val verticalScroll = rememberScrollState()
     val horizontalScroll = rememberScrollState()
 
     val scale = tableScale.coerceIn(0.85f, 1.35f)
     val rowHeight = (64f * scale).dp
     val headerHeight = (42f * scale).dp
     val scoreColumnWidth = (68f * scale).dp
-    val leftColumnWidth = (320f * scale).coerceIn(240f, 440f).dp
+    val leftColumnWidth = (280f * scale).coerceIn(220f, 400f).dp
     val pointsColumnWidth = (66f * scale).dp
 
     val cleanSearch = normalizePlayerName(searchQuery).lowercase()
@@ -4832,9 +4806,7 @@ private fun RoundRobinTable(
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(verticalScroll)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
