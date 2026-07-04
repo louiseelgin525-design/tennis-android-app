@@ -5214,7 +5214,11 @@ fun FinalResultsScreen(
     ) {
         val isPortrait = maxWidth < 720.dp
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -5241,68 +5245,56 @@ fun FinalResultsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             CompactTopThreeRow(
                 standings = standings,
                 playerNames = playerNames
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (isPortrait) {
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ResultsPlacesCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 340.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         standings = standings,
                         playerNames = playerNames
                     )
 
                     RatingChangesCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 300.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         ratingChanges = draft.ratingChanges
                     )
                 }
             } else {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ResultsPlacesCard(
-                        modifier = Modifier
-                            .weight(1.08f)
-                            .fillMaxHeight(),
+                        modifier = Modifier.weight(1.08f),
                         standings = standings,
                         playerNames = playerNames
                     )
 
                     RatingChangesCard(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
+                        modifier = Modifier.weight(1f),
                         ratingChanges = draft.ratingChanges
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    .height(58.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
                     onClick = onBackToTable,
@@ -5310,7 +5302,7 @@ fun FinalResultsScreen(
                     border = BorderStroke(1.dp, AppleBlue),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("← К шахматке", color = AppleBlue)
+                    Text("← К шахматке", color = AppleBlue, style = AppTypography.labelLarge)
                 }
 
                 OutlinedButton(
@@ -5327,7 +5319,7 @@ fun FinalResultsScreen(
                     border = BorderStroke(1.dp, AppleBlue),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("↗ Поделиться", color = AppleBlue)
+                    Text("↗ Поделиться", color = AppleBlue, style = AppTypography.labelLarge)
                 }
 
                 Button(
@@ -5336,9 +5328,11 @@ fun FinalResultsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("✓ На главную", color = Color.White)
+                    Text("✓ На главную", color = Color.White, style = AppTypography.labelLarge)
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
@@ -5358,7 +5352,7 @@ private fun CompactTopThreeRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(82.dp),
+            .heightIn(min = 82.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         CompactTopPlaceCard(
@@ -5402,30 +5396,31 @@ private fun CompactTopPlaceCard(
     border: Color
 ) {
     Card(
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier.wrapContentHeight(),
         colors = CardDefaults.cardColors(containerColor = background),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, border)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(medal, fontSize = 24.sp)
+            Text(medal, fontSize = 28.sp)
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text("$place место", color = TextGray, style = AppTypography.bodyMedium, maxLines = 1)
+                Text("$place место", color = TextGray, fontSize = 12.sp, maxLines = 1)
                 Text(
                     playerName,
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
                     maxLines = 1
                 )
-                Text("$points очк.", color = AppleBlue, style = AppTypography.bodyMedium, maxLines = 1)
+                Text("$points очк.", color = AppleBlue, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
             }
         }
     }
@@ -5440,23 +5435,21 @@ private fun ResultsPlacesCard(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = CardWhite),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, BorderGray)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp)
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
             Text("Все места", style = AppTypography.titleLarge, color = TextDark)
             Text("Итоговая таблица турнира", style = AppTypography.bodyMedium, color = TextGray)
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                modifier = Modifier.fillMaxWidth()
             ) {
                 standings.forEachIndexed { place, stat ->
                     Row(
@@ -5503,23 +5496,21 @@ private fun RatingChangesCard(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = CardWhite),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, BorderGray)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp)
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
             Text("Рейтинг", style = AppTypography.titleLarge, color = TextDark)
             Text("Изменения после турнира", style = AppTypography.bodyMedium, color = TextGray)
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                modifier = Modifier.fillMaxWidth()
             ) {
                 if (ratingChanges.isEmpty()) {
                     Text(
