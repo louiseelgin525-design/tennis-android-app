@@ -456,7 +456,8 @@ data class ClubPlayer(
     val opponentStats: String = ""
 )
 data class RatingChange(val fullName: String, val oldRating: Double, val newRating: Double, val tournamentsBefore: Int, val tournamentsAfter: Int, val placeBonus: Double = 0.0)
-data class RatingApplyResult(val players: List<ClubPlayer>, val changes: List<RatingChange>)
+data class MatchRatingImpact(val player1: String, val player2: String, val score: String, val p1Delta: Double, val p2Delta: Double)
+data class RatingApplyResult(val players: List<ClubPlayer>, val changes: List<RatingChange>, val matchImpacts: List<MatchRatingImpact> = emptyList())
 data class TournamentHistoryEntry(
     val id: Long,
     val name: String,
@@ -464,7 +465,9 @@ data class TournamentHistoryEntry(
     val playersCount: Int,
     val winnerName: String,
     val standingsText: String,
-    val ratingText: String
+    val ratingText: String,
+    val structuredMatches: String = "",
+    val structuredRatings: String = ""
 )
 
 data class PlayerStat(val index: Int, val name: String, val points: Int)
@@ -792,7 +795,9 @@ private fun loadTournamentHistory(context: Context): List<TournamentHistoryEntry
                 playersCount = playersCount,
                 winnerName = decodeHistoryField(parts[4]),
                 standingsText = decodeHistoryField(parts[5]),
-                ratingText = decodeHistoryField(parts[6])
+                ratingText = decodeHistoryField(parts[6]),
+                structuredMatches = parts.getOrElse(7) { "" },
+                structuredRatings = parts.getOrElse(8) { "" }
             )
         }
         .sortedByDescending { it.id }
@@ -813,7 +818,9 @@ private fun saveTournamentHistory(
                 entry.playersCount.toString(),
                 encodeHistoryField(entry.winnerName),
                 encodeHistoryField(entry.standingsText),
-                encodeHistoryField(entry.ratingText)
+                encodeHistoryField(entry.ratingText),
+                entry.structuredMatches,
+                entry.structuredRatings
             ).joinToString(HISTORY_FIELD_SEPARATOR)
         }
 
@@ -859,6 +866,25 @@ private fun createRoundRobinHistoryEntry(draft: TournamentDraft): TournamentHist
         Locale.getDefault()
     ).format(Date())
 
+    val structuredMatches = draft.matchImpacts.joinToString(";;") { impact ->
+        listOf(
+            safeEncode(impact.player1),
+            safeEncode(impact.player2),
+            impact.score,
+            formatRatingForStorage(impact.p1Delta),
+            formatRatingForStorage(impact.p2Delta)
+        ).joinToString("::")
+    }
+
+    val structuredRatings = draft.ratingChanges.joinToString(";;") { change ->
+        listOf(
+            safeEncode(change.fullName),
+            formatRatingForStorage(change.oldRating),
+            formatRatingForStorage(change.newRating),
+            formatRatingForStorage(change.newRating - change.oldRating)
+        ).joinToString("::")
+    }
+
     return TournamentHistoryEntry(
         id = System.currentTimeMillis(),
         name = draft.name.ifBlank { "Теннисный турнир" },
@@ -866,7 +892,9 @@ private fun createRoundRobinHistoryEntry(draft: TournamentDraft): TournamentHist
         playersCount = playerNames.size,
         winnerName = winnerName,
         standingsText = standingsText,
-        ratingText = ratingText
+        ratingText = ratingText,
+        structuredMatches = structuredMatches,
+        structuredRatings = structuredRatings
     )
 }
 
@@ -973,9 +1001,12 @@ private fun applyRoundRobinRatings(
         .associate { it.fullName.lowercase() to it.opponentStats }
         .toMutableMap()
 
+    val matchImpacts = mutableListOf<MatchRatingImpact>()
+
     for (first in playerNames.indices) {
         for (second in first + 1 until playerNames.size) {
-            val result = parseScore(scores[first to second]) ?: continue
+            val scoreStr = scores[first to second]
+            val result = parseScore(scoreStr) ?: continue
             if (result.first == result.second) continue
 
             val firstName = normalizePlayerName(playerNames[first])
@@ -1014,6 +1045,7 @@ private fun applyRoundRobinRatings(
             )
 
             if (baseDelta <= 0.0) {
+                matchImpacts.add(MatchRatingImpact(winnerName, loserName, scoreStr ?: "0:0", 0.0, 0.0))
                 continue
             }
 
@@ -1043,6 +1075,16 @@ private fun applyRoundRobinRatings(
 
             accumulatedDeltas[loser.fullName.lowercase()] =
                 (accumulatedDeltas[loser.fullName.lowercase()] ?: 0.0) - loserDelta
+
+            matchImpacts.add(
+                MatchRatingImpact(
+                    player1 = winnerName,
+                    player2 = loserName,
+                    score = scoreStr ?: "0:0",
+                    p1Delta = winnerDelta,
+                    p2Delta = -loserDelta
+                )
+            )
         }
     }
 
@@ -1125,7 +1167,8 @@ private fun applyRoundRobinRatings(
 
     return RatingApplyResult(
         players = updatedPlayers,
-        changes = changes
+        changes = changes,
+        matchImpacts = matchImpacts
     )
 }
 
@@ -1155,6 +1198,7 @@ class TournamentDraft {
     var ratingApplied by mutableStateOf(false)
     var historySaved by mutableStateOf(false)
     val ratingChanges = mutableStateListOf<RatingChange>()
+    val matchImpacts = mutableStateListOf<MatchRatingImpact>()
 
     // Состояние Сетки Плей-офф
     val playoffScores = mutableStateMapOf<Int, String>()
@@ -1312,6 +1356,8 @@ fun TennisApp() {
 
         draft.ratingChanges.clear()
         draft.ratingChanges.addAll(result.changes)
+        draft.matchImpacts.clear()
+        draft.matchImpacts.addAll(result.matchImpacts)
         draft.ratingApplied = true
     }
 
@@ -1412,20 +1458,36 @@ fun MainDashboardScreen(
     onNavigateToHistory: () -> Unit
 ) {
     val hasDraft = draft.isListGenerated || draft.name.isNotBlank()
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
         item {
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Турниры", style = AppTypography.displayLarge, color = TextDark)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 48.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Турниры",
+                    style = AppTypography.displayLarge.copy(
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.5).sp
+                    ),
+                    color = TextDark
+                )
                 Icon(
                     imageVector = SearchIcon,
                     contentDescription = "Поиск",
                     tint = TextDark,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(CardWhite)
                         .border(1.dp, BorderGray, RoundedCornerShape(14.dp))
-                        .padding(10.dp)
+                        .clickable { onNavigateToHistory() }
+                        .padding(11.dp)
                 )
             }
         }
@@ -1557,33 +1619,6 @@ fun MainDashboardScreen(
             }
         }
 
-        if (tournamentHistory.isNotEmpty()) {
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Последний турнир", style = AppTypography.titleLarge, color = TextDark)
-                    Text("Все ›", style = AppTypography.bodyMedium, color = AppleBlue)
-                }
-            }
-
-            item {
-                val lastTournament = tournamentHistory.first()
-                HistoryCardLight(
-                    name = lastTournament.name,
-                    date = lastTournament.dateText,
-                    players = lastTournament.playersCount.toString(),
-                    winner = lastTournament.winnerName,
-                    isFinished = true,
-                    icon = "🏆",
-                    onClick = onNavigateToHistory
-                )
-            }
-        }
     }
 }
 
@@ -2360,7 +2395,7 @@ fun TournamentHistoryScreen(
     var entryToDelete by remember { mutableStateOf<TournamentHistoryEntry?>(null) }
 
     val filteredHistory = remember(history, searchQuery) {
-        val query = normalizePlayerName(searchQuery).lowercase()
+        val query = searchQuery.trim().lowercase()
 
         if (query.isBlank()) {
             history
@@ -2368,7 +2403,8 @@ fun TournamentHistoryScreen(
             history.filter { entry ->
                 entry.name.lowercase().contains(query) ||
                     entry.winnerName.lowercase().contains(query) ||
-                    entry.standingsText.lowercase().contains(query)
+                    entry.standingsText.lowercase().contains(query) ||
+                    entry.ratingText.lowercase().contains(query)
             }
         }
     }
@@ -2513,40 +2549,9 @@ fun TournamentHistoryScreen(
     }
 
     selectedEntry?.let { entry ->
-        AlertDialog(
-            onDismissRequest = { selectedEntry = null },
-            title = {
-                Text(entry.name)
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .heightIn(max = 420.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text("Дата: ${entry.dateText}", color = TextGray)
-                    Text("Участников: ${entry.playersCount}", color = TextGray)
-                    Text("Победитель: ${entry.winnerName}", color = AppleBlue)
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text("Итоговые места", style = AppTypography.titleLarge, color = TextDark)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(entry.standingsText, color = TextDark)
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text("Рейтинг", style = AppTypography.titleLarge, color = TextDark)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(entry.ratingText, color = TextDark)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { selectedEntry = null }) {
-                    Text("Закрыть", color = AppleBlue)
-                }
-            },
-            containerColor = CardWhite
+        TournamentDetailsDialog(
+            entry = entry,
+            onDismiss = { selectedEntry = null }
         )
     }
 
@@ -2578,6 +2583,203 @@ fun TournamentHistoryScreen(
             },
             containerColor = CardWhite
         )
+    }
+}
+
+@Composable
+fun TournamentDetailsDialog(
+    entry: TournamentHistoryEntry,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = BgLight),
+            shape = RoundedCornerShape(0.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            ) {
+                // Header Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(CardWhite)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppBackButton(onClick = onDismiss)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            entry.name,
+                            style = AppTypography.titleLarge.copy(fontSize = 20.sp),
+                            color = TextDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${entry.dateText} • ${entry.playersCount} участников",
+                            style = AppTypography.bodyMedium,
+                            color = TextGray
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Text("✕", fontSize = 24.sp, color = TextGray)
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 1. Итоговая таблица
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, BorderGray),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("ИТОГОВАЯ ТАБЛИЦА", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            val lines = entry.standingsText.split("\n").filter { it.isNotBlank() }
+                            lines.forEachIndexed { index, line ->
+                                Row(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val parts = line.split(". ", limit = 2)
+                                    if (parts.size == 2) {
+                                        Text(
+                                            parts[0],
+                                            modifier = Modifier.width(28.dp),
+                                            color = AppleBlue,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            parts[1],
+                                            color = TextDark,
+                                            style = AppTypography.labelLarge,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    } else {
+                                        Text(line, color = TextDark, style = AppTypography.labelLarge)
+                                    }
+                                }
+                                if (index < lines.lastIndex) HorizontalDivider(color = BorderGray)
+                            }
+                        }
+                    }
+
+                    // 2. Изменения рейтинга
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, BorderGray),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("ИЗМЕНЕНИЯ РЕЙТИНГА", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            if (entry.structuredRatings.isBlank()) {
+                                Text(entry.ratingText, style = AppTypography.bodyMedium, color = TextDark)
+                            } else {
+                                val ratingRows = entry.structuredRatings.split(";;")
+                                ratingRows.forEachIndexed { index, row ->
+                                    val p = row.split("::")
+                                    if (p.size >= 4) {
+                                        val name = safeDecode(p[0])
+                                        val old = p[1]
+                                        val current = p[2]
+                                        val deltaStr = p[3]
+                                        val delta = deltaStr.toDoubleOrNull() ?: 0.0
+
+                                        Row(
+                                            modifier = Modifier.padding(vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(name, color = TextDark, style = AppTypography.labelLarge, modifier = Modifier.weight(1f))
+                                            Text(old, color = TextGray, style = AppTypography.bodyMedium)
+                                            Text(" → ", color = TextGray)
+                                            Text(current, color = AppleBlue, fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                formatDelta(delta),
+                                                color = if (delta >= 0) GreenBadgeText else SwipeDeleteRed,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        if (index < ratingRows.lastIndex) HorizontalDivider(color = BorderGray)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Сыгранные матчи
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, BorderGray),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("СЫГРАННЫЕ МАТЧИ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            if (entry.structuredMatches.isBlank()) {
+                                Text("Детальная история матчей недоступна для этого турнира.", color = TextGray)
+                            } else {
+                                val matchRows = entry.structuredMatches.split(";;")
+                                matchRows.forEachIndexed { index, row ->
+                                    val p = row.split("::")
+                                    if (p.size >= 5) {
+                                        val p1 = safeDecode(p[0])
+                                        val p2 = safeDecode(p[1])
+                                        val score = p[2]
+                                        val d1 = p[3].toDoubleOrNull() ?: 0.0
+                                        val d2 = p[4].toDoubleOrNull() ?: 0.0
+
+                                        Column(modifier = Modifier.padding(vertical = 10.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(p1, modifier = Modifier.weight(1f), style = AppTypography.labelLarge, color = TextDark)
+                                                Text(
+                                                    score,
+                                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                                    style = AppTypography.titleLarge,
+                                                    color = AppleBlue,
+                                                    fontWeight = FontWeight.ExtraBold
+                                                )
+                                                Text(p2, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = AppTypography.labelLarge, color = TextDark)
+                                            }
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Text(formatDelta(d1), color = if (d1 >= 0) GreenBadgeText else SwipeDeleteRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                Text(formatDelta(d2), color = if (d2 >= 0) GreenBadgeText else SwipeDeleteRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                        if (index < matchRows.lastIndex) HorizontalDivider(color = BorderGray)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
+        }
     }
 }
 
