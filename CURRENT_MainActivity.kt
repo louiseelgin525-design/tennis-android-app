@@ -35,6 +35,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.input.pointer.pointerInput
@@ -354,7 +355,10 @@ data class TournamentHistoryEntry(
     val playersCount: Int,
     val winnerName: String,
     val standingsText: String,
-    val ratingText: String
+    val ratingText: String,
+    val structuredPlayers: String = "",
+    val structuredMatches: String = "",
+    val withdrawnPlayers: String = ""
 )
 
 data class PlayerStat(val index: Int, val name: String, val points: Int)
@@ -652,6 +656,10 @@ private fun loadTournamentHistory(context: Context): List<TournamentHistoryEntry
             val id = parts[0].toLongOrNull() ?: return@mapNotNull null
             val playersCount = parts[3].toIntOrNull() ?: 0
 
+            val structuredPlayers = parts.getOrNull(7)?.let(::decodeHistoryField).orEmpty()
+            val structuredMatches = parts.getOrNull(8)?.let(::decodeHistoryField).orEmpty()
+            val withdrawnPlayers = parts.getOrNull(9)?.let(::decodeHistoryField).orEmpty()
+
             TournamentHistoryEntry(
                 id = id,
                 name = decodeHistoryField(parts[1]),
@@ -659,7 +667,10 @@ private fun loadTournamentHistory(context: Context): List<TournamentHistoryEntry
                 playersCount = playersCount,
                 winnerName = decodeHistoryField(parts[4]),
                 standingsText = decodeHistoryField(parts[5]),
-                ratingText = decodeHistoryField(parts[6])
+                ratingText = decodeHistoryField(parts[6]),
+                structuredPlayers = structuredPlayers,
+                structuredMatches = structuredMatches,
+                withdrawnPlayers = withdrawnPlayers
             )
         }
         .sortedByDescending { it.id }
@@ -680,7 +691,10 @@ private fun saveTournamentHistory(
                 entry.playersCount.toString(),
                 encodeHistoryField(entry.winnerName),
                 encodeHistoryField(entry.standingsText),
-                encodeHistoryField(entry.ratingText)
+                encodeHistoryField(entry.ratingText),
+                encodeHistoryField(entry.structuredPlayers),
+                encodeHistoryField(entry.structuredMatches),
+                encodeHistoryField(entry.withdrawnPlayers)
             ).joinToString(HISTORY_FIELD_SEPARATOR)
         }
 
@@ -726,6 +740,13 @@ private fun createRoundRobinHistoryEntry(draft: TournamentDraft): TournamentHist
         Locale.getDefault()
     ).format(Date())
 
+    val structuredPlayers = playerNames.joinToString(";") { encodeHistoryField(it) }
+    val structuredMatches = draft.matchScores
+        .filter { (key, _) -> key.first < key.second }
+        .map { (key, value) -> "${key.first},${key.second}:$value" }
+        .joinToString(";")
+    val withdrawnPlayersStr = draft.withdrawnPlayers.joinToString(",")
+
     return TournamentHistoryEntry(
         id = System.currentTimeMillis(),
         name = draft.name.ifBlank { "Теннисный турнир" },
@@ -733,8 +754,173 @@ private fun createRoundRobinHistoryEntry(draft: TournamentDraft): TournamentHist
         playersCount = playerNames.size,
         winnerName = winnerName,
         standingsText = standingsText,
-        ratingText = ratingText
+        ratingText = ratingText,
+        structuredPlayers = structuredPlayers,
+        structuredMatches = structuredMatches,
+        withdrawnPlayers = withdrawnPlayersStr
     )
+}
+
+private fun reconstructHistoryPlayers(raw: String): List<String> =
+    if (raw.isBlank()) emptyList() else raw.split(";").map { decodeHistoryField(it) }
+
+private fun reconstructHistoryMatches(raw: String): Map<Pair<Int, Int>, String> {
+    if (raw.isBlank()) return emptyMap()
+    val result = mutableMapOf<Pair<Int, Int>, String>()
+    raw.split(";").forEach { entry ->
+        val parts = entry.split(":", limit = 2)
+        if (parts.size == 2) {
+            val keyParts = parts[0].split(",")
+            if (keyParts.size == 2) {
+                val p1 = keyParts[0].toIntOrNull() ?: return@forEach
+                val p2 = keyParts[1].toIntOrNull() ?: return@forEach
+                val score = parts[1]
+                result[p1 to p2] = score
+                result[p2 to p1] = reverseScore(score)
+            }
+        }
+    }
+    return result
+}
+
+private fun reconstructHistoryWithdrawn(raw: String): Set<Int> =
+    if (raw.isBlank()) emptySet() else raw.split(",").mapNotNull { it.toIntOrNull() }.toSet()
+
+@Composable
+fun InteractiveHistoryGrid(
+    playerNames: List<String>,
+    scores: Map<Pair<Int, Int>, String>,
+    placesByPlayer: Map<Int, Int>,
+    pointsByPlayer: Map<Int, Int>,
+    withdrawnPlayers: Set<Int>
+) {
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(380.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgLight)
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    scale = (scale * zoom).coerceIn(0.5f, 3.0f)
+                    offset += pan
+                }
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    translationX = offset.x,
+                    translationY = offset.y,
+                    transformOrigin = TransformOrigin(0f, 0f)
+                )
+                .wrapContentSize(unbounded = true)
+        ) {
+            StaticRoundRobinTable(
+                playerNames = playerNames,
+                scores = scores,
+                placesByPlayer = placesByPlayer,
+                pointsByPlayer = pointsByPlayer,
+                withdrawnPlayers = withdrawnPlayers,
+                tableScale = 1.0f
+            )
+        }
+    }
+}
+
+@Composable
+private fun StaticRoundRobinTable(
+    playerNames: List<String>,
+    scores: Map<Pair<Int, Int>, String>,
+    placesByPlayer: Map<Int, Int>,
+    pointsByPlayer: Map<Int, Int>,
+    withdrawnPlayers: Set<Int>,
+    tableScale: Float = 0.85f
+) {
+    val scale = tableScale.coerceIn(0.7f, 1.35f)
+    val rowHeight = (42f * scale).dp
+    val headerHeight = (42f * scale).dp
+    val scoreColumnWidth = (58f * scale).dp
+    val leftColumnWidth = (205f * scale).coerceIn(176f, 260f).dp
+    val pointsColumnWidth = (66f * scale).dp
+
+    Row(modifier = Modifier.wrapContentSize().background(CardWhite)) {
+        // Левая колонка (№, Имя, Место)
+        Column(modifier = Modifier.width(leftColumnWidth)) {
+            Row(
+                modifier = Modifier.height(headerHeight).fillMaxWidth().background(BgLight).border(0.5.dp, BorderGray),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("№", modifier = Modifier.width((42f * scale).dp), textAlign = TextAlign.Center, color = TextGray, fontSize = (12f * scale).sp)
+                Text("Игрок", modifier = Modifier.weight(1f), color = TextGray, fontSize = (12f * scale).sp)
+                Text("М", modifier = Modifier.width((34f * scale).dp), textAlign = TextAlign.Center, color = TextGray, fontSize = (12f * scale).sp)
+            }
+            playerNames.forEachIndexed { idx, name ->
+                val isWithdrawn = idx in withdrawnPlayers
+                Row(
+                    modifier = Modifier.height(rowHeight).fillMaxWidth().background(if (isWithdrawn) CellLostBg else CardWhite).border(0.5.dp, BorderGray),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("${idx + 1}", modifier = Modifier.width((42f * scale).dp), textAlign = TextAlign.Center, color = TextGray, fontSize = (12f * scale).sp)
+                    Text(if (isWithdrawn) "$name (L)" else name, modifier = Modifier.weight(1f).padding(horizontal = 4.dp), color = if (isWithdrawn) CellLostText else TextDark, fontSize = (13f * scale).sp, maxLines = 1)
+                    Text("${placesByPlayer[idx] ?: idx + 1}", modifier = Modifier.width((34f * scale).dp), textAlign = TextAlign.Center, color = AppleBlue, fontWeight = FontWeight.Bold, fontSize = (13f * scale).sp)
+                }
+            }
+        }
+        // Сетка результатов
+        Row {
+            playerNames.indices.forEach { opponentIndex ->
+                Column(modifier = Modifier.width(scoreColumnWidth)) {
+                    Box(modifier = Modifier.height(headerHeight).fillMaxWidth().background(BgLight).border(0.5.dp, BorderGray), contentAlignment = Alignment.Center) {
+                        Text("${opponentIndex + 1}", color = TextDark, fontWeight = FontWeight.SemiBold, fontSize = (13f * scale).sp)
+                    }
+                    playerNames.indices.forEach { playerIndex ->
+                        val isDiagonal = playerIndex == opponentIndex
+                        val score = scores[playerIndex to opponentIndex]
+                        val parsed = parseScore(score)
+                        val technicalWin = score == "W"
+                        val technicalLoss = score == "L"
+                        val backgroundColor = when {
+                            isDiagonal -> Color(0xFF5C6370)
+                            technicalWin -> GreenBadgeBg
+                            technicalLoss -> CellLostBg
+                            parsed != null && parsed.first > parsed.second -> CellWonBg
+                            parsed != null -> CellLostBg
+                            else -> CardWhite
+                        }
+                        val scoreColor = when {
+                            technicalWin -> GreenBadgeText
+                            technicalLoss -> CellLostText
+                            parsed != null && parsed.first > parsed.second -> CellWonText
+                            parsed != null -> CellLostText
+                            else -> TextGray
+                        }
+                        Box(modifier = Modifier.height(rowHeight).fillMaxWidth().background(backgroundColor).border(0.5.dp, BorderGray), contentAlignment = Alignment.Center) {
+                            if (!isDiagonal) {
+                                Text(score ?: "-", color = scoreColor, fontWeight = if (score != null) FontWeight.Bold else FontWeight.Normal, fontSize = (13f * scale).sp)
+                            }
+                        }
+                    }
+                }
+            }
+            // Колонка Очков
+            Column(modifier = Modifier.width(pointsColumnWidth)) {
+                Box(modifier = Modifier.height(headerHeight).fillMaxWidth().background(BgLight).border(0.5.dp, BorderGray), contentAlignment = Alignment.Center) {
+                    Text("Очки", color = TextGray, fontSize = (12f * scale).sp)
+                }
+                playerNames.indices.forEach { playerIndex ->
+                    Box(modifier = Modifier.height(rowHeight).fillMaxWidth().background(CardWhite).border(0.5.dp, BorderGray), contentAlignment = Alignment.Center) {
+                        Text("${pointsByPlayer[playerIndex] ?: 0}", color = AppleBlue, fontWeight = FontWeight.Bold, fontSize = (14f * scale).sp)
+                    }
+                }
+            }
+        }
+    }
 }
 
 private fun scoreDominanceCoefficient(score: Pair<Int, Int>): Double {
@@ -2364,6 +2550,45 @@ fun TournamentHistoryScreen(
                     Text("Рейтинг", style = AppTypography.titleLarge, color = TextDark)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(entry.ratingText, color = TextDark)
+
+                    if (entry.structuredPlayers.isNotBlank()) {
+                        val histPlayers = remember(entry.id) { reconstructHistoryPlayers(entry.structuredPlayers) }
+                        val histMatches = remember(entry.id) { reconstructHistoryMatches(entry.structuredMatches) }
+                        val histWithdrawn = remember(entry.id) { reconstructHistoryWithdrawn(entry.withdrawnPlayers) }
+
+                        val histStandings = remember(entry.id) { calculateRoundRobinStandings(histPlayers.size, histMatches) }
+                        val histPlaces = remember(entry.id) { histStandings.mapIndexed { idx, s -> s.index to idx + 1 }.toMap() }
+                        val histPoints = remember(entry.id) { histStandings.associate { it.index to it.points } }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Text("Сыгранные матчи", style = AppTypography.titleLarge, color = TextDark)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        histPlayers.forEachIndexed { pIdx, pName ->
+                            val pMatches = histPlayers.indices
+                                .filter { it > pIdx }
+                                .mapNotNull { oIdx ->
+                                    val score = histMatches[pIdx to oIdx] ?: return@mapNotNull null
+                                    val oName = histPlayers[oIdx]
+                                    "$pName — $oName ($score)"
+                                }
+                            pMatches.forEach {
+                                Text(it, color = TextGray, style = AppTypography.bodyMedium)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Text("Итоговая таблица", style = AppTypography.titleLarge, color = TextDark)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        InteractiveHistoryGrid(
+                            playerNames = histPlayers,
+                            scores = histMatches,
+                            placesByPlayer = histPlaces,
+                            pointsByPlayer = histPoints,
+                            withdrawnPlayers = histWithdrawn
+                        )
+                    }
                 }
             },
             confirmButton = {
