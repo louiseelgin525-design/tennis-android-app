@@ -1408,6 +1408,7 @@ fun TennisApp() {
             )
             AppScreen.History -> TournamentHistoryScreen(
                 history = tournamentHistory,
+                clubPlayers = clubPlayers,
                 onBack = { currentScreen = AppScreen.Dashboard },
                 onHistoryChanged = { updatedHistory ->
                     saveTournamentHistory(context, updatedHistory)
@@ -2445,6 +2446,7 @@ private fun StatInputField(
 @Composable
 fun TournamentHistoryScreen(
     history: List<TournamentHistoryEntry>,
+    clubPlayers: List<ClubPlayer>,
     onBack: () -> Unit,
     onHistoryChanged: (List<TournamentHistoryEntry>) -> Unit
 ) {
@@ -2609,6 +2611,7 @@ fun TournamentHistoryScreen(
     selectedEntry?.let { entry ->
         TournamentDetailsDialog(
             entry = entry,
+            clubPlayers = clubPlayers,
             onDismiss = { selectedEntry = null }
         )
     }
@@ -2647,6 +2650,7 @@ fun TournamentHistoryScreen(
 @Composable
 fun TournamentDetailsDialog(
     entry: TournamentHistoryEntry,
+    clubPlayers: List<ClubPlayer>,
     onDismiss: () -> Unit
 ) {
     Dialog(
@@ -2829,6 +2833,107 @@ fun TournamentDetailsDialog(
                                         }
                                         if (index < matchRows.lastIndex) HorizontalDivider(color = BorderGray)
                                     }
+                                }
+                            }
+                        }
+                    }
+
+                    // 4. Интерактивная шахматка
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, BorderGray),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("ШАХМАТКА ТУРНИРА", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
+                            Text("Увеличивайте щипком и перемещайте", style = AppTypography.bodyMedium.copy(fontSize = 12.sp), color = TextGray)
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            val playerNames = remember(entry.standingsText) {
+                                entry.standingsText.split("\n")
+                                    .filter { it.isNotBlank() }
+                                    .map { line ->
+                                        line.split(". ", limit = 2).getOrNull(1)?.split(" — ")?.getOrNull(0) ?: "Игрок"
+                                    }
+                            }
+
+                            val scores = remember(entry.structuredMatches) {
+                                val map = mutableMapOf<Pair<Int, Int>, String>()
+                                val matchRows = entry.structuredMatches.split(";;")
+                                matchRows.forEach { row ->
+                                    val p = row.split("::")
+                                    if (p.size >= 3) {
+                                        val p1 = safeDecode(p[0])
+                                        val p2 = safeDecode(p[1])
+                                        val score = p[2]
+
+                                        val idx1 = playerNames.indexOf(p1)
+                                        val idx2 = playerNames.indexOf(p2)
+
+                                        if (idx1 != -1 && idx2 != -1) {
+                                            map[idx1 to idx2] = score
+                                            map[idx2 to idx1] = reverseScore(score)
+                                        }
+                                    }
+                                }
+                                map
+                            }
+
+                            val pointsMap = remember(entry.standingsText) {
+                                val map = mutableMapOf<Int, Int>()
+                                entry.standingsText.split("\n")
+                                    .filter { it.isNotBlank() }
+                                    .forEachIndexed { _, line ->
+                                        val p = line.split(". ", limit = 2).getOrNull(1)?.split(" — ")
+                                        val name = p?.getOrNull(0) ?: ""
+                                        val pts = p?.getOrNull(1)?.replace(" очк.", "")?.toIntOrNull() ?: 0
+                                        val idx = playerNames.indexOf(name)
+                                        if (idx != -1) map[idx] = pts
+                                    }
+                                map
+                            }
+
+                            var zoom by remember { mutableStateOf(1f) }
+                            var panOffset by remember { mutableStateOf(Offset.Zero) }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(BgLight)
+                                    .pointerInput(Unit) {
+                                        detectTransformGestures { _, pan, zoomChange, _ ->
+                                            zoom = (zoom * zoomChange).coerceIn(0.5f, 3f)
+                                            panOffset += pan
+                                        }
+                                    }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .graphicsLayer(
+                                            scaleX = zoom,
+                                            scaleY = zoom,
+                                            translationX = panOffset.x,
+                                            translationY = panOffset.y
+                                        )
+                                ) {
+                                    RoundRobinTable(
+                                        playerNames = playerNames,
+                                        clubPlayers = clubPlayers,
+                                        scores = scores,
+                                        placesByPlayer = emptyMap(),
+                                        pointsByPlayer = pointsMap,
+                                        activeMatches = emptyList(),
+                                        activePlayers = emptySet(),
+                                        withdrawnPlayers = emptySet(),
+                                        selectedPair = null,
+                                        searchQuery = "",
+                                        tableScale = 0.8f,
+                                        onCellClick = { _, _ -> },
+                                        onPlayerClick = { }
+                                    )
                                 }
                             }
                         }
@@ -4284,21 +4389,21 @@ private fun SimpleRoundRobinTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(72.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AppBackButton(onClick = onBack)
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Text("🏆", fontSize = 28.sp)
+        Text("🏆", fontSize = 32.sp)
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 tournamentName.uppercase(),
-                style = AppTypography.titleLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                style = AppTypography.displayLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.ExtraBold),
                 color = TextDark,
                 maxLines = 1
             )
@@ -4310,7 +4415,7 @@ private fun SimpleRoundRobinTopBar(
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             TopBarChip(text = "$tablesCount стола", icon = TableIcon)
             TopBarChip(text = "Очки считаются автоматически", icon = CheckCircleIcon)
 
@@ -4321,12 +4426,12 @@ private fun SimpleRoundRobinTopBar(
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text("🏆 Завершить", color = Color.White)
+                    Text("🏆 Завершить", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
 
-            IconButton(onClick = { /* Menu */ }) {
-                Icon(imageVector = MoreIcon, contentDescription = "Меню", tint = TextDark)
+            IconButton(onClick = { /* More options */ }) {
+                Icon(imageVector = MoreIcon, contentDescription = "Меню", tint = TextDark, modifier = Modifier.size(26.dp))
             }
         }
     }
@@ -4707,23 +4812,37 @@ private fun ActiveTableCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = CardWhite),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, BorderGray)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(AppleBlue)
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Стол $tableNumber", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(AppleBlue)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        "Стол $tableNumber",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
             PlayerMiniRow(name = player1, clubPlayers = clubPlayers)
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             PlayerMiniRow(name = player2, clubPlayers = clubPlayers)
         }
     }
@@ -4732,12 +4851,26 @@ private fun ActiveTableCard(
 @Composable
 private fun PlayerMiniRow(name: String, clubPlayers: List<ClubPlayer>) {
     val player = getClubPlayerByName(name, clubPlayers)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        PlayerAvatar(player = player ?: ClubPlayer(0, name), size = 32.dp)
-        Spacer(modifier = Modifier.width(8.dp))
-        Column {
-            Text(name, style = AppTypography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = TextDark, maxLines = 1)
-            Text(formatRating(player?.rating ?: 100.0), color = AppleBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        PlayerAvatar(player = player ?: ClubPlayer(0, name), size = 36.dp)
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                name,
+                style = AppTypography.labelLarge.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                color = TextDark,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                formatRating(player?.rating ?: 100.0),
+                color = AppleBlue,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 }
@@ -4768,21 +4901,22 @@ private fun QueueMatchRow(
 private fun PlayerMiniRowQueue(name: String, clubPlayers: List<ClubPlayer>) {
     val player = getClubPlayerByName(name, clubPlayers)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        PlayerAvatar(player = player ?: ClubPlayer(0, name), size = 24.dp)
-        Spacer(modifier = Modifier.width(6.dp))
+        PlayerAvatar(player = player ?: ClubPlayer(0, name), size = 28.dp)
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             name,
-            style = AppTypography.bodyMedium.copy(fontSize = 12.sp),
+            style = AppTypography.labelLarge.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold),
             color = TextDark,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false)
         )
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
             formatRating(player?.rating ?: 100.0),
             color = AppleBlue,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 11.sp,
+            fontWeight = FontWeight.ExtraBold
         )
     }
 }
@@ -5157,7 +5291,7 @@ private fun RoundRobinTable(
     val rowHeight = (64f * scale).dp
     val headerHeight = (42f * scale).dp
     val scoreColumnWidth = (68f * scale).dp
-    val leftColumnWidth = (280f * scale).coerceIn(220f, 400f).dp
+    val leftColumnWidth = (320f * scale).coerceIn(240f, 450f).dp
     val pointsColumnWidth = (66f * scale).dp
 
     val normalizedActiveMatches = activeMatches.map { if (it != null) normalizedPair(it.first, it.second) else null }
@@ -5335,18 +5469,23 @@ private fun RoundRobinTable(
                             technicalWin -> Color(0xFF24A148)
                             technicalLoss -> Color(0xFFFF3B30)
                             parsed != null && parsed.first > parsed.second -> Color(0xFF24A148)
-                            parsed != null -> Color(0xFFFF3B30)
+                            parsed != null && parsed.first < parsed.second -> Color(0xFFFF3B30)
                             isActive -> Color(0xFF24A148)
                             else -> TextGray
                         }
 
                         val canOpenScore = !isDiagonal && !isTechnicalScore(score)
 
+                        val isWin = parsed != null && parsed.first > parsed.second
+                        val isLoss = parsed != null && parsed.first < parsed.second
+
                         Box(
                             modifier = Modifier
                                 .height(rowHeight)
                                 .fillMaxWidth()
-                                .background(backgroundColor)
+                                .background(
+                                    if (isDiagonal) Color(0xFFF2F4F7) else Color.White
+                                )
                                 .border(
                                     width = when {
                                         isDiagonal -> 0.dp
@@ -5470,42 +5609,63 @@ private fun RoundRobinScoreDialog(
             shape = RoundedCornerShape(28.dp),
             modifier = Modifier
                 .fillMaxWidth(0.98f)
-                .fillMaxHeight(0.85f)
+                .fillMaxHeight(0.92f)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
-                // Header
+                // Header (Minimalist)
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Ввод результата", style = AppTypography.titleLarge.copy(fontSize = 22.sp), color = TextDark, modifier = Modifier.weight(1f))
                     if (tableNumber != null) {
                         Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(BlueBadgeBg).padding(horizontal = 10.dp, vertical = 4.dp)) {
-                            Text("Стол $tableNumber", color = AppleBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Стол $tableNumber", color = AppleBlue, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
                     }
+                    Spacer(modifier = Modifier.weight(1f))
                     IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
                         Text("✕", fontSize = 20.sp, color = TextGray)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
-
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Players VS Block
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        PlayerScoreCard(player = p1 ?: ClubPlayer(0, firstPlayer), modifier = Modifier.weight(1f))
-                        Text("VS", style = AppTypography.titleLarge, color = TextGray.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 12.dp))
-                        PlayerScoreCard(player = p2 ?: ClubPlayer(0, secondPlayer), modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Players VS Block (Vertical Soft UI)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        PlayerVerticalCard(player = p1 ?: ClubPlayer(0, firstPlayer))
+                        Text(
+                            "VS",
+                            style = AppTypography.displayLarge.copy(fontSize = 32.sp, fontWeight = FontWeight.Black),
+                            color = TextGray.copy(alpha = 0.25f)
+                        )
+                        PlayerVerticalCard(player = p2 ?: ClubPlayer(0, secondPlayer))
                     }
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Decorative divider with icon
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = BorderGray)
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            Text("🏓", fontSize = 24.sp)
+                        }
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = BorderGray)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Выберите результат матча", color = TextGray, style = AppTypography.bodyMedium)
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     // Score Buttons Grid
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -5520,7 +5680,6 @@ private fun RoundRobinScoreDialog(
                         // Right Column (P2 wins)
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             p2Wins.forEachIndexed { index, s ->
-                                // Use dark red for primary winning score (0:2 or 0:3), light red for others
                                 val finalColor = if (index == 0) Color(0xFFFF3B30) else Color(0xFFFFEBEE)
                                 val finalTextColor = if (index == 0) Color.White else Color(0xFFFF3B30)
                                 ScoreButton(text = s, bgColor = finalColor, textColor = finalTextColor) { onSave(s) }
@@ -5535,8 +5694,19 @@ private fun RoundRobinScoreDialog(
                     Text("ТЕХНИЧЕСКИЙ РЕЗУЛЬТАТ", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TechnicalButton(text = "W (победа)", modifier = Modifier.weight(1f)) {
+                            onSave("W")
+                        }
+                        TechnicalButton(text = "L (поражение)", modifier = Modifier.weight(1f)) {
+                            onSave("L")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     TechnicalButton(
-                        text = "L (Снялся с турнира)",
+                        text = "Сняться с турнира",
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         showWithdrawalDialog = true
@@ -5547,7 +5717,7 @@ private fun RoundRobinScoreDialog(
                             onDismissRequest = { showWithdrawalDialog = false },
                             title = { Text("Кто снялся?", style = AppTypography.titleLarge) },
                             text = {
-                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     Text("Все несыгранные матчи выбранного игрока будут отмечены как техническое поражение (L).", style = AppTypography.bodyMedium)
 
                                     Button(
@@ -5555,12 +5725,12 @@ private fun RoundRobinScoreDialog(
                                             onTechnicalLoss(true)
                                             showWithdrawalDialog = false
                                         },
-                                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = BlueBadgeBg, contentColor = AppleBlue),
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         elevation = null
                                     ) {
-                                        Text(firstPlayer, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                                        Text(firstPlayer, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                                     }
 
                                     Button(
@@ -5568,19 +5738,19 @@ private fun RoundRobinScoreDialog(
                                             onTechnicalLoss(false)
                                             showWithdrawalDialog = false
                                         },
-                                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = BlueBadgeBg, contentColor = AppleBlue),
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         elevation = null
                                     ) {
-                                        Text(secondPlayer, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                                        Text(secondPlayer, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                                     }
                                 }
                             },
                             confirmButton = {},
                             dismissButton = {
                                 TextButton(onClick = { showWithdrawalDialog = false }) {
-                                    Text("Отмена", color = TextGray)
+                                    Text("Отмена", color = TextGray, fontSize = 16.sp)
                                 }
                             },
                             containerColor = CardWhite,
@@ -5595,11 +5765,45 @@ private fun RoundRobinScoreDialog(
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.textButtonColors(contentColor = SwipeDeleteRed)
                         ) {
-                            Text("Удалить текущий результат", style = AppTypography.labelLarge)
+                            Text("Удалить текущий результат", style = AppTypography.labelLarge, fontWeight = FontWeight.Bold)
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PlayerVerticalCard(player: ClubPlayer) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        PlayerAvatar(player = player, size = 96.dp)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            player.fullName,
+            style = AppTypography.labelLarge.copy(fontSize = 17.sp, fontWeight = FontWeight.ExtraBold),
+            color = TextDark,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 140.dp)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        RatingBadge(rating = player.rating)
+    }
+}
+
+@Composable
+private fun RatingBadge(rating: Double) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(GreenBadgeBg)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Рейтинг ", color = TextGray, fontSize = 12.sp)
+            Text(formatRating(rating), color = GreenBadgeText, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
     }
 }
