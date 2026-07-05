@@ -60,6 +60,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import android.widget.Toast
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
@@ -1080,7 +1081,7 @@ private fun applyRoundRobinRatings(
                 MatchRatingImpact(
                     player1 = winnerName,
                     player2 = loserName,
-                    score = scoreStr ?: "0:0",
+                    score = if (firstWon) (scoreStr ?: "0:0") else reverseScore(scoreStr ?: "0:0"),
                     p1Delta = winnerDelta,
                     p2Delta = -loserDelta
                 )
@@ -1393,6 +1394,16 @@ fun TennisApp() {
                 onPlayersChanged = { updatedPlayers ->
                     saveClubPlayers(context, updatedPlayers)
                     clubPlayers = updatedPlayers
+                },
+                onAddToTournament = { player ->
+                    val alreadyIn = draft.playerFields.any { it.name.lowercase() == player.fullName.lowercase() }
+                    if (alreadyIn) {
+                        Toast.makeText(context, "${player.fullName} уже в турнире", Toast.LENGTH_SHORT).show()
+                    } else {
+                        draft.playerFields.add(PlayerField(draft.nextFieldId++, player.fullName))
+                        draft.playersCount = draft.playerFields.size
+                        Toast.makeText(context, "Игрок добавлен в турнир", Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
             AppScreen.History -> TournamentHistoryScreen(
@@ -1629,7 +1640,8 @@ fun MainDashboardScreen(
 fun PlayerBaseScreen(
     clubPlayers: List<ClubPlayer>,
     onBack: () -> Unit,
-    onPlayersChanged: (List<ClubPlayer>) -> Unit
+    onPlayersChanged: (List<ClubPlayer>) -> Unit,
+    onAddToTournament: (ClubPlayer) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var playerToDelete by remember { mutableStateOf<ClubPlayer?>(null) }
@@ -1688,12 +1700,14 @@ fun PlayerBaseScreen(
                 )
             }
 
-            Button(
+            IconButton(
                 onClick = { showCreateDialog = true },
-                colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
-                shape = RoundedCornerShape(14.dp)
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppleBlue)
             ) {
-                Text("+ Игрок", color = Color.White)
+                Text("+", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -1771,32 +1785,61 @@ fun PlayerBaseScreen(
                     val player = filteredPlayers[index]
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { dismissValue ->
-                            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                                playerToDelete = player
+                            when (dismissValue) {
+                                SwipeToDismissBoxValue.EndToStart -> {
+                                    playerToDelete = player
+                                }
+                                SwipeToDismissBoxValue.StartToEnd -> {
+                                    onAddToTournament(player)
+                                }
+                                else -> {}
                             }
-
                             false
-                        }
+                        },
+                        positionalThreshold = { distance -> distance * 0.4f }
                     )
 
                     SwipeToDismissBox(
                         state = dismissState,
-                        enableDismissFromStartToEnd = false,
+                        enableDismissFromStartToEnd = true,
                         backgroundContent = {
+                            val color = when (dismissState.dismissDirection) {
+                                SwipeToDismissBoxValue.StartToEnd -> GreenBadgeBg
+                                SwipeToDismissBoxValue.EndToStart -> CellLostBg
+                                else -> Color.Transparent
+                            }
+                            val alignment = when (dismissState.dismissDirection) {
+                                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                                else -> Alignment.Center
+                            }
+                            val icon = when (dismissState.dismissDirection) {
+                                SwipeToDismissBoxValue.StartToEnd -> CheckCircleIcon
+                                SwipeToDismissBoxValue.EndToStart -> TrashIcon
+                                else -> null
+                            }
+                            val iconColor = when (dismissState.dismissDirection) {
+                                SwipeToDismissBoxValue.StartToEnd -> GreenBadgeText
+                                SwipeToDismissBoxValue.EndToStart -> SwipeDeleteRed
+                                else -> Color.Transparent
+                            }
+
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(CellLostBg)
-                                    .padding(end = 18.dp),
-                                contentAlignment = Alignment.CenterEnd
+                                    .background(color)
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = alignment
                             ) {
-                                Icon(
-                                    imageVector = TrashIcon,
-                                    contentDescription = "Удалить",
-                                    tint = SwipeDeleteRed,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                if (icon != null) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = iconColor,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
                             }
                         },
                         content = {
@@ -2121,29 +2164,34 @@ private fun PlayerRegistrationDialog(
                             DropdownMenu(
                                 expanded = showAvatarMenu,
                                 onDismissRequest = { showAvatarMenu = false },
-                                modifier = Modifier.background(CardWhite).border(1.dp, BorderGray, RoundedCornerShape(8.dp))
+                                modifier = Modifier
+                                    .background(CardWhite, RoundedCornerShape(16.dp))
+                                    .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text(if (avatarUri.isBlank()) "Снять фото" else "Снять новое фото") },
+                                    text = { Text(if (avatarUri.isBlank()) "Снять фото" else "Снять новое фото", style = AppTypography.bodyMedium) },
                                     onClick = {
                                         showAvatarMenu = false
                                         cameraLauncher.launch(null)
-                                    }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Выбрать из галереи") },
+                                    text = { Text("Выбрать из галереи", style = AppTypography.bodyMedium) },
                                     onClick = {
                                         showAvatarMenu = false
                                         galleryLauncher.launch("image/*")
-                                    }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                 )
                                 if (avatarUri.isNotBlank()) {
                                     DropdownMenuItem(
-                                        text = { Text("Удалить фото", color = SwipeDeleteRed) },
+                                        text = { Text("Удалить фото", color = SwipeDeleteRed, style = AppTypography.bodyMedium) },
                                         onClick = {
                                             showAvatarMenu = false
                                             avatarUri = ""
-                                        }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                     )
                                 }
                             }
