@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "302606159638",
+    "project_id": "tennis-tourney-8255a",
+    "storage_bucket": "tennis-tourney-8255a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:302606159638:android:dd71e93c57906c3b2aca37",
+        "android_client_info": {
+          "package_name": "com.example.tennistourney"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqwljuUFZHWcVJh6lKsbqDhVEq3wRsTNE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
