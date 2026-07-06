@@ -2024,6 +2024,12 @@ fun TennisApp() {
                     } else {
                         currentScreen = AppScreen.AdminLogin
                     }
+                },
+                onBack = {
+                    val clubs = getSavedClubs(context)
+                    if (clubs.isNotEmpty()) {
+                        currentScreen = AppScreen.ClubSelection
+                    }
                 }
             )
             AppScreen.AdminLogin -> AdminAuthDialogs(
@@ -2400,6 +2406,7 @@ fun PlayerBaseScreen(
     onPlayersChanged: (List<ClubPlayer>) -> Unit,
     onAddToTournament: (ClubPlayer) -> Unit
 ) {
+    BackHandler { onBack() }
     var searchQuery by remember { mutableStateOf("") }
     var playerToDelete by remember { mutableStateOf<ClubPlayer?>(null) }
     var playerToEdit by remember { mutableStateOf<ClubPlayer?>(null) }
@@ -3218,6 +3225,7 @@ fun TournamentHistoryScreen(
     onBack: () -> Unit,
     onHistoryChanged: (List<TournamentHistoryEntry>) -> Unit
 ) {
+    BackHandler { onBack() }
     var searchQuery by remember { mutableStateOf("") }
     var selectedEntry by remember { mutableStateOf<TournamentHistoryEntry?>(null) }
     var entryToDelete by remember { mutableStateOf<TournamentHistoryEntry?>(null) }
@@ -3695,6 +3703,7 @@ fun CreateTournamentScreen(
     onBack: () -> Unit,
     onStartTournament: () -> Unit
 ) {
+    BackHandler { onBack() }
     var startError by remember { mutableStateOf<String?>(null) }
     val currentClubId = LocalCurrentClubId.current ?: "" 
 
@@ -4486,6 +4495,7 @@ fun RoundRobinScreen(
     onBack: () -> Unit,
     onFinish: (Boolean) -> Unit
 ) {
+    BackHandler { onBack() }
     val currentClubId = LocalCurrentClubId.current ?: ""
     val playerNames = draft.playerFields.mapIndexed { index, field ->
         field.name.trim().ifBlank { "Игрок ${index + 1}" }
@@ -7357,6 +7367,7 @@ private fun PodiumPlaceCard(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayoffScreen(draft: TournamentDraft, onBack: () -> Unit) {
+    BackHandler { onBack() }
     val currentClubId = LocalCurrentClubId.current ?: ""
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
@@ -7668,8 +7679,12 @@ fun ClubSelectionScreen(
 @Composable
 fun ClubLoginScreen(
     onLoginSuccess: (String) -> Unit,
-    onAdminLoginSuccess: (String, Boolean) -> Unit
+    onAdminLoginSuccess: (String, Boolean) -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
+    if (onBack != null) {
+        BackHandler { onBack() }
+    }
     val context = LocalContext.current
     var clubNameInput by remember { mutableStateOf("") }
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -7815,6 +7830,7 @@ fun AdminAuthDialogs(
     onDismiss: () -> Unit,
     onAdminSuccess: () -> Unit
 ) {
+    BackHandler { onDismiss() }
     val context = LocalContext.current
     val currentClubId = LocalCurrentClubId.current
     var showPinDialog by remember { mutableStateOf(true) }
