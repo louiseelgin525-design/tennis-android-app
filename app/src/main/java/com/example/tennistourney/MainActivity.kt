@@ -7449,7 +7449,7 @@ fun PlayoffTreeContent(draft: TournamentDraft) {
                     Text("${selectedMatch!!.p1} vs ${selectedMatch!!.p2}", style = AppTypography.bodyMedium, color = TextGray)
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    fun saveScore(score: String) {
+                    val saveScore = { score: String ->
                         draft.playoffScores[selectedMatch!!.id] = score
                         if (currentClubId.isNotBlank()) {
                             FirebaseStorage.syncDraftPlayoffScore(currentClubId, selectedMatch!!.id, score)
