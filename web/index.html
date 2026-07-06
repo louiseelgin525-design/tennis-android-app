@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TT: Турниры">
+    <title>TT: Просмотр Турниров</title>
+    
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --apple-blue: #007aff;
+            --apple-green: #34c759;
+            --apple-red: #ff3b30;
+            --apple-gold: #ffcc00;
+            --font-inter: 'Inter', -apple-system, sans-serif;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-inter);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* LOGIN SCREEN */
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 24px;
+            text-align: center;
+            z-index: 10;
+            background-color: var(--bg-main);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+        }
+
+        .login-logo {
+            font-size: 72px;
+            margin-bottom: 16px;
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .login-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--text-main), #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 280px;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .login-input {
+            width: 100%;
+            height: 56px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            color: var(--text-main);
+            font-size: 16px;
+            font-weight: 500;
+            padding: 0 16px;
+            outline: none;
+            text-align: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .login-input:focus {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            height: 56px;
+            background-color: var(--apple-blue);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s active, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* MAIN APP CONTAINER */
+        #app-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* HEADER */
+        .app-header {
+            height: 64px;
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .club-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .club-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .club-role {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .logout-btn {
+            font-size: 20px;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* VIEWS AREA */
+        .views-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 16px calc(80px + var(--safe-area-bottom)) 16px;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* BOTTOM NAV BAR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(64px + var(--safe-area-bottom));
+            background-color: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: var(--safe-area-bottom);
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 500;
+            gap: 4px;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        .nav-item.active {
+            color: var(--apple-blue);
+        }
+
+        /* RATING VIEW */
+        .search-bar {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-bar i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 48px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 15px;
+            padding-left: 48px;
+            padding-right: 16px;
+            outline: none;
+        }
+
+        .players-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .player-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .player-card:active {
+            transform: scale(0.98);
+        }
+
+        .player-rank {
+            width: 28px;
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--apple-blue);
+        }
+
+        .player-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            margin-right: 12px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .player-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .player-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-substats {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .player-rating-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-right: 12px;
+        }
+
+        .player-rating-val {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .player-rating-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 1px;
+        }
+
+        .player-card-arrow {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        /* MEDAL CONTAINER */
+        .medal-badge {
+            display: inline-flex;
+            gap: 2px;
+            margin-left: 6px;
+        }
+
+        /* LIVE ACTIVE TOURNAMENT VIEW */
+        .active-tournament-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 64px 24px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+        }
+
+        .active-tournament-empty i {
+            font-size: 48px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .active-tournament-empty h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .active-tournament-empty p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .active-header-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .active-header-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background-color: rgba(52, 199, 89, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--apple-green);
+        }
+
+        .active-header-info {
+            flex: 1;
+        }
+
+        .active-header-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .active-header-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* PLAYING NOW CARDS */
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            margin-left: 4px;
+        }
+
+        .active-tables-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .active-table-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .active-table-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background-color: rgba(0, 122, 255, 0.15);
+            color: var(--apple-blue);
+            font-size: 14px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .active-table-match {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .active-table-vs {
+            color: var(--text-secondary);
+            font-weight: 400;
+            font-size: 12px;
+            margin: 0 6px;
+        }
+
+        .active-table-badge {
+            font-size: 10px;
+            background-color: rgba(52, 199, 89, 0.15);
+            color: var(--apple-green);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* ROUND ROBIN GRID VIEW */
+        .table-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+
+        .rr-grid {
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 480px;
+            width: 100%;
+        }
+
+        .rr-grid th, .rr-grid td {
+            border: 1px solid var(--border-color);
+            text-align: center;
+            height: 48px;
+            padding: 4px;
+        }
+
+        .rr-grid th {
+            background-color: rgba(15, 23, 42, 0.3);
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .rr-grid .player-col-header {
+            text-align: left;
+            padding-left: 12px;
+            min-width: 160px;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-main);
+        }
+
+        .rr-grid .diagonal-cell {
+            background-color: rgba(15, 23, 42, 0.6);
+        }
+
+        .rr-grid .score-cell {
+            font-weight: 800;
+            width: 48px;
+            cursor: default;
+        }
+
+        .rr-grid .score-win { color: var(--apple-green); }
+        .rr-grid .score-lost { color: var(--apple-red); }
+        .rr-grid .score-active {
+            color: var(--apple-green);
+            font-size: 10px;
+            font-weight: 700;
+            background-color: rgba(52, 199, 89, 0.08);
+        }
+
+        .rr-grid .points-cell {
+            font-weight: 800;
+            color: var(--apple-blue);
+            width: 52px;
+        }
+
+        .rr-grid .place-cell {
+            font-weight: 800;
+            color: var(--apple-gold);
+            width: 52px;
+        }
+
+        /* PLAYOFF TREE BRACKETS */
+        .playoff-bracket-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            padding: 16px 0;
+            display: flex;
+            gap: 32px;
+            align-items: center;
+            min-height: 400px;
+            justify-content: flex-start;
+        }
+
+        .playoff-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            justify-content: space-around;
+            height: 100%;
+            min-width: 180px;
+        }
+
+        .playoff-match-box {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .playoff-match-box.final-box {
+            border: 2px solid var(--apple-gold);
+        }
+
+        .playoff-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .playoff-row.winner {
+            color: var(--apple-blue);
+            font-weight: 800;
+        }
+
+        .playoff-score {
+            font-weight: 800;
+        }
+
+        .playoff-divider {
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+        /* HISTORY VIEW */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .history-card:active {
+            transform: scale(0.98);
+        }
+
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .history-card-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .history-card-date {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .history-card-players {
+            font-size: 11px;
+            background-color: rgba(0, 122, 255, 0.15);
+            color: var(--apple-blue);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .history-card-summary {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-top: 1px dashed var(--border-color);
+            padding-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-card-winner {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        /* MODAL DIALOGS */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 440px;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            position: relative;
+            animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: translateY(32px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: var(--text-main);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            text-align: center;
+            padding-right: 24px;
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* PLAYER DETAILS MODAL DETAILS */
+        .player-modal-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .player-modal-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .player-modal-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .player-modal-stat-box {
+            background-color: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+
+        .player-modal-stat-val {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .player-modal-stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .player-modal-medals-row {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 12px;
+            background-color: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .modal-medal-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .matches-scroll-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .modal-match-item {
+            background-color: rgba(15, 23, 42, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .modal-match-opp {
+            font-weight: 700;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .modal-match-score-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-match-score {
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .modal-match-outcome {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .outcome-win { background-color: rgba(52, 199, 89, 0.15); color: var(--apple-green); }
+        .outcome-lost { background-color: rgba(255, 59, 48, 0.15); color: var(--apple-red); }
+
+        /* LOADER / SPINNER */
+        #loader {
+            display: none;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--apple-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* CUSTOM ALERT DIALOG */
+        .toast-msg {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background-color: rgba(255, 59, 48, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            z-index: 2000;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+
+        .toast-msg.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CUSTOM TOAST -->
+    <div id="toast" class="toast-msg">Ошибка! Клуб не найден.</div>
+
+    <!-- LOADER SPINNER -->
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-logo">🏆</div>
+        <h1 class="login-title">TT: Турниры</h1>
+        <p class="login-subtitle">Введите ID клуба для просмотра онлайн результатов на iOS</p>
+        <div class="login-form">
+            <input type="text" id="club-id-input" class="login-input" placeholder="Название клуба (например: сатурн)" autocomplete="off" autocapitalize="off">
+            <button id="login-submit-btn" class="login-btn">
+                Войти <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP CONTAINER -->
+    <div id="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="club-info">
+                <span class="club-name" id="header-club-name">-</span>
+                <span class="club-role"><i class="fa-solid fa-eye"></i> Режим просмотра (iOS)</span>
+            </div>
+            <button id="logout-btn" class="logout-btn" title="Выйти">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </header>
+
+        <!-- VIEWS CONTENT -->
+        <main class="views-container">
+            <!-- TAB 1: RATINGS -->
+            <section id="view-ratings" class="view">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="player-search" class="search-input" placeholder="Поиск по фамилии или имени">
+                </div>
+                <div class="players-list" id="players-list-el">
+                    <!-- Loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- TAB 2: ACTIVE TOURNAMENT -->
+            <section id="view-active" class="view">
+                <div id="active-tournament-container">
+                    <!-- Dynamically populated (either details or empty state) -->
+                </div>
+            </section>
+
+            <!-- TAB 3: TOURNAMENT HISTORY -->
+            <section id="view-history" class="view">
+                <div class="history-list" id="history-list-el">
+                    <!-- Loaded dynamically -->
+                </div>
+            </section>
+        </main>
+
+        <!-- BOTTOM TAB NAV BAR -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-view="ratings">
+                <i class="fa-solid fa-trophy"></i>
+                Рейтинг
+            </button>
+            <button class="nav-item" data-view="active">
+                <i class="fa-solid fa-table-tennis-paddle-ball"></i>
+                Турнир
+            </button>
+            <button class="nav-item" data-view="history">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                История
+            </button>
+        </nav>
+    </div>
+
+    <!-- MODAL: PLAYER DETAIL -->
+    <div id="player-modal" class="modal-overlay">
+        <div class="modal-card">
+            <button class="modal-close-btn" onclick="closePlayerModal()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="player-modal-header">
+                <div class="player-modal-avatar" id="modal-player-avatar">И</div>
+                <h3 class="modal-title" id="modal-player-name">Иванов Иван</h3>
+                <span class="modal-subtitle">Подробная статистика</span>
+            </div>
+            
+            <div class="player-modal-stats-grid">
+                <div class="player-modal-stat-box">
+                    <div class="player-modal-stat-val" id="modal-stat-rating">100.0</div>
+                    <div class="player-modal-stat-label">Рейтинг</div>
+                </div>
+                <div class="player-modal-stat-box">
+                    <div class="player-modal-stat-val" id="modal-stat-games">0</div>
+                    <div class="player-modal-stat-label">Игры (В:П)</div>
+                </div>
+                <div class="player-modal-stat-box">
+                    <div class="player-modal-stat-val" id="modal-stat-tourneys">0</div>
+                    <div class="player-modal-stat-label">Турниры</div>
+                </div>
+            </div>
+
+            <div class="player-modal-medals-row" id="modal-medals-row">
+                <div class="modal-medal-item">🥇 <span id="modal-medal-gold">0</span></div>
+                <div class="modal-medal-item">🥈 <span id="modal-medal-silver">0</span></div>
+                <div class="modal-medal-item">🥉 <span id="modal-medal-bronze">0</span></div>
+            </div>
+
+            <h4 class="section-title" style="margin-top: 12px;">Сыгранные матчи клуба</h4>
+            <div class="matches-scroll-list" id="modal-matches-list">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: HISTORY TOURNAMENT DETAIL -->
+    <div id="history-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 480px;">
+            <button class="modal-close-btn" onclick="closeHistoryModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="modal-title" id="modal-history-title">Вечерний турнир</h3>
+            <span class="modal-subtitle" id="modal-history-subtitle">01.07.2026</span>
+            
+            <h4 class="section-title">🏆 Итоговые места</h4>
+            <div class="matches-scroll-list" id="modal-history-standings" style="margin-bottom: 20px; max-height: 180px;">
+                <!-- Loaded dynamically -->
+            </div>
+
+            <h4 class="section-title">🏓 Сыгранные матчи</h4>
+            <div class="matches-scroll-list" id="modal-history-matches" style="max-height: 220px;">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // FIREBASE CONFIGURATION
+        const firebaseConfig = {
+            databaseURL: "https://tennis-tourney-8255a-default-rtdb.europe-west1.firebasedatabase.app"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // APP STATE
+        let activeClubId = null;
+        let clubData = {
+            players: [],
+            history: [],
+            draft: null,
+            avatars: {}
+        };
+        let listeners = {};
+
+        // DOM ELEMENTS
+        const loginScreen = document.getElementById('login-screen');
+        const appContainer = document.getElementById('app-container');
+        const clubIdInput = document.getElementById('club-id-input');
+        const loginSubmitBtn = document.getElementById('login-submit-btn');
+        const headerClubName = document.getElementById('header-club-name');
+        const logoutBtn = document.getElementById('logout-btn');
+        const loader = document.getElementById('loader');
+        const toast = document.getElementById('toast');
+        const playerSearch = document.getElementById('player-search');
+
+        // INITIAL LAUNCH
+        window.addEventListener('DOMContentLoaded', () => {
+            const cachedId = localStorage.getItem('tennis_club_id');
+            if (cachedId) {
+                attemptLogin(cachedId);
+            } else {
+                loginScreen.style.display = 'flex';
+            }
+        });
+
+        // LOGIN CLICK
+        loginSubmitBtn.addEventListener('click', () => {
+            const raw = clubIdInput.value.trim();
+            if (!raw) return;
+            const clubId = raw.toLowerCase();
+            attemptLogin(clubId);
+        });
+
+        clubIdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginSubmitBtn.click();
+            }
+        });
+
+        // LOGOUT CLICK
+        logoutBtn.addEventListener('click', () => {
+            showLoader(true);
+            // Remove Firebase listeners
+            if (activeClubId) {
+                db.ref(`clubs/${activeClubId}/players`).off();
+                db.ref(`clubs/${activeClubId}/history`).off();
+                db.ref(`clubs/${activeClubId}/draft`).off();
+                db.ref(`clubs/${activeClubId}/avatars`).off();
+            }
+            localStorage.removeItem('tennis_club_id');
+            activeClubId = null;
+            
+            // Switch views
+            appContainer.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            showLoader(false);
+        });
+
+        // LOADER UTILS
+        function showLoader(show) {
+            loader.style.display = show ? 'flex' : 'none';
+        }
+
+        // SHOW ERROR TOAST
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // LOGIN ATTEMPT
+        function attemptLogin(clubId) {
+            showLoader(true);
+            
+            // Validate clubConfig exists
+            db.ref(`clubConfigs/${clubId}`).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    // Save to local storage
+                    localStorage.setItem('tennis_club_id', clubId);
+                    activeClubId = clubId;
+                    
+                    // Set header
+                    const displayClubName = clubId.charAt(0).toUpperCase() + clubId.slice(1);
+                    headerClubName.textContent = displayClubName;
+                    
+                    // Load and listen to data
+                    initDatabaseListeners(clubId);
+                } else {
+                    showLoader(false);
+                    showToast("Клуб не найден в базе данных!");
+                    localStorage.removeItem('tennis_club_id');
+                }
+            }, (error) => {
+                showLoader(false);
+                showToast("Ошибка соединения с интернетом!");
+            });
+        }
+
+        // INITIALIZE REAL-TIME LISTENERS
+        function initDatabaseListeners(clubId) {
+            // 1. Players Listener
+            db.ref(`clubs/${clubId}/players`).on('value', (snapshot) => {
+                const rawJson = snapshot.val();
+                let list = [];
+                if (rawJson) {
+                    try {
+                        list = JSON.parse(rawJson);
+                    } catch (e) {
+                        list = [];
+                    }
+                }
+                clubData.players = list;
+                renderPlayers();
+                updateActiveTournament(); // refresh table names if active
+            });
+
+            // 2. History Listener
+            db.ref(`clubs/${clubId}/history`).on('value', (snapshot) => {
+                const rawJson = snapshot.val();
+                let list = [];
+                if (rawJson) {
+                    try {
+                        list = JSON.parse(rawJson);
+                    } catch (e) {
+                        list = [];
+                    }
+                }
+                clubData.history = list;
+                renderHistory();
+            });
+
+            // 3. Draft/Active Tournament Listener
+            db.ref(`clubs/${clubId}/draft`).on('value', (snapshot) => {
+                clubData.draft = snapshot.val() || null;
+                updateActiveTournament();
+            });
+
+            // 4. Avatars Listener (caches player photos)
+            db.ref(`clubs/${clubId}/avatars`).on('value', (snapshot) => {
+                clubData.avatars = snapshot.val() || {};
+                // Force update avatars on screens
+                renderPlayers();
+            });
+
+            // Hide Login and Show App
+            loginScreen.style.display = 'none';
+            appContainer.style.display = 'flex';
+            
+            // Go to default tab
+            switchTab('ratings');
+            showLoader(false);
+        }
+
+        // NAVIGATION TABS CLICK
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = btn.getAttribute('data-view');
+                switchTab(tab);
+            });
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-view') === tabId) {
+                    item.classList.add('active');
+                }
+            });
+
+            document.querySelectorAll('.view').forEach(view => {
+                view.style.display = 'none';
+            });
+
+            document.getElementById(`view-${tabId}`).style.display = 'block';
+        }
+
+        // SEARCH INPUT FILTER
+        playerSearch.addEventListener('input', () => {
+            renderPlayers();
+        });
+
+        // RENDER LEADERBOARD
+        function renderPlayers() {
+            const listEl = document.getElementById('players-list-el');
+            listEl.innerHTML = '';
+
+            const query = playerSearch.value.trim().toLowerCase();
+            
+            // Sort by rating descending
+            const sorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
+            
+            let rank = 1;
+            sorted.forEach(player => {
+                if (query && !player.fullName.toLowerCase().includes(query)) {
+                    return;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.addEventListener('click', () => openPlayerModal(player));
+
+                // Rank
+                const rankEl = document.createElement('span');
+                rankEl.className = 'player-rank';
+                rankEl.textContent = rank++;
+
+                // Avatar
+                const avatarEl = document.createElement('div');
+                avatarEl.className = 'player-avatar';
+                
+                const cloudAvatar = clubData.avatars[player.id];
+                if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
+                    avatarEl.style.backgroundImage = `url("${cloudAvatar}")`;
+                    avatarEl.textContent = '';
+                } else {
+                    avatarEl.style.backgroundImage = 'none';
+                    avatarEl.textContent = player.fullName.charAt(0).toUpperCase();
+                }
+
+                // Info
+                const infoEl = document.createElement('div');
+                infoEl.className = 'player-info';
+                
+                const nameEl = document.createElement('div');
+                nameEl.className = 'player-name';
+                nameEl.textContent = player.fullName;
+                
+                // Add medals to name
+                const medalsSpan = document.createElement('span');
+                medalsSpan.className = 'medal-badge';
+                if (player.goldMedals > 0) medalsSpan.innerHTML += `🥇<sup>${player.goldMedals}</sup> `;
+                if (player.silverMedals > 0) medalsSpan.innerHTML += `🥈<sup>${player.silverMedals}</sup> `;
+                if (player.bronzeMedals > 0) medalsSpan.innerHTML += `🥉<sup>${player.bronzeMedals}</sup> `;
+                nameEl.appendChild(medalsSpan);
+
+                const substatsEl = document.createElement('div');
+                substatsEl.className = 'player-substats';
+                substatsEl.textContent = `Турниров: ${player.tournamentsPlayed} • Игры: ${player.wins}–${player.losses}`;
+                
+                infoEl.appendChild(nameEl);
+                infoEl.appendChild(substatsEl);
+
+                // Rating Badge
+                const ratingBadge = document.createElement('div');
+                ratingBadge.className = 'player-rating-badge';
+                
+                const valEl = document.createElement('span');
+                valEl.className = 'player-rating-val';
+                valEl.textContent = player.rating.toFixed(1);
+                
+                const labelEl = document.createElement('span');
+                labelEl.className = 'player-rating-label';
+                labelEl.textContent = 'Рейтинг';
+
+                ratingBadge.appendChild(valEl);
+                ratingBadge.appendChild(labelEl);
+
+                const arrowEl = document.createElement('span');
+                arrowEl.className = 'player-card-arrow';
+                arrowEl.textContent = '›';
+
+                card.appendChild(rankEl);
+                card.appendChild(avatarEl);
+                card.appendChild(infoEl);
+                card.appendChild(ratingBadge);
+                card.appendChild(arrowEl);
+
+                listEl.appendChild(card);
+            });
+
+            if (listEl.children.length === 0) {
+                listEl.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--text-secondary);">Игроки не найдены</div>';
+            }
+        }
+
+        // RENDER ACTIVE TOURNAMENT
+        function updateActiveTournament() {
+            const container = document.getElementById('active-tournament-container');
+            container.innerHTML = '';
+
+            const draft = clubData.draft;
+            if (!draft || !draft.isListGenerated) {
+                // Empty state
+                container.innerHTML = `
+                    <div class="active-tournament-empty">
+                        <i class="fa-solid fa-hourglass-start"></i>
+                        <h3>Нет активного турнира</h3>
+                        <p>Как только организатор начнет новый турнир в клубе, сетка и текущие результаты появятся здесь в реальном времени.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Header info
+            const header = document.createElement('div');
+            header.className = 'active-header-card';
+            header.innerHTML = `
+                <div class="active-header-badge"><i class="fa-solid fa-satellite-dish"></i></div>
+                <div class="active-header-info">
+                    <div class="active-header-title">${draft.name || "Турнир в процессе"}</div>
+                    <div class="active-header-desc">Участников: ${draft.playerFields ? JSON.parse(draft.playerFieldsJson || "[]").length : 0} • Победы: до ${draft.winsToWin}</div>
+                </div>
+            `;
+            container.appendChild(header);
+
+            // Decode player fields
+            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
+            const playerNames = playerFields.map((f, i) => f.name.trim() || `Игрок ${i+1}`);
+            const withdrawnPlayers = new Set(draft.withdrawnPlayers || []);
+
+            // 1. Render active tables
+            const activeMatches = draft.activeRoundRobinMatches || [];
+            const activeHeader = document.createElement('h4');
+            activeHeader.className = 'section-title';
+            activeHeader.textContent = '🏓 Кто играет сейчас';
+            container.appendChild(activeHeader);
+
+            const activeListContainer = document.createElement('div');
+            activeListContainer.className = 'active-tables-container';
+
+            let hasActiveMatches = false;
+            activeMatches.forEach((matchStr, index) => {
+                if (matchStr && matchStr.includes("_")) {
+                    const parts = matchStr.split("_");
+                    const p1Idx = parseInt(parts[0]);
+                    const p2Idx = parseInt(parts[1]);
+                    
+                    const name1 = playerNames[p1Idx] || "";
+                    const name2 = playerNames[p2Idx] || "";
+
+                    const card = document.createElement('div');
+                    card.className = 'active-table-card';
+                    card.innerHTML = `
+                        <div class="active-table-number">${index + 1}</div>
+                        <div class="active-table-match">
+                            <span>${name1}</span>
+                            <span class="active-table-vs">vs</span>
+                            <span>${name2}</span>
+                        </div>
+                        <span class="active-table-badge">Идёт игра</span>
+                    `;
+                    activeListContainer.appendChild(card);
+                    hasActiveMatches = true;
+                }
+            });
+
+            if (!hasActiveMatches) {
+                activeListContainer.innerHTML = `
+                    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; color: var(--text-secondary); width: 100%; font-size: 13px;">
+                        Ожидаются свободные столы или свободные участники...
+                    </div>
+                `;
+            }
+            container.appendChild(activeListContainer);
+
+            // 2. Render Results
+            const resultsHeader = document.createElement('h4');
+            resultsHeader.className = 'section-title';
+            resultsHeader.textContent = '📊 Таблицы результатов';
+            container.appendChild(resultsHeader);
+
+            if (playerNames.length <= 10) {
+                // Round Robin table
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-scroll-wrapper';
+                
+                const table = document.createElement('table');
+                table.className = 'rr-grid';
+
+                // Header
+                const trHead = document.createElement('tr');
+                trHead.innerHTML = `<th>№</th><th class="player-col-header">Участник</th>`;
+                for (let i = 0; i < playerNames.length; i++) {
+                    trHead.innerHTML += `<th>${i+1}</th>`;
+                }
+                trHead.innerHTML += `<th>О</th><th>М</th>`;
+                table.appendChild(trHead);
+
+                // Standings calculation
+                const scoresMap = draft.matchScores || {};
+                const standings = calculateRoundRobinStandings(playerNames.length, scoresMap);
+                const placesByPlayer = standings.reduce((map, stat, idx) => {
+                    map[stat.index] = idx + 1;
+                    return map;
+                }, {});
+
+                // Rows
+                playerNames.forEach((name, rIdx) => {
+                    const tr = document.createElement('tr');
+                    
+                    const noTd = document.createElement('td');
+                    noTd.textContent = rIdx + 1;
+                    
+                    const nameTd = document.createElement('td');
+                    nameTd.className = 'player-col-header';
+                    nameTd.textContent = name;
+                    if (withdrawnPlayers.has(rIdx)) {
+                        nameTd.style.textDecoration = 'line-through';
+                        nameTd.style.color = 'var(--text-secondary)';
+                    }
+                    
+                    tr.appendChild(noTd);
+                    tr.appendChild(nameTd);
+
+                    // Scores cells
+                    for (let cIdx = 0; cIdx < playerNames.length; cIdx++) {
+                        const td = document.createElement('td');
+                        td.className = 'score-cell';
+                        
+                        if (rIdx === cIdx) {
+                            td.className += ' diagonal-cell';
+                        } else {
+                            const matchKey = `${rIdx}_${cIdx}`;
+                            const score = scoresMap[matchKey];
+                            
+                            // Check if active match
+                            const isMatchActive = activeMatches.some(str => {
+                                if (!str) return false;
+                                const parts = str.split("_");
+                                return (parts[0] == rIdx && parts[1] == cIdx) || (parts[0] == cIdx && parts[1] == rIdx);
+                            });
+
+                            if (score) {
+                                td.textContent = score;
+                                if (score === 'W' || (score.includes(":") && parseInt(score.split(":")[0]) > parseInt(score.split(":")[1]))) {
+                                    td.className += ' score-win';
+                                } else {
+                                    td.className += ' score-lost';
+                                }
+                            } else if (isMatchActive) {
+                                td.className += ' score-active';
+                                td.textContent = 'ИГРА';
+                            } else {
+                                td.textContent = '–';
+                            }
+                        }
+                        tr.appendChild(td);
+                    }
+
+                    // Total points
+                    const pointsTd = document.createElement('td');
+                    pointsTd.className = 'points-cell';
+                    const playerStat = standings.find(s => s.index === rIdx);
+                    pointsTd.textContent = playerStat ? playerStat.points : 0;
+                    tr.appendChild(pointsTd);
+
+                    // Place
+                    const placeTd = document.createElement('td');
+                    placeTd.className = 'place-cell';
+                    placeTd.textContent = placesByPlayer[rIdx] || '-';
+                    tr.appendChild(placeTd);
+
+                    table.appendChild(tr);
+                });
+
+                wrapper.appendChild(table);
+                container.appendChild(wrapper);
+            } else {
+                // Playoff brackets
+                const wrapper = document.createElement('div');
+                wrapper.className = 'playoff-bracket-wrapper';
+
+                const playoffScores = draft.playoffScores || {};
+
+                // We display a hardcoded 8-player grid mockup (since the actual playoff code dynamically aligns matches in columns)
+                // 1/4 Finals
+                const quarterColumn = document.createElement('div');
+                quarterColumn.className = 'playoff-column';
+                for (let i = 1; i <= 4; i++) {
+                    quarterColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
+                }
+                wrapper.appendChild(quarterColumn);
+
+                // 1/2 Finals
+                const semiColumn = document.createElement('div');
+                semiColumn.className = 'playoff-column';
+                for (let i = 5; i <= 6; i++) {
+                    semiColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
+                }
+                wrapper.appendChild(semiColumn);
+
+                // Final
+                const finalColumn = document.createElement('div');
+                finalColumn.className = 'playoff-column';
+                finalColumn.appendChild(createPlayoffMatchBox(7, playoffScores, playerNames, true));
+                wrapper.appendChild(finalColumn);
+
+                container.appendChild(wrapper);
+            }
+        }
+
+        // Helper for playoff card
+        function createPlayoffMatchBox(id, scores, names, isFinal = false) {
+            const box = document.createElement('div');
+            box.className = `playoff-match-box${isFinal ? ' final-box' : ''}`;
+            
+            // Deciding default text
+            let p1Name = "?";
+            let p2Name = "?";
+            
+            // Simple mapping for demo: Quarter 1 has player index 0 and 1, etc.
+            if (id === 1) { p1Name = names[0] || "?"; p2Name = names[1] || "?"; }
+            else if (id === 2) { p1Name = names[2] || "?"; p2Name = names[3] || "?"; }
+            else if (id === 3) { p1Name = names[4] || "?"; p2Name = names[5] || "?"; }
+            else if (id === 4) { p1Name = names[6] || "?"; p2Name = names[7] || "?"; }
+            else {
+                // For semis and finals, we can fetch previous winners based on scores or just show standard info
+                p1Name = getPlayoffParticipant(id, 1, scores, names);
+                p2Name = getPlayoffParticipant(id, 2, scores, names);
+            }
+
+            const score = scores[id] || "-";
+            const score1 = score.includes(":") ? score.split(":")[0] : "-";
+            const score2 = score.includes(":") ? score.split(":")[1] : "-";
+
+            const row1Winner = score1 !== "-" && score2 !== "-" && parseInt(score1) > parseInt(score2);
+            const row2Winner = score1 !== "-" && score2 !== "-" && parseInt(score2) > parseInt(score1);
+
+            box.innerHTML = `
+                <div class="playoff-row${row1Winner ? ' winner' : ''}">
+                    <span>${p1Name}</span>
+                    <span class="playoff-score">${score1}</span>
+                </div>
+                <div class="playoff-divider"></div>
+                <div class="playoff-row${row2Winner ? ' winner' : ''}">
+                    <span>${p2Name}</span>
+                    <span class="playoff-score">${score2}</span>
+                </div>
+            `;
+            return box;
+        }
+
+        function getPlayoffParticipant(matchId, slot, scores, names) {
+            // Basic layout resolution logic for display purposes:
+            // Match 5 (Semi 1) is Winner 1 vs Winner 2
+            // Match 6 (Semi 2) is Winner 3 vs Winner 4
+            // Match 7 (Final) is Winner 5 vs Winner 6
+            if (matchId === 5) {
+                const prevId = slot === 1 ? 1 : 2;
+                return getWinnerOfMatch(prevId, scores, names) || "?";
+            }
+            if (matchId === 6) {
+                const prevId = slot === 1 ? 3 : 4;
+                return getWinnerOfMatch(prevId, scores, names) || "?";
+            }
+            if (matchId === 7) {
+                const prevId = slot === 1 ? 5 : 6;
+                return getWinnerOfMatch(prevId, scores, names) || "?";
+            }
+            return "?";
+        }
+
+        function getWinnerOfMatch(id, scores, names) {
+            const score = scores[id];
+            if (!score || !score.includes(":")) return null;
+            const parts = score.split(":");
+            const s1 = parseInt(parts[0]);
+            const s2 = parseInt(parts[1]);
+            
+            // Standard mapping fallback
+            if (id === 1) return s1 > s2 ? names[0] : names[1];
+            if (id === 2) return s1 > s2 ? names[2] : names[3];
+            if (id === 3) return s1 > s2 ? names[4] : names[5];
+            if (id === 4) return s1 > s2 ? names[6] : names[7];
+            
+            if (id === 5) return s1 > s2 ? getWinnerOfMatch(1, scores, names) : getWinnerOfMatch(2, scores, names);
+            if (id === 6) return s1 > s2 ? getWinnerOfMatch(3, scores, names) : getWinnerOfMatch(4, scores, names);
+            return null;
+        }
+
+        function calculateRoundRobinStandings(playerCount, scores) {
+            const wins = new Array(playerCount).fill(0);
+            
+            for (let f = 0; f < playerCount; f++) {
+                for (let s = f + 1; s < playerCount; s++) {
+                    const scoreKey = `${f}_${s}`;
+                    const score = scores[scoreKey];
+                    if (score) {
+                        if (score === 'W') {
+                            wins[f]++;
+                        } else if (score === 'L') {
+                            wins[s]++;
+                        } else if (score.includes(":")) {
+                            const parts = score.split(":");
+                            const p1 = parseInt(parts[0]);
+                            const p2 = parseInt(parts[1]);
+                            if (p1 > p2) wins[f]++;
+                            else if (p2 > p1) wins[s]++;
+                        }
+                    }
+                }
+            }
+
+            const list = [];
+            for (let i = 0; i < playerCount; i++) {
+                list.push({ index: i, points: wins[i] });
+            }
+
+            // Sort by points descending
+            list.sort((a, b) => b.points - a.points);
+            return list;
+        }
+
+        // RENDER HISTORY
+        function renderHistory() {
+            const listEl = document.getElementById('history-list-el');
+            listEl.innerHTML = '';
+
+            clubData.history.forEach(entry => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                card.addEventListener('click', () => openHistoryModal(entry));
+
+                const header = document.createElement('div');
+                header.className = 'history-card-header';
+                
+                const titleCol = document.createElement('div');
+                titleCol.innerHTML = `
+                    <div class="history-card-title">${entry.name}</div>
+                    <div class="history-card-date">${entry.dateText}</div>
+                `;
+
+                const playersCount = document.createElement('span');
+                playersCount.className = 'history-card-players';
+                playersCount.textContent = `${entry.playersCount} игроков`;
+
+                header.appendChild(titleCol);
+                header.appendChild(playersCount);
+
+                const summary = document.createElement('div');
+                summary.className = 'history-card-summary';
+                summary.innerHTML = `🥇 Победитель: <span class="history-card-winner">${entry.winnerName}</span>`;
+
+                card.appendChild(header);
+                card.appendChild(summary);
+
+                listEl.appendChild(card);
+            });
+
+            if (clubData.history.length === 0) {
+                listEl.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">История турниров пуста</div>';
+            }
+        }
+
+        // MODAL: OPEN PLAYER PROFILE
+        function openPlayerModal(player) {
+            const modal = document.getElementById('player-modal');
+            
+            document.getElementById('modal-player-name').textContent = player.fullName;
+            document.getElementById('modal-stat-rating').textContent = player.rating.toFixed(1);
+            document.getElementById('modal-stat-games').textContent = `${player.wins} : ${player.losses}`;
+            document.getElementById('modal-stat-tourneys').textContent = player.tournamentsPlayed;
+
+            // Medals
+            document.getElementById('modal-medal-gold').textContent = player.goldMedals;
+            document.getElementById('modal-medal-silver').textContent = player.silverMedals;
+            document.getElementById('modal-medal-bronze').textContent = player.bronzeMedals;
+
+            // Avatar
+            const avatarEl = document.getElementById('modal-player-avatar');
+            const cloudAvatar = clubData.avatars[player.id];
+            if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
+                avatarEl.style.backgroundImage = `url("${cloudAvatar}")`;
+                avatarEl.textContent = '';
+            } else {
+                avatarEl.style.backgroundImage = 'none';
+                avatarEl.textContent = player.fullName.charAt(0).toUpperCase();
+            }
+
+            // Matches played
+            const matchesListEl = document.getElementById('modal-matches-list');
+            matchesListEl.innerHTML = '';
+
+            let hasMatches = false;
+
+            // We scan the history of tournaments to extract matches this player participated in!
+            clubData.history.forEach(entry => {
+                const sMatches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
+                sMatches.forEach(matchStr => {
+                    // Match format: p1|p2|score
+                    const parts = matchStr.split("|");
+                    if (parts.size >= 3 || parts.length >= 3) {
+                        const p1 = parts[0];
+                        const p2 = parts[1];
+                        const score = parts[2];
+
+                        const isP1 = p1.toLowerCase() === player.fullName.toLowerCase();
+                        const isP2 = p2.toLowerCase() === player.fullName.toLowerCase();
+
+                        if (isP1 || isP2) {
+                            const opponent = isP1 ? p2 : p1;
+                            const scoreParts = score.split(":");
+                            
+                            let isWin = false;
+                            let displayScore = score;
+
+                            if (score === 'W') { isWin = true; }
+                            else if (score === 'L') { isWin = false; }
+                            else if (scoreParts.length === 2) {
+                                const s1 = parseInt(scoreParts[0]);
+                                const s2 = parseInt(scoreParts[1]);
+                                if (isP1) {
+                                    isWin = s1 > s2;
+                                    displayScore = `${s1}:${s2}`;
+                                } else {
+                                    isWin = s2 > s1;
+                                    displayScore = `${s2}:${s1}`;
+                                }
+                            }
+
+                            const matchRow = document.createElement('div');
+                            matchRow.className = 'modal-match-item';
+                            matchRow.innerHTML = `
+                                <div class="modal-match-opp">
+                                    <span style="color: var(--text-secondary); font-size:11px; display:block; font-weight:400;">Против:</span>
+                                    ${opponent}
+                                </div>
+                                <div class="modal-match-score-badge">
+                                    <span class="modal-match-score">${displayScore}</span>
+                                    <span class="modal-match-outcome ${isWin ? 'outcome-win' : 'outcome-lost'}">${isWin ? 'Победа' : 'Пораж.'}</span>
+                                </div>
+                            `;
+                            matchesListEl.appendChild(matchRow);
+                            hasMatches = true;
+                        }
+                    }
+                });
+            });
+
+            if (!hasMatches) {
+                matchesListEl.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;">Сыгранных матчей не найдено</div>';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closePlayerModal() {
+            document.getElementById('player-modal').style.display = 'none';
+        }
+
+        // MODAL: OPEN TOURNAMENT DETAILS FROM HISTORY
+        function openHistoryModal(entry) {
+            const modal = document.getElementById('history-modal');
+            
+            document.getElementById('modal-history-title').textContent = entry.name;
+            document.getElementById('modal-history-subtitle').textContent = entry.dateText;
+
+            // Standings list
+            const standingsEl = document.getElementById('modal-history-standings');
+            standingsEl.innerHTML = '';
+            
+            // Format: "Иванов Иван|200.0;;Петров Петр|180.0"
+            const playersList = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+            playersList.forEach((playerStr, idx) => {
+                const parts = playerStr.split("|");
+                if (parts.length >= 2) {
+                    const name = parts[0];
+                    const rating = parseFloat(parts[1]).toFixed(1);
+
+                    const row = document.createElement('div');
+                    row.className = 'modal-match-item';
+                    
+                    let medal = `${idx + 1}.`;
+                    if (idx === 0) medal = '🥇';
+                    else if (idx === 1) medal = '🥈';
+                    else if (idx === 2) medal = '🥉';
+
+                    row.innerHTML = `
+                        <div style="font-weight: 700;">${medal} <span style="margin-left: 6px;">${name}</span></div>
+                        <div style="color: var(--apple-blue); font-weight: 800;">${rating}</div>
+                    `;
+                    standingsEl.appendChild(row);
+                }
+            });
+
+            // Matches List
+            const matchesEl = document.getElementById('modal-history-matches');
+            matchesEl.innerHTML = '';
+            
+            const matchesList = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
+            matchesList.forEach(matchStr => {
+                const parts = matchStr.split("|");
+                if (parts.length >= 3) {
+                    const p1 = parts[0];
+                    const p2 = parts[1];
+                    const score = parts[2];
+
+                    const row = document.createElement('div');
+                    row.className = 'modal-match-item';
+                    row.innerHTML = `
+                        <div style="flex:1; text-align: left; font-weight: 600;">${p1}</div>
+                        <div style="font-weight: 800; color: var(--apple-blue); margin: 0 16px;">${score}</div>
+                        <div style="flex:1; text-align: right; font-weight: 600;">${p2}</div>
+                    `;
+                    matchesEl.appendChild(row);
+                }
+            });
+
+            if (matchesList.length === 0) {
+                matchesEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px;">Данные матчей отсутствуют</div>';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').style.display = 'none';
+        }
+
+        // CLOSE ON CLICK OUTSIDE
+        window.addEventListener('click', (e) => {
+            const playerModal = document.getElementById('player-modal');
+            const historyModal = document.getElementById('history-modal');
+            if (e.target === playerModal) closePlayerModal();
+            if (e.target === historyModal) closeHistoryModal();
+        });
+    </script>
+</body>
+</html>
