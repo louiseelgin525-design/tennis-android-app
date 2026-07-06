@@ -2168,9 +2168,25 @@ fun MainDashboardScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Column {
+                    val displayClubName = currentClubId.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
+                    Text(
+                        displayClubName,
+                        style = AppTypography.displayLarge.copy(
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        ),
+                        color = TextDark
+                    )
+                    Text(
+                        if (isAdmin) "Организатор" else "Игрок",
+                        style = AppTypography.bodySmall,
+                        color = if (isAdmin) AppleBlue else TextGray
+                    )
+                }
                 Box {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
