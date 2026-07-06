@@ -204,6 +204,13 @@ object FirebaseStorage {
         }
     }
     
+    fun syncDraftMatchScoresMap(clubId: String, scores: Map<Pair<Int, Int>, String>) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val formattedMap = scores.mapKeys { "${it.key.first}_${it.key.second}" }
+            database.getReference("clubs/$clubId/draft/matchScores").setValue(formattedMap)
+        }
+    }
+    
     fun syncDraftPlayoffScore(clubId: String, matchId: Int, score: String) {
         GlobalScope.launch(Dispatchers.IO) {
             database.getReference("clubs/$clubId/draft/playoffScores/$matchId").setValue(score)

@@ -2052,6 +2052,7 @@ fun MainDashboardScreen(
     onNavigateToHistory: () -> Unit,
     onChangeClub: () -> Unit
 ) {
+    val currentClubId = LocalCurrentClubId.current ?: ""
     val hasDraft = draft.isListGenerated || draft.name.isNotBlank()
 
     var showMenu by remember { mutableStateOf(false) }
@@ -4517,6 +4518,7 @@ fun RoundRobinScreen(
         draft.withdrawnPlayers.toList()
     ) {
         rebuildTechnicalResults(
+            clubId = currentClubId,
             draft = draft,
             playerCount = playerCount
         )
@@ -4880,7 +4882,7 @@ fun RoundRobinScreen(
             confirmButton = {
                 TextButton(onClick = {
                     draft.withdrawnPlayers.remove(playerIndex)
-                    rebuildTechnicalResults(draft, playerNames.size)
+                    rebuildTechnicalResults(currentClubId, draft, playerNames.size)
                     restorePlayerCandidate = null
                 }) { Text("Вернуть", color = AppleBlue, fontWeight = FontWeight.Bold) }
             },
