@@ -7560,7 +7560,7 @@ fun ClubSelectionScreen(
     onRemoveClub: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val savedClubs = getSavedClubs(context).toList()
+    var savedClubs by remember { mutableStateOf(getSavedClubs(context).toList()) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -7592,6 +7592,7 @@ fun ClubSelectionScreen(
                             TextButton(onClick = {
                                 showConfirmDelete = false
                                 onRemoveClub(clubId)
+                                savedClubs = savedClubs.filter { it != clubId }
                             }) { Text("Удалить", color = SwipeDeleteRed, fontWeight = FontWeight.Bold) }
                         },
                         dismissButton = {
