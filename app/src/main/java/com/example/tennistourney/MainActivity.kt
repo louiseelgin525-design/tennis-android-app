@@ -762,12 +762,12 @@ private fun updateOpponentStat(
 
 private fun saveBitmapAvatar(
     context: Context,
+    clubId: String,
     bitmap: Bitmap,
     playerId: Int
 ): String {
     return try {
         val outputStream = ByteArrayOutputStream()
-        // Resize bitmap to max 200x200 to keep database payload small
         val scaled = if (bitmap.width > 200 || bitmap.height > 200) {
             val scale = 200.0 / kotlin.math.max(bitmap.width, bitmap.height)
             Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
@@ -776,7 +776,16 @@ private fun saveBitmapAvatar(
         }
         scaled.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
         val bytes = outputStream.toByteArray()
-        "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+        val base64 = "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+        
+        val placeholder = "db_avatar_$playerId"
+        avatarMemoryCache[placeholder] = scaled
+        
+        if (clubId.isNotBlank()) {
+            FirebaseStorage.savePlayerAvatar(clubId, playerId, base64)
+        }
+        
+        placeholder
     } catch (e: Exception) {
         e.printStackTrace()
         ""
@@ -785,6 +794,7 @@ private fun saveBitmapAvatar(
 
 private fun saveUriAvatar(
     context: Context,
+    clubId: String,
     uri: Uri,
     playerId: Int
 ): String {
@@ -792,7 +802,7 @@ private fun saveUriAvatar(
         context.contentResolver.openInputStream(uri)?.use { input ->
             val bitmap = BitmapFactory.decodeStream(input)
             if (bitmap != null) {
-                saveBitmapAvatar(context, bitmap, playerId)
+                saveBitmapAvatar(context, clubId, bitmap, playerId)
             } else ""
         } ?: ""
     } catch (e: Exception) {
@@ -804,10 +814,35 @@ private fun saveUriAvatar(
 @Composable
 private fun rememberAvatarBitmap(uriOrPath: String): Bitmap? {
     val context = LocalContext.current
+    val clubId = LocalCurrentClubId.current ?: ""
 
-    return remember(uriOrPath) {
+    return remember(uriOrPath, clubId) {
         if (uriOrPath.isBlank()) {
             null
+        } else if (uriOrPath.startsWith("db_avatar_")) {
+            val cached = avatarMemoryCache[uriOrPath]
+            if (cached != null) {
+                cached
+            } else {
+                val playerId = uriOrPath.substringAfter("db_avatar_").toIntOrNull()
+                if (playerId != null && clubId.isNotBlank()) {
+                    FirebaseStorage.fetchPlayerAvatar(clubId, playerId) { base64 ->
+                        if (base64.isNotBlank()) {
+                            try {
+                                val base64Data = base64.substringAfter("base64,")
+                                val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                if (bitmap != null) {
+                                    avatarMemoryCache[uriOrPath] = bitmap
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+                null
+            }
         } else {
             try {
                 if (uriOrPath.startsWith("data:image/jpeg;base64,")) {
@@ -1507,6 +1542,7 @@ val LocalSetIsAdmin = staticCompositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalCurrentClubId = staticCompositionLocalOf<String?> { null }
 val LocalCurrentClubName = staticCompositionLocalOf<String> { "" }
 val LocalSaveDraft = staticCompositionLocalOf<() -> Unit> { {} }
+val avatarMemoryCache = androidx.compose.runtime.mutableStateMapOf<String, android.graphics.Bitmap>()
 
 @Composable
 fun TennisApp() {
@@ -1588,9 +1624,171 @@ fun TennisApp() {
                     .edit().putString(HISTORY_PREFS_KEY, encoded).apply()
             }
 
+            val dListener = FirebaseStorage.listenToDraftGranular(clubId) { snapshot ->
+                val firebaseName = snapshot.child("name").getValue(String::class.java).orEmpty()
+                if (draft.name != firebaseName) {
+                    draft.name = firebaseName
+                }
+                
+                val firebasePlayersCount = snapshot.child("playersCount").getValue(Int::class.java) ?: 2
+                if (draft.playersCount != firebasePlayersCount) {
+                    draft.playersCount = firebasePlayersCount
+                }
+                
+                val firebaseWinsToWin = snapshot.child("winsToWin").getValue(Int::class.java) ?: 2
+                if (draft.winsToWin != firebaseWinsToWin) {
+                    draft.winsToWin = firebaseWinsToWin
+                }
+                
+                val firebaseTablesCount = snapshot.child("tablesCount").getValue(Int::class.java) ?: 1
+                if (draft.tablesCount != firebaseTablesCount) {
+                    draft.tablesCount = firebaseTablesCount
+                }
+                
+                val firebaseFixedK = snapshot.child("fixedK").getValue(Double::class.java) ?: 0.2
+                if (draft.fixedK != firebaseFixedK) {
+                    draft.fixedK = firebaseFixedK
+                }
+                
+                val firebaseIsListGenerated = snapshot.child("isListGenerated").getValue(Boolean::class.java) ?: false
+                if (draft.isListGenerated != firebaseIsListGenerated) {
+                    draft.isListGenerated = firebaseIsListGenerated
+                }
+                
+                val firebaseNextFieldId = snapshot.child("nextFieldId").getValue(Int::class.java) ?: 0
+                if (draft.nextFieldId != firebaseNextFieldId) {
+                    draft.nextFieldId = firebaseNextFieldId
+                }
+                
+                val firebaseRatingApplied = snapshot.child("ratingApplied").getValue(Boolean::class.java) ?: false
+                if (draft.ratingApplied != firebaseRatingApplied) {
+                    draft.ratingApplied = firebaseRatingApplied
+                }
+                
+                val firebaseHistorySaved = snapshot.child("historySaved").getValue(Boolean::class.java) ?: false
+                if (draft.historySaved != firebaseHistorySaved) {
+                    draft.historySaved = firebaseHistorySaved
+                }
+                
+                val firebaseBonusesAwarded = snapshot.child("bonusesAwarded").getValue(Boolean::class.java) ?: false
+                if (draft.bonusesAwarded != firebaseBonusesAwarded) {
+                    draft.bonusesAwarded = firebaseBonusesAwarded
+                }
+                
+                val pfJson = snapshot.child("playerFieldsJson").getValue(String::class.java).orEmpty()
+                if (pfJson.isNotBlank()) {
+                    try {
+                        val type = object : com.google.gson.reflect.TypeToken<List<PlayerField>>() {}.type
+                        val list: List<PlayerField> = Gson().fromJson(pfJson, type)
+                        if (draft.playerFields != list) {
+                            draft.playerFields.clear()
+                            draft.playerFields.addAll(list)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                } else {
+                    if (draft.playerFields.isNotEmpty()) {
+                        draft.playerFields.clear()
+                    }
+                }
+                
+                val withdrawn = snapshot.child("withdrawnPlayers").children.mapNotNull { it.getValue(Int::class.java) }
+                if (draft.withdrawnPlayers != withdrawn) {
+                    draft.withdrawnPlayers.clear()
+                    draft.withdrawnPlayers.addAll(withdrawn)
+                }
+                
+                val lastFinished = snapshot.child("lastFinishedPlayers").children.mapNotNull { it.getValue(Int::class.java) }
+                if (draft.lastFinishedPlayers != lastFinished) {
+                    draft.lastFinishedPlayers.clear()
+                    draft.lastFinishedPlayers.addAll(lastFinished)
+                }
+                
+                val newMatchScores = mutableMapOf<Pair<Int, Int>, String>()
+                snapshot.child("matchScores").children.forEach { child ->
+                    val keyStr = child.key ?: ""
+                    val value = child.getValue(String::class.java) ?: ""
+                    val parts = keyStr.split("_")
+                    if (parts.size == 2) {
+                        val p1 = parts[0].toIntOrNull()
+                        val p2 = parts[1].toIntOrNull()
+                        if (p1 != null && p2 != null) {
+                            newMatchScores[p1 to p2] = value
+                        }
+                    }
+                }
+                if (draft.matchScores != newMatchScores) {
+                    draft.matchScores.clear()
+                    draft.matchScores.putAll(newMatchScores)
+                }
+                
+                val newPlayoffScores = mutableMapOf<Int, String>()
+                snapshot.child("playoffScores").children.forEach { child ->
+                    val keyInt = child.key?.toIntOrNull()
+                    val value = child.getValue(String::class.java) ?: ""
+                    if (keyInt != null) {
+                        newPlayoffScores[keyInt] = value
+                    }
+                }
+                if (draft.playoffScores != newPlayoffScores) {
+                    draft.playoffScores.clear()
+                    draft.playoffScores.putAll(newPlayoffScores)
+                }
+                
+                val activeList = snapshot.child("activeRoundRobinMatches").children.map { child ->
+                    val keyStr = child.getValue(String::class.java) ?: ""
+                    val parts = keyStr.split("_")
+                    if (parts.size == 2) {
+                        val p1 = parts[0].toIntOrNull()
+                        val p2 = parts[1].toIntOrNull()
+                        if (p1 != null && p2 != null) {
+                            p1 to p2
+                        } else null
+                    } else null
+                }
+                if (draft.activeRoundRobinMatches != activeList) {
+                    draft.activeRoundRobinMatches.clear()
+                    draft.activeRoundRobinMatches.addAll(activeList)
+                }
+                
+                val rcJson = snapshot.child("ratingChangesJson").getValue(String::class.java).orEmpty()
+                if (rcJson.isNotBlank()) {
+                    try {
+                        val type = object : com.google.gson.reflect.TypeToken<List<RatingChange>>() {}.type
+                        val list: List<RatingChange> = Gson().fromJson(rcJson, type)
+                        if (draft.ratingChanges != list) {
+                            draft.ratingChanges.clear()
+                            draft.ratingChanges.addAll(list)
+                        }
+                    } catch (e: Exception) {}
+                } else {
+                    if (draft.ratingChanges.isNotEmpty()) {
+                        draft.ratingChanges.clear()
+                    }
+                }
+                
+                val miJson = snapshot.child("matchImpactsJson").getValue(String::class.java).orEmpty()
+                if (miJson.isNotBlank()) {
+                    try {
+                        val type = object : com.google.gson.reflect.TypeToken<List<MatchRatingImpact>>() {}.type
+                        val list: List<MatchRatingImpact> = Gson().fromJson(miJson, type)
+                        if (draft.matchImpacts != list) {
+                            draft.matchImpacts.clear()
+                            draft.matchImpacts.addAll(list)
+                        }
+                    } catch (e: Exception) {}
+                } else {
+                    if (draft.matchImpacts.isNotEmpty()) {
+                        draft.matchImpacts.clear()
+                    }
+                }
+            }
+
             onDispose {
                 FirebaseStorage.removePlayersListener(clubId, pListener)
                 FirebaseStorage.removeHistoryListener(clubId, hListener)
+                FirebaseStorage.removeDraftGranularListener(clubId, dListener)
             }
         } else {
             clubPlayers = emptyList()
@@ -1623,7 +1821,8 @@ fun TennisApp() {
             applyPlaceBonuses = applyPlaceBonuses
         )
 
-        saveClubPlayers(context, currentClubId ?: "", result.players)
+        val clubId = currentClubId ?: ""
+        saveClubPlayers(context, clubId, result.players)
         clubPlayers = result.players
 
         draft.ratingChanges.clear()
@@ -1632,6 +1831,13 @@ fun TennisApp() {
         draft.matchImpacts.addAll(result.matchImpacts)
         draft.ratingApplied = true
         draft.bonusesAwarded = true
+        
+        if (clubId.isNotBlank()) {
+            FirebaseStorage.syncDraftProperty(clubId, "ratingApplied", true)
+            FirebaseStorage.syncDraftProperty(clubId, "bonusesAwarded", true)
+            FirebaseStorage.syncDraftProperty(clubId, "ratingChangesJson", Gson().toJson(draft.ratingChanges))
+            FirebaseStorage.syncDraftProperty(clubId, "matchImpactsJson", Gson().toJson(draft.matchImpacts))
+        }
     }
 
     fun saveHistoryFromCurrentTournament() {
@@ -1640,9 +1846,14 @@ fun TennisApp() {
         val entry = createRoundRobinHistoryEntry(draft)
         val updatedHistory = listOf(entry) + tournamentHistory
 
-        saveTournamentHistory(context, currentClubId ?: "", updatedHistory)
+        val clubId = currentClubId ?: ""
+        saveTournamentHistory(context, clubId, updatedHistory)
         tournamentHistory = updatedHistory
         draft.historySaved = true
+        
+        if (clubId.isNotBlank()) {
+            FirebaseStorage.syncDraftProperty(clubId, "historySaved", true)
+        }
     }
 
     AppOrientationEffect(currentScreen)
@@ -1709,6 +1920,25 @@ fun TennisApp() {
                     val avgRating = if (tPlayers.isEmpty()) 100.0 else tPlayers.map { it.rating }.average()
                     draft.fixedK = calculateTournamentK(avgRating)
 
+                    draft.isListGenerated = true
+                    if (draft.playerFields.size <= 10) {
+                        refreshActiveRoundRobinMatches(
+                            draft = draft,
+                            playerCount = draft.playerFields.size,
+                            tablesCount = draft.tablesCount
+                        )
+                    }
+
+                    val clubId = currentClubId ?: ""
+                    if (clubId.isNotBlank()) {
+                        FirebaseStorage.syncDraftProperty(clubId, "ratingApplied", false)
+                        FirebaseStorage.syncDraftProperty(clubId, "historySaved", false)
+                        FirebaseStorage.syncDraftProperty(clubId, "fixedK", draft.fixedK)
+                        FirebaseStorage.syncDraftProperty(clubId, "isListGenerated", true)
+                        FirebaseStorage.syncDraftPlayerFields(clubId, draft.playerFields)
+                        FirebaseStorage.syncDraftActiveMatches(clubId, draft.activeRoundRobinMatches)
+                    }
+
                     savePlayersFromCurrentTournament()
                     currentScreen = if (draft.playerFields.size <= 10) AppScreen.RoundRobin else AppScreen.Playoff
                 }
@@ -1739,6 +1969,10 @@ fun TennisApp() {
                     draft.historySaved = false
                     draft.ratingChanges.clear()
                     draft.playoffScores.clear()
+                    val clubId = currentClubId ?: ""
+                    if (clubId.isNotBlank()) {
+                        FirebaseStorage.clearDraft(clubId)
+                    }
                     currentScreen = AppScreen.Dashboard
                 }
             )
@@ -2019,7 +2253,13 @@ fun MainDashboardScreen(
                     }
                     Spacer(modifier = Modifier.height(20.dp))
                     OutlinedTextField(
-                        value = draft.name, onValueChange = { draft.name = it },
+                        value = draft.name, onValueChange = { 
+                            draft.name = it
+                            val clubId = currentClubId ?: ""
+                            if (clubId.isNotBlank()) {
+                                FirebaseStorage.syncDraftProperty(clubId, "name", it)
+                            }
+                        },
                         placeholder = { Text("Введите название турнира", color = TextGray) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = BorderGray, focusedBorderColor = AppleBlue, unfocusedContainerColor = CardWhite, focusedContainerColor = CardWhite),
@@ -2586,12 +2826,14 @@ private fun PlayerRegistrationDialog(
     var showAvatarMenu by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
+    val clubId = LocalCurrentClubId.current ?: ""
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
             val id = player?.id ?: ((existingPlayers.maxOfOrNull { it.id } ?: 0) + 1)
-            avatarUri = saveBitmapAvatar(context, bitmap, id)
+            avatarUri = saveBitmapAvatar(context, clubId, bitmap, id)
         }
     }
 
@@ -2600,7 +2842,7 @@ private fun PlayerRegistrationDialog(
     ) { uri ->
         if (uri != null) {
             val id = player?.id ?: ((existingPlayers.maxOfOrNull { it.id } ?: 0) + 1)
-            avatarUri = saveUriAvatar(context, uri, id)
+            avatarUri = saveUriAvatar(context, clubId, uri, id)
         }
     }
 
@@ -3437,13 +3679,21 @@ fun CreateTournamentScreen(
     onStartTournament: () -> Unit
 ) {
     var startError by remember { mutableStateOf<String?>(null) }
+    val currentClubId = LocalCurrentClubId.current ?: "" 
 
     LaunchedEffect(draft.playersCount) {
+        var changed = false
         while (draft.playerFields.size < draft.playersCount) {
             draft.playerFields.add(PlayerField(draft.nextFieldId++, ""))
+            changed = true
         }
         while (draft.playerFields.size > draft.playersCount) {
             draft.playerFields.removeAt(draft.playerFields.lastIndex)
+            changed = true
+        }
+        if (changed && currentClubId.isNotBlank()) {
+            FirebaseStorage.syncDraftPlayerFields(currentClubId, draft.playerFields)
+            FirebaseStorage.syncDraftProperty(currentClubId, "nextFieldId", draft.nextFieldId)
         }
     }
 
@@ -3507,6 +3757,9 @@ fun CreateTournamentScreen(
                             value = draft.name,
                             onValueChange = {
                                 draft.name = it
+                                if (currentClubId.isNotBlank()) {
+                                    FirebaseStorage.syncDraftProperty(currentClubId, "name", it)
+                                }
                                 startError = null
                             },
                             placeholder = { Text("Например: Вечерний турнир") },
@@ -3590,12 +3843,15 @@ fun CreateTournamentScreen(
                                 ) {
                                     SegmentBtn("до 1", draft.winsToWin == 1, Modifier.weight(1f)) {
                                         draft.winsToWin = 1
+                                        if (currentClubId.isNotBlank()) FirebaseStorage.syncDraftProperty(currentClubId, "winsToWin", 1)
                                     }
                                     SegmentBtn("до 2", draft.winsToWin == 2, Modifier.weight(1f)) {
                                         draft.winsToWin = 2
+                                        if (currentClubId.isNotBlank()) FirebaseStorage.syncDraftProperty(currentClubId, "winsToWin", 2)
                                     }
                                     SegmentBtn("до 3", draft.winsToWin == 3, Modifier.weight(1f)) {
                                         draft.winsToWin = 3
+                                        if (currentClubId.isNotBlank()) FirebaseStorage.syncDraftProperty(currentClubId, "winsToWin", 3)
                                     }
                                 }
                             }
@@ -3625,6 +3881,7 @@ fun CreateTournamentScreen(
                                     color = if (draft.tablesCount > 1) TextGray else BorderGray,
                                     modifier = Modifier.clickable(enabled = draft.tablesCount > 1) {
                                         draft.tablesCount--
+                                        if (currentClubId.isNotBlank()) FirebaseStorage.syncDraftProperty(currentClubId, "tablesCount", draft.tablesCount)
                                     }
                                 )
 
@@ -3641,6 +3898,7 @@ fun CreateTournamentScreen(
                                     color = if (draft.tablesCount < maximumTables) TextGray else BorderGray,
                                     modifier = Modifier.clickable(enabled = draft.tablesCount < maximumTables) {
                                         draft.tablesCount++
+                                        if (currentClubId.isNotBlank()) FirebaseStorage.syncDraftProperty(currentClubId, "tablesCount", draft.tablesCount)
                                     }
                                 )
                             }
@@ -3719,6 +3977,7 @@ fun CreateTournamentScreen(
                                             val idx = draft.playerFields.indexOf(field)
                                             if (idx != -1) {
                                                 draft.playerFields[idx] = field.copy(name = newName)
+                                                if (currentClubId.isNotBlank()) FirebaseStorage.syncDraftPlayerFields(currentClubId, draft.playerFields)
                                             }
                                             startError = null
                                         }
@@ -3729,6 +3988,10 @@ fun CreateTournamentScreen(
                                             onClick = {
                                                 draft.playerFields.removeAt(index)
                                                 draft.playersCount--
+                                                if (currentClubId.isNotBlank()) {
+                                                    FirebaseStorage.syncDraftPlayerFields(currentClubId, draft.playerFields)
+                                                    FirebaseStorage.syncDraftProperty(currentClubId, "playersCount", draft.playersCount)
+                                                }
                                                 startError = null
                                             }
                                         ) {
@@ -3756,6 +4019,11 @@ fun CreateTournamentScreen(
                                 .clickable {
                                     draft.playersCount++
                                     draft.playerFields.add(PlayerField(draft.nextFieldId++, ""))
+                                    if (currentClubId.isNotBlank()) {
+                                        FirebaseStorage.syncDraftProperty(currentClubId, "playersCount", draft.playersCount)
+                                        FirebaseStorage.syncDraftPlayerFields(currentClubId, draft.playerFields)
+                                        FirebaseStorage.syncDraftProperty(currentClubId, "nextFieldId", draft.nextFieldId)
+                                    }
                                     startError = null
                                 }
                                 .padding(12.dp)
@@ -3933,6 +4201,7 @@ private fun isTechnicalScore(score: String?): Boolean =
     score == "W" || score == "L"
 
 private fun rebuildTechnicalResults(
+    clubId: String,
     draft: TournamentDraft,
     playerCount: Int
 ) {
@@ -3984,6 +4253,10 @@ private fun rebuildTechnicalResults(
         playerCount = playerCount,
         tablesCount = draft.tablesCount
     )
+    if (clubId.isNotBlank()) {
+        FirebaseStorage.syncDraftMatchScoresMap(clubId, draft.matchScores)
+        FirebaseStorage.syncDraftActiveMatches(clubId, draft.activeRoundRobinMatches)
+    }
 }
 
 private fun totalRoundRobinMatches(playerCount: Int): Int =
@@ -4196,6 +4469,7 @@ fun RoundRobinScreen(
     onBack: () -> Unit,
     onFinish: (Boolean) -> Unit
 ) {
+    val currentClubId = LocalCurrentClubId.current ?: ""
     val playerNames = draft.playerFields.mapIndexed { index, field ->
         field.name.trim().ifBlank { "Игрок ${index + 1}" }
     }
@@ -4539,9 +4813,17 @@ fun RoundRobinScreen(
                 onSave = { score ->
                     draft.matchScores[first to second] = score
                     draft.matchScores[second to first] = reverseScore(score)
+                    
+                    if (currentClubId.isNotBlank()) {
+                        FirebaseStorage.syncDraftMatchScore(currentClubId, first, second, score)
+                        FirebaseStorage.syncDraftMatchScore(currentClubId, second, first, reverseScore(score))
+                    }
 
                     draft.lastFinishedPlayers.clear()
                     draft.lastFinishedPlayers.addAll(listOf(first, second))
+                    if (currentClubId.isNotBlank()) {
+                        FirebaseStorage.syncDraftLastFinishedPlayers(currentClubId, draft.lastFinishedPlayers)
+                    }
 
                     val normalized = normalizedPair(first, second)
                     val idx = draft.activeRoundRobinMatches.indexOf(normalized)
@@ -4553,13 +4835,22 @@ fun RoundRobinScreen(
                         playerCount = playerNames.size,
                         tablesCount = draft.tablesCount
                     )
+                    if (currentClubId.isNotBlank()) {
+                        FirebaseStorage.syncDraftActiveMatches(currentClubId, draft.activeRoundRobinMatches)
+                    }
                     selectedPair = null
                 },
                 onDelete = {
                     draft.matchScores.remove(first to second)
                     draft.matchScores.remove(second to first)
+                    
+                    if (currentClubId.isNotBlank()) {
+                        FirebaseStorage.syncDraftProperty(currentClubId, "matchScores/${first}_${second}", null)
+                        FirebaseStorage.syncDraftProperty(currentClubId, "matchScores/${second}_${first}", null)
+                    }
 
                     rebuildTechnicalResults(
+                        clubId = currentClubId,
                         draft = draft,
                         playerCount = playerNames.size
                     )
@@ -4570,12 +4861,19 @@ fun RoundRobinScreen(
                     val withdrawnIndex = if (playerToWithdraw == cp1) first else second
                     if (withdrawnIndex !in draft.withdrawnPlayers) {
                         draft.withdrawnPlayers.add(withdrawnIndex)
+                        if (currentClubId.isNotBlank()) {
+                            FirebaseStorage.syncDraftWithdrawnPlayers(currentClubId, draft.withdrawnPlayers)
+                        }
                     }
 
                     draft.lastFinishedPlayers.clear()
                     draft.lastFinishedPlayers.addAll(listOf(first, second))
+                    if (currentClubId.isNotBlank()) {
+                        FirebaseStorage.syncDraftLastFinishedPlayers(currentClubId, draft.lastFinishedPlayers)
+                    }
 
                     rebuildTechnicalResults(
+                        clubId = currentClubId,
                         draft = draft,
                         playerCount = playerNames.size
                     )
@@ -7041,6 +7339,7 @@ private fun PodiumPlaceCard(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayoffScreen(draft: TournamentDraft, onBack: () -> Unit) {
+    val currentClubId = LocalCurrentClubId.current ?: ""
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
 
@@ -7165,6 +7464,9 @@ fun PlayoffTreeContent(draft: TournamentDraft) {
 
                     fun saveScore(score: String) {
                         draft.playoffScores[selectedMatch!!.id] = score
+                        if (currentClubId.isNotBlank()) {
+                            FirebaseStorage.syncDraftPlayoffScore(currentClubId, selectedMatch!!.id, score)
+                        }
                         // В реальном приложении здесь победитель копируется в следующий матч
                         selectedMatch = null
                     }

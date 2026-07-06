@@ -164,4 +164,86 @@ object FirebaseStorage {
             onResult(null)
         }
     }
+    
+    // ----------------------------------------------------
+    // ON-DEMAND AVATARS
+    // ----------------------------------------------------
+    fun savePlayerAvatar(clubId: String, playerId: Int, base64: String) {
+        GlobalScope.launch(Dispatchers.IO) {
+            database.getReference("clubs/$clubId/avatars/$playerId").setValue(base64)
+        }
+    }
+    
+    fun fetchPlayerAvatar(clubId: String, playerId: Int, onResult: (String) -> Unit) {
+        database.getReference("clubs/$clubId/avatars/$playerId").get().addOnSuccessListener { snapshot ->
+            onResult(snapshot.getValue(String::class.java).orEmpty())
+        }.addOnFailureListener {
+            onResult("")
+        }
+    }
+    
+    // ----------------------------------------------------
+    // GRANULAR DRAFT SYNC
+    // ----------------------------------------------------
+    fun syncDraftProperty(clubId: String, path: String, value: Any?) {
+        GlobalScope.launch(Dispatchers.IO) {
+            database.getReference("clubs/$clubId/draft/$path").setValue(value)
+        }
+    }
+    
+    fun syncDraftPlayerFields(clubId: String, fields: List<PlayerField>) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val json = gson.toJson(fields)
+            database.getReference("clubs/$clubId/draft/playerFieldsJson").setValue(json)
+        }
+    }
+    
+    fun syncDraftMatchScore(clubId: String, p1: Int, p2: Int, score: String) {
+        GlobalScope.launch(Dispatchers.IO) {
+            database.getReference("clubs/$clubId/draft/matchScores/${p1}_${p2}").setValue(score)
+        }
+    }
+    
+    fun syncDraftPlayoffScore(clubId: String, matchId: Int, score: String) {
+        GlobalScope.launch(Dispatchers.IO) {
+            database.getReference("clubs/$clubId/draft/playoffScores/$matchId").setValue(score)
+        }
+    }
+    
+    fun syncDraftWithdrawnPlayers(clubId: String, list: List<Int>) {
+        GlobalScope.launch(Dispatchers.IO) {
+            database.getReference("clubs/$clubId/draft/withdrawnPlayers").setValue(list)
+        }
+    }
+    
+    fun syncDraftActiveMatches(clubId: String, list: List<Pair<Int, Int>?>) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val serialized = list.map { pair ->
+                if (pair != null) "${pair.first}_${pair.second}" else ""
+            }
+            database.getReference("clubs/$clubId/draft/activeRoundRobinMatches").setValue(serialized)
+        }
+    }
+    
+    fun syncDraftLastFinishedPlayers(clubId: String, list: List<Int>) {
+        GlobalScope.launch(Dispatchers.IO) {
+            database.getReference("clubs/$clubId/draft/lastFinishedPlayers").setValue(list)
+        }
+    }
+    
+    fun listenToDraftGranular(clubId: String, onUpdate: (DataSnapshot) -> Unit): ValueEventListener {
+        val ref = database.getReference("clubs/$clubId/draft")
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                onUpdate(snapshot)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        }
+        ref.addValueEventListener(listener)
+        return listener
+    }
+    
+    fun removeDraftGranularListener(clubId: String, listener: ValueEventListener) {
+        database.getReference("clubs/$clubId/draft").removeEventListener(listener)
+    }
 }
