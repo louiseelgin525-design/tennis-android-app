@@ -2223,7 +2223,6 @@ fun MainDashboardScreen(
                     }
                 }
             }
-        }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
