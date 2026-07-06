@@ -3861,7 +3861,7 @@ fun CreateTournamentScreen(
 
                             // Правая колонка: Формат до побед
                             Column(modifier = Modifier.weight(1.3f)) {
-                                Text("🏆 Кол-во партий", style = AppTypography.titleLarge, color = TextDark)
+                                Text("🏆 Победы", style = AppTypography.titleLarge, color = TextDark)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
