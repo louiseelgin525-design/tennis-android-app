@@ -2120,10 +2120,7 @@ fun MainDashboardScreen(
                         Text("Как создать турнир?", fontWeight = FontWeight.Bold, color = TextDark)
                         Text("На главном экране нажмите «Новый турнир». Заполните название, выберите игроков из базы и начните турнир. Сетка сгенерируется автоматически.", color = TextGray)
                     }
-                    Column {
-                        Text("Режим Администратора (Скрытый вход)", fontWeight = FontWeight.Bold, color = TextDark)
-                        Text("Чтобы войти в режим админа, зажмите пальцем название вашего клуба вверху экрана на 2 секунды. Появится запрос ПИН-кода.", color = TextGray)
-                    }
+
                     Column {
                         Text("Как добавить игрока в базу?", fontWeight = FontWeight.Bold, color = TextDark)
                         Text("Перейдите в меню «База игроков» и нажмите синий круглый значок «+» справа вверху.", color = TextGray)
