@@ -23,6 +23,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -42,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -842,7 +844,10 @@ private fun applyRoundRobinRatings(
 
     for (first in playerNames.indices) {
         for (second in first + 1 until playerNames.size) {
-            val result = parseScore(scores[first to second]) ?: continue
+            val scoreString = scores[first to second]
+            if (isTechnicalScore(scoreString)) continue
+
+            val result = parseScore(scoreString) ?: continue
             if (result.first == result.second) continue
 
             val firstName = normalizePlayerName(playerNames[first])
@@ -1235,6 +1240,7 @@ fun TennisApp() {
             )
             AppScreen.RoundRobin -> RoundRobinScreen(
                 draft = draft,
+                clubPlayers = clubPlayers,
                 onBack = { currentScreen = AppScreen.CreateTournament },
                 onFinish = { applyPlaceBonuses ->
                     savePlayersFromCurrentTournament()
@@ -1777,7 +1783,7 @@ private fun PlayerAvatar(
     Box(
         modifier = Modifier
             .size(size)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(CircleShape)
             .background(BlueBadgeBg),
         contentAlignment = Alignment.Center
     ) {
@@ -3279,8 +3285,9 @@ private fun refreshActiveRoundRobinMatches(
             val alreadyAssigned = pair in draft.activeRoundRobinMatches
             val alreadyPlayed = draft.matchScores.containsKey(pair)
             val playerIsBusy = first in busyPlayers || second in busyPlayers
+            val playerIsWithdrawn = first in draft.withdrawnPlayers || second in draft.withdrawnPlayers
 
-            if (!alreadyAssigned && !alreadyPlayed && !playerIsBusy) {
+            if (!alreadyAssigned && !alreadyPlayed && !playerIsBusy && !playerIsWithdrawn) {
                 draft.activeRoundRobinMatches.add(pair)
                 busyPlayers.add(first)
                 busyPlayers.add(second)
@@ -3290,6 +3297,8 @@ private fun refreshActiveRoundRobinMatches(
 }
 
 private fun playerWon(score: String?): Boolean {
+    if (score == "W") return true
+    if (score == "L") return false
     val parsed = parseScore(score) ?: return false
     return parsed.first > parsed.second
 }
@@ -3308,7 +3317,14 @@ private fun rankTiedPlayers(
         tiedPlayers
             .filter { opponent -> opponent != player }
             .forEach { opponent ->
-                val result = parseScore(scores[player to opponent]) ?: return@forEach
+                val score = scores[player to opponent]
+                if (score == "W") {
+                    miniPoints++
+                    return@forEach
+                }
+                if (score == "L") return@forEach
+
+                val result = parseScore(score) ?: return@forEach
                 setsWon += result.first
                 setsLost += result.second
                 if (result.first > result.second) miniPoints++
@@ -3381,6 +3397,7 @@ private fun calculateRoundRobinStandings(
 @Composable
 fun RoundRobinScreen(
     draft: TournamentDraft,
+    clubPlayers: List<ClubPlayer>,
     onBack: () -> Unit,
     onFinish: (Boolean) -> Unit
 ) {
@@ -3546,11 +3563,15 @@ fun RoundRobinScreen(
                 .takeIf { it >= 0 }
                 ?.plus(1)
 
+            val cp1 = clubPlayers.find { normalizePlayerName(it.fullName) == normalizePlayerName(playerNames[first]) }
+                ?: ClubPlayer(fullName = playerNames[first], rating = 0.0)
+            val cp2 = clubPlayers.find { normalizePlayerName(it.fullName) == normalizePlayerName(playerNames[second]) }
+                ?: ClubPlayer(fullName = playerNames[second], rating = 0.0)
+
             RoundRobinScoreDialog(
-                firstPlayer = playerNames[first],
-                secondPlayer = playerNames[second],
+                player1 = cp1,
+                player2 = cp2,
                 bestOfThreeWins = draft.bestOf3,
-                tableNumber = tableNumber,
                 existingScore = draft.matchScores[first to second],
                 onDismiss = { selectedPair = null },
                 onSave = { score ->
@@ -3575,6 +3596,14 @@ fun RoundRobinScreen(
                         playerCount = playerNames.size
                     )
 
+                    selectedPair = null
+                },
+                onWithdrawPlayer = { playerToWithdraw ->
+                    val indexToWithdraw = if (playerToWithdraw == cp1) first else second
+                    if (indexToWithdraw !in draft.withdrawnPlayers) {
+                        draft.withdrawnPlayers.add(indexToWithdraw)
+                        rebuildTechnicalResults(draft, playerNames.size)
+                    }
                     selectedPair = null
                 }
             )
@@ -4864,14 +4893,14 @@ private fun RoundRobinTable(
 
 @Composable
 private fun RoundRobinScoreDialog(
-    firstPlayer: String,
-    secondPlayer: String,
+    player1: ClubPlayer,
+    player2: ClubPlayer,
     bestOfThreeWins: Boolean,
-    tableNumber: Int?,
     existingScore: String?,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onWithdrawPlayer: (ClubPlayer) -> Unit
 ) {
     val firstPlayerWins = if (bestOfThreeWins) {
         listOf("3:0", "3:1", "3:2")
@@ -4886,113 +4915,71 @@ private fun RoundRobinScoreDialog(
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .fillMaxHeight(0.86f)
+                .fillMaxWidth(0.95f)
+                .wrapContentHeight()
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(14.dp)
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                if (existingScore != null) {
+                    TextButton(
+                        onClick = onDelete,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Удалить результат", color = SwipeDeleteRed)
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Быстрый ввод счёта", style = AppTypography.titleLarge, color = TextDark)
-                        Text(
-                            tableNumber?.let { "Стол $it" } ?: "Матч из таблицы",
-                            style = AppTypography.bodyMedium,
-                            color = AppleBlue
-                        )
+                    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        PlayerIdentityBlock(player = player1, onWithdraw = { onWithdrawPlayer(player1) })
                     }
 
-                    if (existingScore != null) {
-                        TextButton(onClick = onDelete) {
-                            Text("Удалить старый", color = SwipeDeleteRed)
-                        }
-                    }
-                }
+                    Text(
+                        "VS",
+                        color = TextGray.copy(alpha = 0.4f),
+                        style = AppTypography.titleLarge,
+                        modifier = Modifier.padding(top = 28.dp, horizontal = 4.dp)
+                    )
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = BgLight),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            firstPlayer,
-                            modifier = Modifier.weight(1f),
-                            color = TextDark,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            textAlign = TextAlign.Center
-                        )
-                        Text("VS", color = TextGray, modifier = Modifier.padding(horizontal = 12.dp))
-                        Text(
-                            secondPlayer,
-                            modifier = Modifier.weight(1f),
-                            color = TextDark,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            textAlign = TextAlign.Center
-                        )
+                    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        PlayerIdentityBlock(player = player2, onWithdraw = { onWithdrawPlayer(player2) })
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    val isNarrow = maxWidth < 620.dp
-
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val isNarrow = maxWidth < 480.dp
                     if (isNarrow) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            QuickScoreRow(
-                                winnerLabel = "Победил",
-                                playerName = firstPlayer,
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            QuickScoreRowRedesign(
                                 scores = firstPlayerWins,
                                 background = CellWonBg,
                                 foreground = AppleBlue,
-                                modifier = Modifier.fillMaxWidth(),
                                 onSave = onSave
                             )
-
-                            QuickScoreRow(
-                                winnerLabel = "Победил",
-                                playerName = secondPlayer,
+                            QuickScoreRowRedesign(
                                 scores = secondPlayerWins,
                                 background = CellLostBg,
                                 foreground = CellLostText,
-                                modifier = Modifier.fillMaxWidth(),
                                 onSave = onSave
                             )
                         }
                     } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            QuickScoreRow(
-                                winnerLabel = "Победил",
-                                playerName = firstPlayer,
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            QuickScoreRowRedesign(
                                 scores = firstPlayerWins,
                                 background = CellWonBg,
                                 foreground = AppleBlue,
                                 modifier = Modifier.weight(1f),
                                 onSave = onSave
                             )
-
-                            QuickScoreRow(
-                                winnerLabel = "Победил",
-                                playerName = secondPlayer,
+                            QuickScoreRowRedesign(
                                 scores = secondPlayerWins,
                                 background = CellLostBg,
                                 foreground = CellLostText,
@@ -5002,22 +4989,97 @@ private fun RoundRobinScoreDialog(
                         }
                     }
                 }
+            }
+        }
+    }
+}
 
-                Spacer(modifier = Modifier.height(8.dp))
+@Composable
+private fun PlayerIdentityBlock(
+    player: ClubPlayer,
+    onWithdraw: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        PlayerAvatar(player = player, size = 80.dp)
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            player.fullName,
+            style = AppTypography.titleLarge,
+            color = TextDark,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        RatingChip(rating = player.rating)
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Нажмите нужный итоговый счёт. Окно закроется автоматически.",
-                        modifier = Modifier.weight(1f),
-                        color = TextGray,
-                        style = AppTypography.bodyMedium
-                    )
+        Spacer(modifier = Modifier.height(12.dp))
 
-                    TextButton(onClick = onDismiss) {
-                        Text("Отмена", color = TextGray)
+        TextButton(
+            onClick = onWithdraw,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text("Снялся (L)", color = SwipeDeleteRed, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun RatingChip(rating: Double) {
+    Surface(
+        color = BgLight,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = formatRating(rating),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            style = AppTypography.bodySmall.copy(fontWeight = FontWeight.Bold),
+            color = AppleBlue
+        )
+    }
+}
+
+@Composable
+private fun QuickScoreRowRedesign(
+    scores: List<String>,
+    background: Color,
+    foreground: Color,
+    modifier: Modifier = Modifier,
+    onSave: (String) -> Unit
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = background),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, foreground.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Победа", color = foreground.copy(alpha = 0.7f), style = AppTypography.bodySmall)
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                scores.forEach { score ->
+                    Button(
+                        onClick = { onSave(score) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.weight(1f).height(50.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    ) {
+                        Text(
+                            score,
+                            color = foreground,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
                     }
                 }
             }
