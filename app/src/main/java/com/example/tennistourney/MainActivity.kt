@@ -819,50 +819,51 @@ private fun rememberAvatarBitmap(uriOrPath: String): Bitmap? {
     val context = LocalContext.current
     val clubId = LocalCurrentClubId.current ?: ""
 
-    return remember(uriOrPath, clubId) {
-        if (uriOrPath.isBlank()) {
-            null
-        } else if (uriOrPath.startsWith("db_avatar_")) {
-            val cached = avatarMemoryCache[uriOrPath]
-            if (cached != null) {
-                cached
-            } else {
-                val playerId = uriOrPath.substringAfter("db_avatar_").toIntOrNull()
-                if (playerId != null && clubId.isNotBlank()) {
-                    FirebaseStorage.fetchPlayerAvatar(clubId, playerId) { base64 ->
-                        if (base64.isNotBlank()) {
-                            try {
-                                val base64Data = base64.substringAfter("base64,")
-                                val bytes = Base64.decode(base64Data, Base64.DEFAULT)
-                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                                if (bitmap != null) {
-                                    avatarMemoryCache[uriOrPath] = bitmap
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+    if (uriOrPath.isBlank()) return null
+
+    if (uriOrPath.startsWith("db_avatar_")) {
+        val cached = avatarMemoryCache[uriOrPath]
+        if (cached != null) {
+            return cached
+        }
+        val playerId = uriOrPath.substringAfter("db_avatar_").toIntOrNull()
+        if (playerId != null && clubId.isNotBlank()) {
+            androidx.compose.runtime.LaunchedEffect(uriOrPath, clubId) {
+                FirebaseStorage.fetchPlayerAvatar(clubId, playerId) { base64 ->
+                    if (base64.isNotBlank()) {
+                        try {
+                            val base64Data = base64.substringAfter("base64,")
+                            val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            if (bitmap != null) {
+                                avatarMemoryCache[uriOrPath] = bitmap
                             }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
                     }
                 }
-                null
             }
-        } else {
-            try {
-                if (uriOrPath.startsWith("data:image/jpeg;base64,")) {
-                    val base64Data = uriOrPath.substringAfter("base64,")
-                    val bytes = Base64.decode(base64Data, Base64.DEFAULT)
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                } else if (uriOrPath.startsWith("/") || uriOrPath.startsWith("file:")) {
-                    BitmapFactory.decodeFile(uriOrPath.removePrefix("file://"))
-                } else {
-                    context.contentResolver.openInputStream(Uri.parse(uriOrPath)).use { input ->
-                        BitmapFactory.decodeStream(input)
-                    }
+        }
+        return null
+    }
+
+    return remember(uriOrPath) {
+        try {
+            if (uriOrPath.startsWith("data:image/jpeg;base64,")) {
+                val base64Data = uriOrPath.substringAfter("base64,")
+                val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            } else if (uriOrPath.startsWith("/") || uriOrPath.startsWith("file:")) {
+                BitmapFactory.decodeFile(uriOrPath.removePrefix("file://"))
+            } else {
+                context.contentResolver.openInputStream(Uri.parse(uriOrPath)).use { input ->
+                    BitmapFactory.decodeStream(input)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }
