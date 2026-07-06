@@ -1861,7 +1861,11 @@ fun TennisApp() {
     AppOrientationEffect(currentScreen)
 
     MaterialTheme(typography = AppTypography) {
-        when (currentScreen) {
+        CompositionLocalProvider(
+            LocalCurrentClubId provides currentClubId,
+            LocalIsAdmin provides isAdmin
+        ) {
+            when (currentScreen) {
             AppScreen.Dashboard -> MainDashboardScreen(
                 draft = draft,
                 clubPlayers = clubPlayers,
@@ -2035,6 +2039,7 @@ fun TennisApp() {
                     currentScreen = AppScreen.Dashboard
                 }
             )
+        }
         }
     }
 }
