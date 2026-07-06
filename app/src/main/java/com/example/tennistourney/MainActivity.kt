@@ -2058,6 +2058,7 @@ fun MainDashboardScreen(
     onChangeClub: () -> Unit
 ) {
     val currentClubId = LocalCurrentClubId.current ?: ""
+    val isAdmin = LocalIsAdmin.current
     val hasDraft = draft.isListGenerated || draft.name.isNotBlank()
 
     var showMenu by remember { mutableStateOf(false) }
