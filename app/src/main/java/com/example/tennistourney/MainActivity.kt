@@ -48,6 +48,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.combinedClickable
@@ -7576,12 +7579,53 @@ fun ClubSelectionScreen(
         ) {
             items(savedClubs) { clubId ->
                 val isAdmin = isClubAdmin(context, clubId)
+                var offsetX by remember { mutableStateOf(0f) }
+                var showConfirmDelete by remember { mutableStateOf(false) }
+
+                if (showConfirmDelete) {
+                    AlertDialog(
+                        onDismissRequest = { showConfirmDelete = false },
+                        title = { Text("Удалить клуб?", style = AppTypography.titleLarge) },
+                        text = { Text("Вы действительно хотите удалить клуб ${clubId.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }} и все его данные?", style = AppTypography.bodyMedium) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showConfirmDelete = false
+                                onRemoveClub(clubId)
+                            }) { Text("Удалить", color = SwipeDeleteRed, fontWeight = FontWeight.Bold) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showConfirmDelete = false }) { Text("Отмена", color = TextGray) }
+                        },
+                        containerColor = CardWhite,
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                }
+
                 Card(
                     colors = CardDefaults.cardColors(containerColor = CardWhite),
                     shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, BorderGray),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .offset { IntOffset(offsetX.roundToInt(), 0) }
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragEnd = {
+                                    if (offsetX < -120f) { // Swipe left threshold (approx 120 pixels/dp - not very sensitive)
+                                        showConfirmDelete = true
+                                    }
+                                    offsetX = 0f
+                                },
+                                onDragCancel = {
+                                    offsetX = 0f
+                                },
+                                onHorizontalDrag = { _, dragAmount ->
+                                    if (dragAmount < 0 || offsetX < 0) {
+                                        offsetX = (offsetX + dragAmount).coerceIn(-200f, 0f)
+                                    }
+                                }
+                            )
+                        }
                         .combinedClickable(
                             onClick = { onSelectClub(clubId) },
                             onLongClick = { onSelectClubAdmin(clubId) }
@@ -7601,9 +7645,6 @@ fun ClubSelectionScreen(
                             if (isAdmin) {
                                 Text("Организатор", style = AppTypography.bodySmall, color = AppleBlue)
                             }
-                        }
-                        IconButton(onClick = { onRemoveClub(clubId) }) {
-                            Icon(imageVector = TrashIcon, contentDescription = "Удалить", tint = SwipeDeleteRed)
                         }
                     }
                 }
