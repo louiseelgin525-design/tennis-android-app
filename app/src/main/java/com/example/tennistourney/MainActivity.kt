@@ -76,6 +76,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import android.widget.Toast
+import android.util.Base64
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
@@ -763,15 +765,22 @@ private fun saveBitmapAvatar(
     bitmap: Bitmap,
     playerId: Int
 ): String {
-    val dir = File(context.filesDir, "avatars")
-    if (!dir.exists()) dir.mkdirs()
-
-    val file = File(dir, "player_${playerId}_${System.currentTimeMillis()}.jpg")
-    FileOutputStream(file).use { stream ->
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 88, stream)
+    return try {
+        val outputStream = ByteArrayOutputStream()
+        // Resize bitmap to max 200x200 to keep database payload small
+        val scaled = if (bitmap.width > 200 || bitmap.height > 200) {
+            val scale = 200.0 / kotlin.math.max(bitmap.width, bitmap.height)
+            Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+        } else {
+            bitmap
+        }
+        scaled.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        val bytes = outputStream.toByteArray()
+        "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        ""
     }
-
-    return file.absolutePath
 }
 
 private fun saveUriAvatar(
@@ -779,17 +788,17 @@ private fun saveUriAvatar(
     uri: Uri,
     playerId: Int
 ): String {
-    val dir = File(context.filesDir, "avatars")
-    if (!dir.exists()) dir.mkdirs()
-
-    val file = File(dir, "player_${playerId}_${System.currentTimeMillis()}.jpg")
-    context.contentResolver.openInputStream(uri)?.use { input ->
-        FileOutputStream(file).use { output ->
-            input.copyTo(output)
-        }
+    return try {
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            val bitmap = BitmapFactory.decodeStream(input)
+            if (bitmap != null) {
+                saveBitmapAvatar(context, bitmap, playerId)
+            } else ""
+        } ?: ""
+    } catch (e: Exception) {
+        e.printStackTrace()
+        ""
     }
-
-    return file.absolutePath
 }
 
 @Composable
@@ -801,14 +810,19 @@ private fun rememberAvatarBitmap(uriOrPath: String): Bitmap? {
             null
         } else {
             try {
-                if (uriOrPath.startsWith("/") || uriOrPath.startsWith("file:")) {
+                if (uriOrPath.startsWith("data:image/jpeg;base64,")) {
+                    val base64Data = uriOrPath.substringAfter("base64,")
+                    val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } else if (uriOrPath.startsWith("/") || uriOrPath.startsWith("file:")) {
                     BitmapFactory.decodeFile(uriOrPath.removePrefix("file://"))
                 } else {
                     context.contentResolver.openInputStream(Uri.parse(uriOrPath)).use { input ->
                         BitmapFactory.decodeStream(input)
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                e.printStackTrace()
                 null
             }
         }
