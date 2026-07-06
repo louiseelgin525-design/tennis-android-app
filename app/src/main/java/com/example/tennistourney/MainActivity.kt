@@ -2461,21 +2461,18 @@ private fun PlayerRegistrationCard(
                     maxLines = 1
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Рейтинг ${formatRating(player.rating)}",
-                        color = AppleBlue,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        "Турниров: ${player.tournamentsPlayed}",
-                        color = TextGray,
-                        style = AppTypography.bodyMedium,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
+                Text(
+                    "Рейтинг ${formatRating(player.rating)}",
+                    color = AppleBlue,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    "Турниров: ${player.tournamentsPlayed}",
+                    color = TextGray,
+                    style = AppTypography.bodyMedium,
+                    maxLines = 1
+                )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
