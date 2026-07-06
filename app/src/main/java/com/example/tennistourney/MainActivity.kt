@@ -7387,6 +7387,7 @@ fun GroupsTabContent(draft: TournamentDraft) {
 
 @Composable
 fun PlayoffTreeContent(draft: TournamentDraft) {
+    val currentClubId = LocalCurrentClubId.current ?: ""
     // Состояния для Паннинга и Зумирования
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
