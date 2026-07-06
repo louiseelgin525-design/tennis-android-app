@@ -1575,6 +1575,7 @@ fun TennisApp() {
     DisposableEffect(currentClubId) {
         if (currentClubId != null) {
             val clubId = currentClubId!!
+            isAdmin = isClubAdmin(context, clubId)
             clubPlayers = loadClubPlayers(context, clubId)
             tournamentHistory = loadTournamentHistory(context, clubId)
 
@@ -1793,6 +1794,7 @@ fun TennisApp() {
         } else {
             clubPlayers = emptyList()
             tournamentHistory = emptyList()
+            isAdmin = false
             onDispose {}
         }
     }
@@ -2154,49 +2156,23 @@ fun MainDashboardScreen(
     ) {
         item {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 48.dp, bottom = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Турниры",
-                    style = AppTypography.displayLarge.copy(
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.5).sp
-                    ),
-                    color = TextDark
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Box {
                     Icon(
-                        imageVector = SearchIcon,
-                        contentDescription = "Поиск",
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Меню",
                         tint = TextDark,
                         modifier = Modifier
                             .size(44.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(CardWhite)
                             .border(1.dp, BorderGray, RoundedCornerShape(14.dp))
-                            .clickable { onNavigateToHistory() }
+                            .clickable { showMenu = true }
                             .padding(11.dp)
                     )
-
-                    Box {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Меню",
-                            tint = TextDark,
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(CardWhite)
-                                .border(1.dp, BorderGray, RoundedCornerShape(14.dp))
-                                .clickable { showMenu = true }
-                                .padding(11.dp)
-                        )
 
                         DropdownMenu(
                             expanded = showMenu,
@@ -2219,18 +2195,28 @@ fun MainDashboardScreen(
                                     showFaqDialog = true
                                 }
                             )
+                            val isAdminLocal = LocalIsAdmin.current
+                            if (isAdminLocal) {
+                                DropdownMenuItem(
+                                    text = { Text("Экспорт бэкапа", style = AppTypography.bodyMedium) },
+                                    onClick = {
+                                        showMenu = false
+                                        exportBackupLauncher.launch("tennistourney_backup.json")
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Импорт бэкапа", style = AppTypography.bodyMedium) },
+                                    onClick = {
+                                        showMenu = false
+                                        importBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
-                                text = { Text("Экспорт бэкапа", style = AppTypography.bodyMedium) },
+                                text = { Text("Сменить / Создать клуб", style = AppTypography.bodyMedium) },
                                 onClick = {
                                     showMenu = false
-                                    exportBackupLauncher.launch("tennistourney_backup.json")
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Импорт бэкапа", style = AppTypography.bodyMedium) },
-                                onClick = {
-                                    showMenu = false
-                                    importBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                                    onChangeClub()
                                 }
                             )
                         }
@@ -3835,7 +3821,7 @@ fun CreateTournamentScreen(
 
                             // Правая колонка: Формат до побед
                             Column(modifier = Modifier.weight(1.3f)) {
-                                Text("🏆 До скольки побед", style = AppTypography.titleLarge, color = TextDark)
+                                Text("🏆 До побед", style = AppTypography.titleLarge, color = TextDark)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
