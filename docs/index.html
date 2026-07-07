@@ -2622,11 +2622,12 @@
 
         // DECODE URL ENCODED STRINGS (FOR PLAYERS AND MATCHES FROM FIREBASE)
         function decodeName(str) {
-            if (!str) return "";
+            if (str === null || str === undefined) return "";
+            let s = String(str);
             try {
-                return decodeURIComponent(str.replace(/\+/g, ' '));
+                return decodeURIComponent(s.replace(/\+/g, ' '));
             } catch (e) {
-                return str;
+                return s;
             }
         }
 
@@ -2642,11 +2643,12 @@
 
         // NORMALIZE AND CLEAN NAMES FOR RELIABLE CROSS-PLATFORM COMPARISONS
         function cleanNameString(s) {
-            if (!s) return "";
+            if (s === null || s === undefined) return "";
+            let str = String(s);
             try {
-                s = decodeURIComponent(s.replace(/\+/g, ' '));
+                str = decodeURIComponent(str.replace(/\+/g, ' '));
             } catch (e) {}
-            return s.trim().replace(/\s+/g, ' ').toLowerCase();
+            return str.trim().replace(/\s+/g, ' ').toLowerCase();
         }
 
         // CHART DATA HELPERS
@@ -3437,7 +3439,7 @@
                     listContainer.style.gap = '10px';
 
                     registeredNames.forEach((name, index) => {
-                        const pProfile = clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(name));
+                        const pProfile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name));
                         const ratingStr = pProfile ? ` <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
                         
                         const row = document.createElement('div');
@@ -3563,7 +3565,7 @@
                     const isWithdrawn = withdrawnPlayers.has(f);
                     const strikeStyle = isWithdrawn ? 'text-decoration: line-through; opacity: 0.5;' : '';
                     
-                    const pProfile = clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(playerNames[f]));
+                    const pProfile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(playerNames[f]));
                     const ratingStr = pProfile ? ` <span style="font-size:11px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
 
                     let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${ratingStr}</td>`;
@@ -4082,8 +4084,8 @@
             const row1Winner = scoreP1 !== "-" && parseInt(scoreP1) > parseInt(scoreP2);
             const row2Winner = scoreP2 !== "-" && parseInt(scoreP2) > parseInt(scoreP1);
 
-            const p1Profile = p1Name !== "?" ? clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(p1Name)) : null;
-            const p2Profile = p2Name !== "?" ? clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(p2Name)) : null;
+            const p1Profile = p1Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p1Name)) : null;
+            const p2Profile = p2Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p2Name)) : null;
             const p1Display = p1Profile ? `${p1Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p1Profile.rating.toFixed(0)}</span>` : p1Name;
             const p2Display = p2Profile ? `${p2Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p2Profile.rating.toFixed(0)}</span>` : p2Name;
 
