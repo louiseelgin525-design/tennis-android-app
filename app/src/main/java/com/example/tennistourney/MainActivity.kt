@@ -1815,7 +1815,7 @@ fun TennisApp() {
         val updatedPlayers = rememberPlayersFromTournament(
             context = context,
             existingPlayers = clubPlayers,
-            playerNames = draft.playerFields.map { it.name }
+            playerNames = draft.playerFields.map { normalizePlayerName(it.name) }
         )
 
         saveClubPlayers(context, currentClubId ?: "", updatedPlayers)
@@ -1825,7 +1825,7 @@ fun TennisApp() {
     fun applyRatingFromCurrentTournament(applyPlaceBonuses: Boolean) {
         if (draft.ratingApplied) return
 
-        val playerNames = draft.playerFields.map { it.name }
+        val playerNames = draft.playerFields.map { normalizePlayerName(it.name) }
 
         val result = applyRoundRobinRatings(
             existingPlayers = clubPlayers,
@@ -4589,7 +4589,7 @@ fun RoundRobinScreen(
     BackHandler { onBack() }
     val currentClubId = LocalCurrentClubId.current ?: ""
     val playerNames = draft.playerFields.mapIndexed { index, field ->
-        field.name.trim().ifBlank { "Игрок ${index + 1}" }
+        normalizePlayerName(field.name).ifBlank { "Игрок ${index + 1}" }
     }
 
     val playerCount = playerNames.size
@@ -7065,7 +7065,7 @@ fun FinalResultsScreen(
     BackHandler(onBack = onBackToTable)
 
     val playerNames = draft.playerFields.mapIndexed { index, field ->
-        field.name.trim().ifBlank { "Игрок ${index + 1}" }
+        normalizePlayerName(field.name).ifBlank { "Игрок ${index + 1}" }
     }
     val standings = calculateRoundRobinStandings(
         playerCount = playerNames.size,
