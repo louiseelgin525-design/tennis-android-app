@@ -268,8 +268,9 @@
             cursor: pointer;
         }
 
-        .nav-item i {
-            font-size: 20px;
+        .nav-item i, .nav-item svg {
+            width: 24px;
+            height: 24px;
         }
 
         .nav-item.active {
@@ -319,10 +320,39 @@
             align-items: center;
             cursor: pointer;
             transition: transform 0.2s;
+            position: relative;
+            z-index: 2;
         }
 
         .player-card:active {
             transform: scale(0.98);
+        }
+
+        .player-card-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            width: 100%;
+            background-color: var(--bg-main);
+        }
+
+        .player-card-swipe-bg {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: var(--apple-green);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            padding-left: 16px;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 16px;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.15s;
         }
 
         .player-rank {
@@ -2174,6 +2204,14 @@
             }
 
             filtered.forEach((player, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'player-card-wrapper';
+
+                const swipeBg = document.createElement('div');
+                swipeBg.className = 'player-card-swipe-bg';
+                swipeBg.innerHTML = `${SVG_ICONS.plus} <span style="margin-left: 8px; font-weight:700;">Добавить в турнир</span>`;
+                wrapper.appendChild(swipeBg);
+
                 const card = document.createElement('div');
                 card.className = 'player-card';
 
@@ -2255,11 +2293,72 @@
                         openPlayerEditModal(player);
                     });
                     card.appendChild(editIcon);
+
+                    // Touch Swipe handlers
+                    let startX = 0;
+                    let startY = 0;
+                    let isSwiping = false;
+                    let swipeX = 0;
+
+                    card.addEventListener('touchstart', (e) => {
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                        isSwiping = false;
+                        swipeX = 0;
+                        card.style.transition = 'none';
+                        swipeBg.style.transition = 'none';
+                    }, { passive: true });
+
+                    card.addEventListener('touchmove', (e) => {
+                        const currentX = e.touches[0].clientX;
+                        const currentY = e.touches[0].clientY;
+                        const diffX = currentX - startX;
+                        const diffY = currentY - startY;
+
+                        if (!isSwiping) {
+                            if (Math.abs(diffX) > Math.abs(diffY) && diffX > 10) {
+                                isSwiping = true;
+                            }
+                        }
+
+                        if (isSwiping) {
+                            if (e.cancelable) e.preventDefault();
+                            swipeX = Math.max(0, diffX);
+                            card.style.transform = `translateX(${swipeX}px)`;
+                            swipeBg.style.opacity = Math.min(1, swipeX / 80);
+                        }
+                    }, { passive: false });
+
+                    card.addEventListener('touchend', () => {
+                        card.style.transition = 'transform 0.2s ease-out';
+                        swipeBg.style.transition = 'opacity 0.2s ease-out';
+
+                        if (swipeX > 80) {
+                            const draft = clubData.draft;
+                            if (!draft || draft.isListGenerated) {
+                                showToast("Сначала начните создание турнира во вкладке 'Турнир'!");
+                            } else {
+                                if (selectedPlayerIdsForDraft.has(player.id)) {
+                                    showToast(`Игрок ${player.fullName} уже добавлен!`);
+                                } else {
+                                    selectedPlayerIdsForDraft.add(player.id);
+                                    showToast(`Игрок ${player.fullName} добавлен в турнир!`);
+                                    if (typeof renderDraftPlayersSelector === 'function') {
+                                        renderDraftPlayersSelector();
+                                    }
+                                }
+                            }
+                        }
+                        
+                        card.style.transform = 'translateX(0)';
+                        swipeBg.style.opacity = '0';
+                    });
                 } else {
                     card.appendChild(arrowEl);
                 }
 
-                listEl.appendChild(card);
+                wrapper.appendChild(card);
+                listEl.appendChild(wrapper);
             });
 
             if (filtered.length === 0) {
@@ -3527,6 +3626,7 @@
                 </div>
 
                 <h4 class="section-title" style="margin-top:8px;">👥 Выберите участников из списка</h4>
+                <div id="draft-selected-players-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; margin-top:4px;"></div>
                 <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0;" autocomplete="off" autocapitalize="words" oninput="renderDraftPlayersSelector()">
                 
                 <div id="draft-players-list-selector" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px;">
@@ -3584,6 +3684,46 @@
 
         // RENDER CHECKBOX SELECTOR FOR DRAFT SETUP
         window.renderDraftPlayersSelector = function() {
+            const selectedContainer = document.getElementById('draft-selected-players-container');
+            if (selectedContainer) {
+                selectedContainer.innerHTML = '';
+                const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id));
+                selectedPlayers.forEach(p => {
+                    const chip = document.createElement('div');
+                    chip.className = 'selected-player-chip';
+                    chip.style.backgroundColor = 'rgba(0, 122, 255, 0.08)';
+                    chip.style.border = '1px solid rgba(0, 122, 255, 0.2)';
+                    chip.style.color = 'var(--apple-blue)';
+                    chip.style.padding = '4px 10px';
+                    chip.style.borderRadius = '20px';
+                    chip.style.fontSize = '12px';
+                    chip.style.fontWeight = '700';
+                    chip.style.display = 'flex';
+                    chip.style.alignItems = 'center';
+                    chip.style.gap = '6px';
+                    chip.style.cursor = 'pointer';
+                    chip.style.transition = 'all 0.15s';
+                    
+                    chip.innerHTML = `
+                        <span>${p.fullName}</span>
+                        <span style="font-weight:900; font-size:14px; opacity:0.6; padding-left: 2px;">×</span>
+                    `;
+                    
+                    chip.addEventListener('click', () => {
+                        selectedPlayerIdsForDraft.delete(p.id);
+                        renderDraftPlayersSelector();
+                    });
+                    
+                    selectedContainer.appendChild(chip);
+                });
+                
+                if (selectedPlayers.length === 0) {
+                    selectedContainer.style.display = 'none';
+                } else {
+                    selectedContainer.style.display = 'flex';
+                }
+            }
+
             const listSelector = document.getElementById('draft-players-list-selector');
             if (!listSelector) return;
             listSelector.innerHTML = '';
