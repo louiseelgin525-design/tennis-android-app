@@ -1014,13 +1014,13 @@
 
         /* CHART BUTTONS & STYLING */
         .chart-range-btn {
-            background: rgba(0, 0, 0, 0.03);
+            background: #FFFFFF;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 20px;
             color: var(--text-secondary);
             font-size: 11px;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 4px 12px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -1498,7 +1498,7 @@
             <!-- RATING HISTORY CHART -->
             <div id="chart-section-block" style="display:none; width: 100%; margin-bottom: 24px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                    <span id="chart-max-rating" style="font-size: 13px; font-weight:700; color:var(--apple-gold);">Максимальный: -</span>
+                    <span id="chart-max-rating" style="font-size: 13px; font-weight:700; color:#FFB300;">Максимальный: -</span>
                     <div class="chart-ranges" style="display:flex; gap:4px;">
                         <button class="chart-range-btn active" data-range="all" onclick="changeChartRange('all')">Все время</button>
                         <button class="chart-range-btn" data-range="year" onclick="changeChartRange('year')">Год</button>
@@ -1506,7 +1506,7 @@
                         <button class="chart-range-btn" data-range="10" onclick="changeChartRange('10')">10 игр</button>
                     </div>
                 </div>
-                <div style="position:relative; width: 100%; height: 220px; background: rgba(15,23,42,0.3); border-radius:16px; border: 1px solid var(--border-color); padding: 8px;">
+                <div style="position:relative; width: 100%; height: 220px; background: #A2AAB0; border-radius:16px; border: none; padding: 12px 10px 8px 10px;">
                     <canvas id="rating-chart" style="width:100%; height:100%;"></canvas>
                     <div id="chart-tooltip" style="position:absolute; display:none; background:rgba(30,41,59,0.95); border:1px solid var(--border-color); padding:8px 12px; border-radius:8px; font-size:11px; z-index:1000; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
                 </div>
@@ -2766,9 +2766,9 @@
             }
 
             // Draw Y Grid lines & Labels
-            ctx.strokeStyle = '#334155';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
             ctx.lineWidth = 0.5;
-            ctx.fillStyle = '#94a3b8';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
             ctx.font = '9px sans-serif';
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
@@ -2842,7 +2842,7 @@
             });
 
             // Date labels on X Axis
-            ctx.fillStyle = '#94a3b8';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
 
@@ -2858,9 +2858,9 @@
                 ctx.clearRect(0, 0, width, height);
 
                 // Grid
-                ctx.strokeStyle = '#334155';
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
                 ctx.lineWidth = 0.5;
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
                 ctx.font = '9px sans-serif';
                 ctx.textAlign = 'right';
                 ctx.textBaseline = 'middle';
@@ -2906,7 +2906,7 @@
                 ctx.stroke();
 
                 // Dates X Axis
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
                 if (points.length >= 2) {
@@ -2923,7 +2923,7 @@
 
                     if (idx === hoverIdx) {
                         // Dash line
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
                         ctx.setLineDash([4, 4]);
                         ctx.beginPath();
                         ctx.moveTo(x, paddingTop);
