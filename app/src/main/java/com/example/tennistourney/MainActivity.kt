@@ -2296,7 +2296,7 @@ fun MainDashboardScreen(
                 Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(AppleGreen), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF34C759)), contentAlignment = Alignment.Center) {
                                 Text("🏆", fontSize = 24.sp)
                             }
                             Spacer(modifier = Modifier.width(16.dp))
