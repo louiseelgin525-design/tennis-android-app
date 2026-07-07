@@ -6372,16 +6372,13 @@ private fun RoundRobinTable(
                             .takeIf { it >= 0 }
                             ?.plus(1)
 
-                        val isWin = parsed != null && parsed.first > parsed.second
-                        val isLoss = parsed != null && parsed.first < parsed.second
-
                         val backgroundColor = when {
-                            isDiagonal -> Color(0xFFF2F4F7)
-                            isWin || technicalWin -> Color(0xFFE8F5E9)
-                            isLoss || technicalLoss -> Color(0xFFFFEBEE)
-                            isActive -> Color(0xFFE3F2FD)
+                            isDiagonal -> Color(0xFFF0F0F2)
+                            technicalWin -> GreenBadgeBg
+                            technicalLoss -> CellLostBg
+                            isActive -> GreenBadgeBg
                             isSearchCross -> Color(0xFFFFFAE6)
-                            else -> Color.White
+                            else -> Color.Transparent
                         }
 
                         val scoreColor = when {
@@ -6389,29 +6386,34 @@ private fun RoundRobinTable(
                             technicalLoss -> Color(0xFFFF3B30)
                             parsed != null && parsed.first > parsed.second -> Color(0xFF24A148)
                             parsed != null && parsed.first < parsed.second -> Color(0xFFFF3B30)
-                            isActive -> AppleBlue
+                            isActive -> Color(0xFF24A148)
                             else -> TextGray
                         }
 
                         val canOpenScore = !isDiagonal
 
+                        val isWin = parsed != null && parsed.first > parsed.second
+                        val isLoss = parsed != null && parsed.first < parsed.second
+
                         Box(
                             modifier = Modifier
                                 .height(rowHeight)
                                 .fillMaxWidth()
-                                .background(backgroundColor)
+                                .background(
+                                    if (isDiagonal) Color(0xFFF2F4F7) else Color.White
+                                )
                                 .border(
                                     width = when {
                                         isDiagonal -> 0.dp
                                         isSelected -> 2.dp
-                                        isActive -> 2.dp
+                                        isActive -> 1.5.dp
                                         isSearchCross -> 1.dp
                                         else -> 0.5.dp
                                     },
                                     color = when {
                                         isDiagonal -> Color.Transparent
                                         isSelected -> AppleBlue
-                                        isActive -> AppleBlue
+                                        isActive -> Color(0xFF24A148)
                                         isSearchCross -> Color(0xFFFFD54F)
                                         else -> BorderGray
                                     }
