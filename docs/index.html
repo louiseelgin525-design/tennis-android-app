@@ -1413,7 +1413,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.1.5 (07.07.2026 23:29)
+                Версия веб-приложения: 1.1.6 (07.07.2026 23:42)
             </div>
         </form>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
@@ -1833,6 +1833,7 @@
 
         // GLOBAL ERROR HANDLER TO SHOW ERRORS DIRECTLY ON PHONE SCREEN
         window.addEventListener('error', function(e) {
+            if (!e.message || e.message === "Script error.") return;
             debugLog("Критическая ошибка JS: " + e.message);
             const errDiv = document.createElement('div');
             errDiv.style.position = 'fixed';
@@ -1938,6 +1939,7 @@
 
         // GLOBAL ERROR HANDLER TO SHOW ERRORS DIRECTLY ON PHONE SCREEN
         window.addEventListener('error', function(e) {
+            if (!e.message || e.message === "Script error.") return;
             debugLog("Критическая ошибка JS: " + e.message);
             const errDiv = document.createElement('div');
             errDiv.style.position = 'fixed';
