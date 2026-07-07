@@ -1428,6 +1428,14 @@
                 </div>
             </div>
 
+            <!-- H2H MATCHUPS SECTION -->
+            <div id="player-h2h-section" style="display:none; width: 100%; margin-bottom: 24px;">
+                <h4 class="section-title">⚔️ Личные встречи (H2H)</h4>
+                <div id="player-h2h-list" style="background: rgba(15,23,42,0.3); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
             <!-- RESULTS LIST -->
             <h4 class="section-title">Результаты матчей</h4>
             <div id="player-results-list" style="width: 100%; display:flex; flex-direction:column; gap:16px;">
@@ -2693,6 +2701,63 @@
                 });
             } else {
                 awardsSection.style.display = 'none';
+            }
+
+            // Calculate Head-to-Head (H2H) stats dynamically from history
+            const h2h = {};
+            playerHistory.forEach(h => {
+                h.matches.forEach(m => {
+                    const opp = m.opponent.trim();
+                    if (!h2h[opp]) h2h[opp] = { wins: 0, losses: 0 };
+                    if (m.isWin) {
+                        h2h[opp].wins++;
+                    } else {
+                        h2h[opp].losses++;
+                    }
+                });
+            });
+
+            const h2hList = Object.keys(h2h).map(opp => {
+                return {
+                    opponent: opp,
+                    wins: h2h[opp].wins,
+                    losses: h2h[opp].losses,
+                    total: h2h[opp].wins + h2h[opp].losses
+                };
+            }).sort((a, b) => b.total - a.total);
+
+            const h2hSection = document.getElementById('player-h2h-section');
+            const h2hListEl = document.getElementById('player-h2h-list');
+            h2hListEl.innerHTML = '';
+
+            if (h2hList.length > 0) {
+                h2hSection.style.display = 'block';
+                h2hList.forEach(item => {
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.alignItems = 'center';
+                    row.style.fontSize = '13px';
+                    row.style.fontWeight = '700';
+                    row.style.padding = '8px 12px';
+                    row.style.borderRadius = '12px';
+                    row.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                    row.style.border = '1px solid rgba(255,255,255,0.04)';
+
+                    const ratioColor = item.wins > item.losses ? 'var(--apple-green)' : (item.wins < item.losses ? 'var(--apple-red)' : 'var(--text-secondary)');
+                    const ratioText = '<span style="color:' + ratioColor + '; font-weight:800;">' + item.wins + ' : ' + item.losses + '</span>';
+
+                    row.innerHTML = `
+                        <span>${item.opponent}</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:11px; color:var(--text-secondary); font-weight:500;">Игр: ${item.total}</span>
+                            ${ratioText}
+                        </div>
+                    `;
+                    h2hListEl.appendChild(row);
+                });
+            } else {
+                h2hSection.style.display = 'none';
             }
 
             // Render Results
