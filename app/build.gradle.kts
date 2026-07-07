@@ -34,7 +34,7 @@ android {
         }
     }
 
-    applicationVariants.all {
+    (this as com.android.build.gradle.AppExtension).applicationVariants.all {
         val variant = this
         outputs.all {
             val output = this as? com.android.build.gradle.api.ApkVariantOutput
