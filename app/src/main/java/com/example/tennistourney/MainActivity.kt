@@ -671,7 +671,7 @@ private const val HISTORY_FIELD_SEPARATOR = "\u001F"
 
 
 private fun normalizePlayerName(rawName: String): String =
-    rawName
+    safeDecode(rawName)
         .trim()
         .replace(Regex("\\s+"), " ")
 
