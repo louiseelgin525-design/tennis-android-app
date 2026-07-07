@@ -1043,6 +1043,9 @@
             <button type="submit" id="login-submit-btn" class="login-btn">
                 Войти <i class="fa-solid fa-arrow-right"></i>
             </button>
+            <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
+                Версия веб-приложения: 1.0.5 (07.07.2026 11:00)
+            </div>
         </form>
     </div>
 
@@ -1188,6 +1191,23 @@
     </div>
 
     <script>
+        // GLOBAL ERROR HANDLER TO SHOW ERRORS DIRECTLY ON PHONE SCREEN
+        window.addEventListener('error', function(e) {
+            const errDiv = document.createElement('div');
+            errDiv.style.position = 'fixed';
+            errDiv.style.top = '0';
+            errDiv.style.left = '0';
+            errDiv.style.right = '0';
+            errDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
+            errDiv.style.color = 'white';
+            errDiv.style.padding = '16px';
+            errDiv.style.fontSize = '12px';
+            errDiv.style.zIndex = '99999';
+            errDiv.style.wordBreak = 'break-all';
+            errDiv.innerHTML = '<strong>Ошибка JS:</strong> ' + e.message + ' <br>Файл: ' + e.filename.split('/').pop() + ':' + e.lineno;
+            document.body.appendChild(errDiv);
+        });
+
         // FIREBASE CONFIGURATION
         let db = null;
         try {
