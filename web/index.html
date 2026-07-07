@@ -1044,9 +1044,12 @@
                 Войти <i class="fa-solid fa-arrow-right"></i>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.0.5 (07.07.2026 11:00)
+                Версия веб-приложения: 1.0.6 (07.07.2026 13:10)
             </div>
         </form>
+        <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
+            <div>[System] Лог инициализации...</div>
+        </div>
     </div>
 
     <!-- 2. MAIN APP CONTAINER -->
@@ -1191,8 +1194,23 @@
     </div>
 
     <script>
+        // DEBUG LOG TO PANEL ON SCREEN
+        function debugLog(msg) {
+            const panel = document.getElementById('debug-log-panel');
+            if (panel) {
+                const item = document.createElement('div');
+                item.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                item.style.padding = "2px 0";
+                item.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                panel.appendChild(item);
+                panel.scrollTop = panel.scrollHeight;
+            }
+            console.log(msg);
+        }
+
         // GLOBAL ERROR HANDLER TO SHOW ERRORS DIRECTLY ON PHONE SCREEN
         window.addEventListener('error', function(e) {
+            debugLog("Критическая ошибка JS: " + e.message);
             const errDiv = document.createElement('div');
             errDiv.style.position = 'fixed';
             errDiv.style.top = '0';
@@ -1219,8 +1237,10 @@
             
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
+            debugLog("Firebase SDK успешно инициализирован.");
         } catch (e) {
             console.error("Firebase initialization failed:", e);
+            debugLog("Ошибка инициализации Firebase: " + e.message);
         }
 
         // APP STATE
@@ -1270,10 +1290,15 @@
         const toast = document.getElementById('toast');
         const playerSearch = document.getElementById('player-search');
 
-        // INITIAL LAUNCH
+
+
+        // INITIAL DOM LOAD LOG
         window.addEventListener('DOMContentLoaded', () => {
+            debugLog("DOM контент загружен.");
             const cachedId = safeStorage.getItem('tennis_club_id');
+            debugLog("Кэшированный ID клуба: " + (cachedId || "отсутствует"));
             if (cachedId) {
+                debugLog("Попытка авто-входа в: " + cachedId);
                 attemptLogin(cachedId);
             } else {
                 loginScreen.style.display = 'flex';
@@ -1285,9 +1310,16 @@
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const raw = clubIdInput.value.trim();
-                if (!raw) return;
-                // Convert to lowercase and strip all spaces to match formattedId from APK
-                const clubId = raw.toLowerCase().replace(/\s+/g, '');
+                debugLog("Форма отправлена. Сырой ввод: '" + raw + "'");
+                if (!raw) {
+                    debugLog("Ввод пуст, отмена.");
+                    return;
+                }
+                // Convert to lowercase, strip zero-width chars and spaces, normalize to NFC
+                const clubId = raw.toLowerCase()
+                                  .replace(/[\s​-‍﻿]+/g, '')
+                                  .normalize('NFC');
+                debugLog("Сформатированный ID клуба: '" + clubId + "' (длина: " + clubId.length + ")");
                 attemptLogin(clubId);
             });
         }
@@ -1327,16 +1359,21 @@
 
         // LOGIN ATTEMPT
         function attemptLogin(clubId) {
+            debugLog("attemptLogin запущена для ID: '" + clubId + "'");
             if (!db) {
                 showLoader(false);
                 showToast("Ошибка: База данных не инициализирована!");
+                debugLog("Ошибка: db === null. База не готова.");
                 return;
             }
             showLoader(true);
             try {
-                // Validate clubConfig exists
-                db.ref(`clubConfigs/${clubId}`).once('value', (snapshot) => {
+                debugLog("Отправка запроса проверки существования clubConfigs/" + clubId + "...");
+                // Validate clubConfig exists (using .child() for unicode key safety)
+                db.ref("clubConfigs").child(clubId).once('value', (snapshot) => {
+                    debugLog("Ответ от Firebase получен.");
                     if (snapshot.exists()) {
+                        debugLog("Клуб найден в базе. Конфиг загружен.");
                         // Save to local storage
                         safeStorage.setItem('tennis_club_id', clubId);
                         activeClubId = clubId;
@@ -1348,15 +1385,18 @@
                         // Load and listen to data
                         initDatabaseListeners(clubId);
                     } else {
+                        debugLog("Ошибка: Клуб '" + clubId + "' не найден в db path 'clubConfigs'.");
                         showLoader(false);
                         showToast("Клуб не найден в базе данных!");
                         safeStorage.removeItem('tennis_club_id');
                     }
                 }, (error) => {
+                    debugLog("Firebase error: " + error.message);
                     showLoader(false);
                     showToast("Ошибка соединения с интернетом!");
                 });
             } catch (err) {
+                debugLog("Исключение в attemptLogin: " + err.message);
                 showLoader(false);
                 showToast("Ошибка запуска: " + err.message);
             }
