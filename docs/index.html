@@ -1320,7 +1320,7 @@
         <header class="app-header">
             <div class="club-info">
                 <span class="club-name" id="header-club-name">-</span>
-                <span class="club-role"><i class="fa-solid fa-eye"></i> Режим просмотра (iOS)</span>
+                <span class="club-role" id="header-club-role"><i class="fa-solid fa-eye"></i> Режим просмотра (iOS)</span>
             </div>
             <button id="logout-btn" class="logout-btn" title="Выйти">
                 <i class="fa-solid fa-right-from-bracket"></i>
@@ -1841,6 +1841,11 @@
                         // Set header
                         const displayClubName = config.displayName || (clubId.charAt(0).toUpperCase() + clubId.slice(1));
                         headerClubName.innerHTML = `${displayClubName} ${isAdmin ? '<span class="admin-badge"><i class="fa-solid fa-crown"></i> Админ</span>' : ''}`;
+                        
+                        const roleEl = document.getElementById('header-club-role');
+                        if (roleEl) {
+                            roleEl.innerHTML = isAdmin ? '<i class="fa-solid fa-crown"></i> Режим организатора (iOS)' : '<i class="fa-solid fa-eye"></i> Режим просмотра (iOS)';
+                        }
                         
                         // Load and listen to data
                         initDatabaseListeners(clubId);
@@ -3822,12 +3827,12 @@
                     return {
                         ...p,
                         rating: Math.max(0.0, p.rating + delta),
-                        tournamentsPlayed: p.tournamentsPlayed + 1,
-                        wins: p.wins + winsInc,
-                        losses: p.losses + lossesInc,
-                        goldMedals: p.goldMedals + goldInc,
-                        silverMedals: p.silverMedals + silverInc,
-                        bronzeMedals: p.bronzeMedals + bronzeInc
+                        tournamentsPlayed: (p.tournamentsPlayed || 0) + 1,
+                        wins: (p.wins || 0) + winsInc,
+                        losses: (p.losses || 0) + lossesInc,
+                        goldMedals: (p.goldMedals || 0) + goldInc,
+                        silverMedals: (p.silverMedals || 0) + silverInc,
+                        bronzeMedals: (p.bronzeMedals || 0) + bronzeInc
                     };
                 }
                 return p;
