@@ -515,6 +515,17 @@
             margin-left: 4px;
         }
 
+        .active-info-columns {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        @media (min-width: 600px) {
+            .active-info-columns {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
         .active-tables-container {
             display: grid;
             grid-template-columns: 1fr;
@@ -3479,17 +3490,27 @@
             // Display names list with fallback for active game table resolution
             const playerNamesWithFallback = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
 
-            // 1. Render active tables
-            const activeMatches = draft.activeRoundRobinMatches || [];
+            // 1. Render Active Tables & Queue columns wrapper
+            const infoColumns = document.createElement('div');
+            infoColumns.className = 'active-info-columns';
+            infoColumns.style.marginBottom = '24px';
+
+            // Column A: Active Matches
+            const colActive = document.createElement('div');
+            colActive.style.display = 'flex';
+            colActive.style.flexDirection = 'column';
+
             const activeHeader = document.createElement('h4');
             activeHeader.className = 'section-title';
             activeHeader.textContent = '🏓 Кто играет сейчас';
-            container.appendChild(activeHeader);
+            colActive.appendChild(activeHeader);
 
             const activeListContainer = document.createElement('div');
             activeListContainer.className = 'active-tables-container';
+            activeListContainer.style.marginBottom = '0'; // reset for column layout
 
             let hasActiveMatches = false;
+            const activeMatches = draft.activeRoundRobinMatches || [];
             activeMatches.forEach((matchStr, index) => {
                 if (matchStr && matchStr.includes("_")) {
                     const parts = matchStr.split("_");
@@ -3526,11 +3547,120 @@
             if (!hasActiveMatches) {
                 activeListContainer.innerHTML = `
                     <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; color: var(--text-secondary); width: 100%; font-size: 13px;">
-                        Ожидаются свободные столы или свободные участники...
+                        Ожидаются свободные столы...
                     </div>
                 `;
             }
-            container.appendChild(activeListContainer);
+            colActive.appendChild(activeListContainer);
+            infoColumns.appendChild(colActive);
+
+            // Column B: Queue Matches
+            const colQueue = document.createElement('div');
+            colQueue.style.display = 'flex';
+            colQueue.style.flexDirection = 'column';
+
+            const queueHeader = document.createElement('h4');
+            queueHeader.className = 'section-title';
+            queueHeader.textContent = '🕒 Очередь к столам';
+            colQueue.appendChild(queueHeader);
+
+            // Compute Queue (match queue logic)
+            const assigned = new Set();
+            activeMatches.forEach(matchStr => {
+                if (matchStr && matchStr.includes("_")) {
+                    const parts = matchStr.split("_");
+                    const p1 = parseInt(parts[0]);
+                    const p2 = parseInt(parts[1]);
+                    const key = p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
+                    assigned.add(key);
+                }
+            });
+
+            const scoresMap = draft.matchScores || {};
+            const withdrawn = new Set(draft.withdrawnPlayers || []);
+            const lastFinished = new Set(draft.lastFinishedPlayers || []);
+
+            const matchesPlayed = new Array(playerNames.length).fill(0);
+            for (let f = 0; f < playerNames.length; f++) {
+                for (let s = f + 1; s < playerNames.length; s++) {
+                    const key = `${f}_${s}`;
+                    if (scoresMap[key]) {
+                        matchesPlayed[f]++;
+                        matchesPlayed[s]++;
+                    }
+                }
+            }
+
+            const queueList = [];
+            for (let f = 0; f < playerNames.length; f++) {
+                for (let s = f + 1; s < playerNames.length; s++) {
+                    if (withdrawn.has(f) || withdrawn.has(s)) continue;
+                    const key = `${f}_${s}`;
+                    if (!scoresMap[key] && !assigned.has(key)) {
+                        queueList.push({ f, s });
+                    }
+                }
+            }
+
+            queueList.sort((a, b) => {
+                const aPenaltyP1 = lastFinished.has(a.f) ? 20 : 0;
+                const aPenaltyP2 = lastFinished.has(a.s) ? 20 : 0;
+                const aWeight = (matchesPlayed[a.f] + matchesPlayed[a.s] + aPenaltyP1 + aPenaltyP2) * 1000 - Math.abs(a.f - a.s);
+
+                const bPenaltyP1 = lastFinished.has(b.f) ? 20 : 0;
+                const bPenaltyP2 = lastFinished.has(b.s) ? 20 : 0;
+                const bWeight = (matchesPlayed[b.f] + matchesPlayed[b.s] + bPenaltyP1 + bPenaltyP2) * 1000 - Math.abs(b.f - b.s);
+
+                return aWeight - bWeight;
+            });
+
+            const queueContainer = document.createElement('div');
+            queueContainer.className = 'active-tables-container'; // reuse styles for card flow
+            queueContainer.style.marginBottom = '0'; // reset for column layout
+
+            const queueToShow = queueList.slice(0, 2);
+            queueToShow.forEach((match, idx) => {
+                const name1 = playerNamesWithFallback[match.f];
+                const name2 = playerNamesWithFallback[match.s];
+                const p1Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name1));
+                const p2Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name2));
+                const r1 = p1Profile ? `★${p1Profile.rating.toFixed(0)}` : '★100';
+                const r2 = p2Profile ? `★${p2Profile.rating.toFixed(0)}` : '★100';
+
+                const card = document.createElement('div');
+                card.className = 'active-table-card';
+                card.innerHTML = `
+                    <div class="active-table-number" style="background-color:rgba(142, 142, 147, 0.15); color:var(--text-secondary);">${idx + 1}</div>
+                    <div class="active-table-match" style="font-size: 13px; display:flex; align-items:center; justify-content:space-between; padding-right:12px;">
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700;">${name1} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r1}</span></span>
+                        <span class="active-table-vs">—</span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700; text-align:right;">${name2} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r2}</span></span>
+                    </div>
+                `;
+                queueContainer.appendChild(card);
+            });
+
+            if (queueList.length === 0) {
+                queueContainer.innerHTML = `
+                    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; color: var(--text-secondary); width: 100%; font-size: 13px;">
+                        Очередь пуста
+                    </div>
+                `;
+            } else if (queueList.length > 2) {
+                const moreLabel = document.createElement('div');
+                moreLabel.style.fontSize = '11px';
+                moreLabel.style.color = 'var(--text-secondary)';
+                moreLabel.style.textAlign = 'right';
+                moreLabel.style.paddingRight = '8px';
+                moreLabel.style.marginTop = '4px';
+                moreLabel.textContent = `и еще ${queueList.length - 2} в ожидании...`;
+                queueContainer.appendChild(moreLabel);
+            }
+
+            colQueue.appendChild(queueContainer);
+            infoColumns.appendChild(colQueue);
+
+            container.appendChild(infoColumns);
 
             // 2. Render Results
             const resultsHeader = document.createElement('h4');
