@@ -28,17 +28,6 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-
-    applicationVariants.all {
-        val variant = this
-        outputs.all {
-            val output = this as? com.android.build.gradle.api.ApkVariantOutput
-            if (output != null) {
-                val suffix = if (variant.buildType.name == "release") "" else "-debug"
-                output.outputFileName = "TT-Турниры$suffix.apk"
-            }
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
