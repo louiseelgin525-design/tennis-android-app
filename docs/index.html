@@ -1021,6 +1021,260 @@
             font-weight: 800;
             text-align: right;
         }
+
+        /* ADMIN PANEL CUSTOM STYLES */
+        .role-selector {
+            display: flex;
+            margin-bottom: 16px;
+            gap: 8px;
+            width: 100%;
+        }
+        .role-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .role-btn.active {
+            background: var(--apple-blue);
+            color: white;
+            border-color: var(--apple-blue);
+        }
+        .admin-badge {
+            background-color: rgba(255, 59, 48, 0.15);
+            color: var(--apple-red);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 8px;
+            margin-left: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .edit-player-icon {
+            color: var(--apple-blue);
+            cursor: pointer;
+            padding: 10px;
+            font-size: 14px;
+            transition: transform 0.1s;
+        }
+        .edit-player-icon:active {
+            transform: scale(0.9);
+        }
+        .add-player-btn-container {
+            width: 100%;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .add-player-btn {
+            background-color: var(--apple-green);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .draft-setup-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .draft-setup-title {
+            font-size: 17px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .counter-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 12px;
+        }
+        .counter-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .counter-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .counter-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .counter-btn:active {
+            background: rgba(255,255,255,0.15);
+        }
+        .counter-val {
+            font-weight: 800;
+            font-size: 16px;
+            min-width: 24px;
+            text-align: center;
+        }
+        .wins-segments {
+            display: flex;
+            gap: 6px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 10px;
+        }
+        .wins-segment-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .wins-segment-btn.active {
+            background: var(--bg-card);
+            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .draft-player-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .draft-player-item.selected {
+            background: rgba(0, 122, 255, 0.08);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+        .draft-player-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: transparent;
+            font-size: 11px;
+        }
+        .draft-player-item.selected .draft-player-checkbox {
+            border-color: var(--apple-blue);
+            background-color: var(--apple-blue);
+            color: white;
+        }
+        .dialog-score-btn-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .dialog-score-btn {
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .dialog-score-btn:active {
+            transform: scale(0.96);
+        }
+        .score-btn-won {
+            background-color: rgba(52, 199, 89, 0.15);
+            color: var(--apple-green);
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+        .score-btn-lost {
+            background-color: rgba(255, 59, 48, 0.15);
+            color: var(--apple-red);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+        .withdraw-btn {
+            background-color: rgba(255, 159, 10, 0.15);
+            color: #ff9f0a;
+            border: 1px solid rgba(255, 159, 10, 0.3);
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .finish-tourney-btn {
+            background-color: var(--apple-blue);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .finish-grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+        .finish-grid-table th, .finish-grid-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .finish-grid-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .finish-grid-table td {
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -1039,12 +1293,20 @@
         <h1 class="login-title">TT: Турниры</h1>
         <p class="login-subtitle">Введите ID клуба для просмотра онлайн результатов на iOS</p>
         <form id="login-form" class="login-form">
+            <div class="role-selector">
+                <button type="button" id="role-viewer-btn" class="role-btn active" onclick="setRole('viewer')">Зритель</button>
+                <button type="button" id="role-admin-btn" class="role-btn" onclick="setRole('admin')">Организатор</button>
+            </div>
+            
             <input type="text" id="club-id-input" class="login-input" placeholder="Название клуба (например: сатурн)" autocomplete="off" autocapitalize="off">
-            <button type="submit" id="login-submit-btn" class="login-btn">
+            
+            <input type="password" id="admin-pin-input" class="login-input" placeholder="ПИН-код администратора" style="display:none; margin-top:8px;" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password">
+
+            <button type="submit" id="login-submit-btn" class="login-btn" style="margin-top:12px;">
                 Войти <i class="fa-solid fa-arrow-right"></i>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.0.6 (07.07.2026 13:10)
+                Версия веб-приложения: 1.0.7 (07.07.2026 13:15)
             </div>
         </form>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
@@ -1174,6 +1436,119 @@
         </div>
     </div>
 
+    <!-- MODAL: ADD PLAYER -->
+    <div id="player-add-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px;">
+            <button class="modal-close-btn" onclick="closePlayerAddModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="modal-title">Добавить игрока</h3>
+            <span class="modal-subtitle">Создание нового профиля в базе клуба</span>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+                <input type="text" id="add-player-name" class="login-input" placeholder="Фамилия Имя" autocomplete="off" style="margin:0;">
+                <input type="number" id="add-player-rating" class="login-input" placeholder="Стартовый рейтинг (например: 200)" style="margin:0;" step="0.1" inputmode="decimal">
+                <button onclick="submitAddPlayer()" class="login-btn" style="margin-top:8px; background-color: var(--apple-green);">Добавить игрока</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT PLAYER -->
+    <div id="player-edit-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px;">
+            <button class="modal-close-btn" onclick="closePlayerEditModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="modal-title">Редактировать игрока</h3>
+            <span class="modal-subtitle" id="edit-player-subtitle">Изменение данных профиля</span>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+                <input type="text" id="edit-player-name" class="login-input" placeholder="Фамилия Имя" autocomplete="off" style="margin:0;">
+                <input type="number" id="edit-player-rating" class="login-input" placeholder="Рейтинг" style="margin:0;" step="0.1" inputmode="decimal">
+                <button onclick="submitEditPlayer()" class="login-btn" style="margin-top:8px;">Сохранить изменения</button>
+                <button onclick="submitDeletePlayer()" class="login-btn" style="background-color:var(--apple-red); margin-top:8px;">Удалить игрока из базы</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN ROUND ROBIN MATCH SCORING -->
+    <div id="admin-score-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 420px;">
+            <button class="modal-close-btn" onclick="closeAdminScoreModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="modal-title">Ввод результата матча</h3>
+            <span class="modal-subtitle" id="admin-score-match-title">Игрок 1 vs Игрок 2</span>
+            
+            <div id="admin-score-compact-container" style="display:none; flex-direction:column; gap:10px;">
+                <div class="dialog-score-btn-container">
+                    <button class="dialog-score-btn score-btn-won" onclick="submitQuickScore('1:0')">1 : 0</button>
+                    <button class="dialog-score-btn score-btn-lost" onclick="submitQuickScore('0:1')">0 : 1</button>
+                </div>
+            </div>
+
+            <div id="admin-score-standard-container" style="display:none; flex-direction:column; gap:10px; margin-top:16px;">
+                <!-- Filled dynamically by wins count -->
+                <div id="admin-score-btns-grid" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+
+            <button class="withdraw-btn" id="withdraw-p1-btn" onclick="submitPlayerWithdrawal(0)">
+                <i class="fa-solid fa-user-slash"></i> Снять первого игрока
+            </button>
+            <button class="withdraw-btn" id="withdraw-p2-btn" onclick="submitPlayerWithdrawal(1)">
+                <i class="fa-solid fa-user-slash"></i> Снять второго игрока
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN PLAYOFF MATCH SCORING -->
+    <div id="admin-playoff-score-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px;">
+            <button class="modal-close-btn" onclick="closeAdminPlayoffScoreModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="modal-title">Результат плей-офф</h3>
+            <span class="modal-subtitle" id="admin-playoff-match-title">Игрок 1 vs Игрок 2</span>
+            
+            <div class="dialog-score-btn-container" style="margin-top:16px;">
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button class="dialog-score-btn score-btn-won" onclick="submitPlayoffScore('3:0')">3 : 0</button>
+                    <button class="dialog-score-btn score-btn-won" onclick="submitPlayoffScore('3:1')">3 : 1</button>
+                    <button class="dialog-score-btn score-btn-won" onclick="submitPlayoffScore('3:2')">3 : 2</button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button class="dialog-score-btn score-btn-lost" onclick="submitPlayoffScore('0:3')">0 : 3</button>
+                    <button class="dialog-score-btn score-btn-lost" onclick="submitPlayoffScore('1:3')">1 : 3</button>
+                    <button class="dialog-score-btn score-btn-lost" onclick="submitPlayoffScore('2:3')">2 : 3</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TOURNAMENT FINALIZATION / RATING CALCULATION -->
+    <div id="tournament-finish-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 550px; width: 100%;">
+            <button class="modal-close-btn" onclick="closeTournamentFinishModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="modal-title">🏁 Завершение турнира</h3>
+            <span class="modal-subtitle" id="finish-tourney-subtitle">Предварительные итоги и изменение рейтингов</span>
+
+            <div style="margin-top:16px; max-height: 250px; overflow-y:auto; border:1px solid var(--border-color); border-radius:12px;">
+                <table class="finish-grid-table">
+                    <thead>
+                        <tr>
+                            <th>Место</th>
+                            <th>Игрок</th>
+                            <th>Рейтинг</th>
+                            <th style="text-align:right;">Изменение</th>
+                        </tr>
+                    </thead>
+                    <tbody id="finish-tourney-ratings-tbody">
+                        <!-- Filled dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px; margin-top:20px; font-size:13px; font-weight:700;">
+                <input type="checkbox" id="finish-bonuses-checkbox" style="width:18px; height:18px;" checked>
+                <label for="finish-bonuses-checkbox" style="cursor:pointer;">🏆 Начислить бонусы за призовые места (+1.5, +1.0, +0.5)</label>
+            </div>
+
+            <button onclick="submitFinalizeTournament()" class="login-btn" style="margin-top:24px; background-color: var(--apple-blue);">
+                <i class="fa-solid fa-floppy-disk"></i> Применить и сохранить историю
+            </button>
+        </div>
+    </div>
+
     <!-- MODAL: HISTORY TOURNAMENT DETAIL -->
     <div id="history-modal" class="modal-overlay">
         <div class="modal-card" style="max-width: 480px;">
@@ -1243,16 +1618,6 @@
             debugLog("Ошибка инициализации Firebase: " + e.message);
         }
 
-        // APP STATE
-        let activeClubId = null;
-        let clubData = {
-            players: [],
-            history: [],
-            draft: null,
-            avatars: {}
-        };
-        let listeners = {};
-
         // SAFE LOCAL STORAGE WRAPPER (Prevents crash in Safari Private Browsing mode)
         const safeStorage = {
             getItem(key) {
@@ -1290,16 +1655,80 @@
         const toast = document.getElementById('toast');
         const playerSearch = document.getElementById('player-search');
 
+        // GLOBAL STATE
+        let activeClubId = null;
+        let isAdmin = false;
+        let selectedRole = 'viewer'; // 'viewer' or 'admin'
+        let clubData = {
+            players: [],
+            history: [],
+            draft: null,
+            avatars: {}
+        };
+        let listeners = {};
 
+        // DOM ELEMENTS FOR ADMIN MODALS
+        let activeScoreMatch = null; // { f, s, scoreKey, index }
+        let activePlayoffMatchId = null;
+        let selectedPlayerIdsForDraft = new Set();
+        let editPlayerTarget = null; // player object
+
+        // DEBUG LOG TO PANEL ON SCREEN
+        function debugLog(msg) {
+            const panel = document.getElementById('debug-log-panel');
+            if (panel) {
+                const item = document.createElement('div');
+                item.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                item.style.padding = "2px 0";
+                item.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                panel.appendChild(item);
+                panel.scrollTop = panel.scrollHeight;
+            }
+            console.log(msg);
+        }
+
+        // GLOBAL ERROR HANDLER TO SHOW ERRORS DIRECTLY ON PHONE SCREEN
+        window.addEventListener('error', function(e) {
+            debugLog("Критическая ошибка JS: " + e.message);
+            const errDiv = document.createElement('div');
+            errDiv.style.position = 'fixed';
+            errDiv.style.top = '0';
+            errDiv.style.left = '0';
+            errDiv.style.right = '0';
+            errDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
+            errDiv.style.color = 'white';
+            errDiv.style.padding = '16px';
+            errDiv.style.fontSize = '12px';
+            errDiv.style.zIndex = '99999';
+            errDiv.style.wordBreak = 'break-all';
+            errDiv.innerHTML = '<strong>Ошибка JS:</strong> ' + e.message + ' <br>Файл: ' + e.filename.split('/').pop() + ':' + e.lineno;
+            document.body.appendChild(errDiv);
+        });
+
+        // ROLE SELECTOR TOGGLE
+        function setRole(role) {
+            selectedRole = role;
+            document.getElementById('role-viewer-btn').classList.toggle('active', role === 'viewer');
+            document.getElementById('role-admin-btn').classList.toggle('active', role === 'admin');
+            document.getElementById('admin-pin-input').style.display = role === 'admin' ? 'block' : 'none';
+            debugLog("Роль переключена на: " + role);
+        }
 
         // INITIAL DOM LOAD LOG
         window.addEventListener('DOMContentLoaded', () => {
             debugLog("DOM контент загружен.");
             const cachedId = safeStorage.getItem('tennis_club_id');
+            const adminMode = safeStorage.getItem('tennis_admin_mode') === 'true';
             debugLog("Кэшированный ID клуба: " + (cachedId || "отсутствует"));
+            
+            if (adminMode) {
+                selectedRole = 'admin';
+                setRole('admin');
+            }
+
             if (cachedId) {
                 debugLog("Попытка авто-входа в: " + cachedId);
-                attemptLogin(cachedId);
+                attemptLogin(cachedId, safeStorage.getItem('tennis_admin_pin') || '');
             } else {
                 loginScreen.style.display = 'flex';
             }
@@ -1310,6 +1739,7 @@
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const raw = clubIdInput.value.trim();
+                const pin = document.getElementById('admin-pin-input').value.trim();
                 debugLog("Форма отправлена. Сырой ввод: '" + raw + "'");
                 if (!raw) {
                     debugLog("Ввод пуст, отмена.");
@@ -1317,10 +1747,10 @@
                 }
                 // Convert to lowercase, strip zero-width chars and spaces, normalize to NFC
                 const clubId = raw.toLowerCase()
-                                  .replace(/[\s​-‍﻿]+/g, '')
+                                  .replace(/[\s\u200B-\u200D\uFEFF]+/g, '')
                                   .normalize('NFC');
                 debugLog("Сформатированный ID клуба: '" + clubId + "' (длина: " + clubId.length + ")");
-                attemptLogin(clubId);
+                attemptLogin(clubId, pin);
             });
         }
 
@@ -1335,12 +1765,16 @@
                 db.ref(`clubs/${activeClubId}/avatars`).off();
             }
             safeStorage.removeItem('tennis_club_id');
+            safeStorage.removeItem('tennis_admin_mode');
+            safeStorage.removeItem('tennis_admin_pin');
             activeClubId = null;
+            isAdmin = false;
             
             // Switch views
             appContainer.style.display = 'none';
             loginScreen.style.display = 'flex';
             showLoader(false);
+            debugLog("Вышли из системы. Кэш сброшен.");
         });
 
         // LOADER UTILS
@@ -1358,7 +1792,7 @@
         }
 
         // LOGIN ATTEMPT
-        function attemptLogin(clubId) {
+        function attemptLogin(clubId, pin) {
             debugLog("attemptLogin запущена для ID: '" + clubId + "'");
             if (!db) {
                 showLoader(false);
@@ -1373,14 +1807,32 @@
                 db.ref("clubConfigs").child(clubId).once('value', (snapshot) => {
                     debugLog("Ответ от Firebase получен.");
                     if (snapshot.exists()) {
-                        debugLog("Клуб найден в базе. Конфиг загружен.");
+                        const config = JSON.parse(snapshot.val());
+                        
+                        if (selectedRole === 'admin') {
+                            if (config.adminPin === pin) {
+                                debugLog("Администратор успешно авторизован по ПИН-коду.");
+                                isAdmin = true;
+                                safeStorage.setItem('tennis_admin_mode', 'true');
+                                safeStorage.setItem('tennis_admin_pin', pin);
+                            } else {
+                                debugLog("Ошибка: Неверный ПИН-код администратора.");
+                                showLoader(false);
+                                showToast("Неверный ПИН-код администратора!");
+                                return;
+                            }
+                        } else {
+                            isAdmin = false;
+                            safeStorage.setItem('tennis_admin_mode', 'false');
+                        }
+
                         // Save to local storage
                         safeStorage.setItem('tennis_club_id', clubId);
                         activeClubId = clubId;
                         
                         // Set header
-                        const displayClubName = clubId.charAt(0).toUpperCase() + clubId.slice(1);
-                        headerClubName.textContent = displayClubName;
+                        const displayClubName = config.displayName || (clubId.charAt(0).toUpperCase() + clubId.slice(1));
+                        headerClubName.innerHTML = `${displayClubName} ${isAdmin ? '<span class="admin-badge"><i class="fa-solid fa-crown"></i> Админ</span>' : ''}`;
                         
                         // Load and listen to data
                         initDatabaseListeners(clubId);
@@ -1444,7 +1896,6 @@
             // 4. Avatars Listener (caches player photos)
             db.ref(`clubs/${clubId}/avatars`).on('value', (snapshot) => {
                 clubData.avatars = snapshot.val() || {};
-                // Force update avatars on screens
                 renderPlayers();
             });
 
@@ -1485,35 +1936,45 @@
             renderPlayers();
         });
 
-        // RENDER LEADERBOARD
+        // RENDER READ-ONLY AND ADMIN PLAYERS LIST
         function renderPlayers() {
             const listEl = document.getElementById('players-list-el');
             listEl.innerHTML = '';
 
             const query = playerSearch.value.trim().toLowerCase();
-            
-            // Sort by rating descending
-            const sorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
-            
-            let rank = 1;
-            sorted.forEach(player => {
-                if (query && !player.fullName.toLowerCase().includes(query)) {
-                    return;
-                }
 
+            // Filter players
+            const filtered = clubData.players.filter(p => {
+                return p.fullName.toLowerCase().includes(query);
+            });
+
+            // Sort by rating descending
+            filtered.sort((a, b) => b.rating - a.rating);
+
+            // Add Admin button if organizer mode
+            if (isAdmin) {
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'add-player-btn-container';
+                btnContainer.innerHTML = `
+                    <button class="add-player-btn" onclick="openPlayerAddModal()">
+                        <i class="fa-solid fa-plus"></i> Добавить игрока
+                    </button>
+                `;
+                listEl.appendChild(btnContainer);
+            }
+
+            filtered.forEach((player, index) => {
                 const card = document.createElement('div');
                 card.className = 'player-card';
-                card.addEventListener('click', () => openPlayerModal(player));
 
                 // Rank
                 const rankEl = document.createElement('span');
                 rankEl.className = 'player-rank';
-                rankEl.textContent = rank++;
+                rankEl.textContent = `${index + 1}`;
 
                 // Avatar
                 const avatarEl = document.createElement('div');
                 avatarEl.className = 'player-avatar';
-                
                 const cloudAvatar = clubData.avatars[player.id];
                 if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
                     avatarEl.style.backgroundImage = `url("${cloudAvatar}")`;
@@ -1569,436 +2030,129 @@
                 card.appendChild(avatarEl);
                 card.appendChild(infoEl);
                 card.appendChild(ratingBadge);
-                card.appendChild(arrowEl);
+                
+                // Add click triggers
+                infoEl.addEventListener('click', () => openPlayerModal(player));
+                avatarEl.addEventListener('click', () => openPlayerModal(player));
+                ratingBadge.addEventListener('click', () => openPlayerModal(player));
+
+                if (isAdmin) {
+                    const editIcon = document.createElement('i');
+                    editIcon.className = 'fa-solid fa-user-pen edit-player-icon';
+                    editIcon.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openPlayerEditModal(player);
+                    });
+                    card.appendChild(editIcon);
+                } else {
+                    card.appendChild(arrowEl);
+                }
 
                 listEl.appendChild(card);
             });
 
-            if (listEl.children.length === 0) {
-                listEl.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--text-secondary);">Игроки не найдены</div>';
+            if (filtered.length === 0) {
+                listEl.innerHTML += '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">Игроки не найдены</div>';
             }
         }
 
-        // RENDER ACTIVE TOURNAMENT
-        function updateActiveTournament() {
-            const container = document.getElementById('active-tournament-container');
-            container.innerHTML = '';
-
-            const draft = clubData.draft;
-            if (!draft || (!draft.isListGenerated && !draft.name)) {
-                // Empty state
-                container.innerHTML = `
-                    <div class="active-tournament-empty">
-                        <i class="fa-solid fa-hourglass-start"></i>
-                        <h3>Нет активного турнира</h3>
-                        <p>Как только организатор начнет новый турнир в клубе, сетка и текущие результаты появятся здесь в реальном времени.</p>
-                    </div>
-                `;
+        // PLAYER BASE WRITE OPERATIONS (Admin Modals)
+        function openPlayerAddModal() {
+            document.getElementById('add-player-name').value = '';
+            document.getElementById('add-player-rating').value = '';
+            document.getElementById('player-add-modal').style.display = 'flex';
+        }
+        function closePlayerAddModal() {
+            document.getElementById('player-add-modal').style.display = 'none';
+        }
+        function submitAddPlayer() {
+            const name = document.getElementById('add-player-name').value.trim();
+            const ratingVal = parseFloat(document.getElementById('add-player-rating').value);
+            if (!name || isNaN(ratingVal)) {
+                showToast("Заполните имя и рейтинг!");
                 return;
             }
 
-            // Decode player fields (1-to-1 mapping to preserve indexing for active games)
-            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
-            const playerNames = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
-            const withdrawnPlayers = new Set(draft.withdrawnPlayers || []);
+            const nextId = clubData.players.length > 0 ? Math.max(...clubData.players.map(p => p.id)) + 1 : 1;
+            const newPlayer = {
+                id: nextId,
+                fullName: name,
+                rating: ratingVal,
+                tournamentsPlayed: 0,
+                wins: 0,
+                losses: 0,
+                goldMedals: 0,
+                silverMedals: 0,
+                bronzeMedals: 0,
+                avatarUri: "",
+                opponentStats: ""
+            };
 
-            // If setup phase (draft is not active but name is present)
-            if (!draft.isListGenerated) {
-                const registeredNames = playerFields.map(f => decodeName(f.name).trim()).filter(n => n !== "");
-
-                const header = document.createElement('div');
-                header.className = 'active-header-card';
-                header.innerHTML = `
-                    <div class="active-header-badge" style="background-color: rgba(255, 204, 0, 0.15); color: var(--apple-gold);"><i class="fa-solid fa-clock"></i></div>
-                    <div class="active-header-info">
-                        <div class="active-header-title">${draft.name || "Новый турнир"}</div>
-                        <div class="active-header-desc">Регистрация участников • Добавлено: ${registeredNames.length} • Победы: до ${draft.winsToWin || 2}</div>
-                    </div>
-                `;
-                container.appendChild(header);
-
-                const activeHeader = document.createElement('h4');
-                activeHeader.className = 'section-title';
-                activeHeader.textContent = '👥 Зарегистрированные игроки';
-                container.appendChild(activeHeader);
-
-                const listContainer = document.createElement('div');
-                listContainer.style.backgroundColor = 'var(--bg-card)';
-                listContainer.style.border = '1px solid var(--border-color)';
-                listContainer.style.borderRadius = '16px';
-                listContainer.style.padding = '16px';
-                listContainer.style.display = 'flex';
-                listContainer.style.flexDirection = 'column';
-                listContainer.style.gap = '10px';
-
-                registeredNames.forEach((name, index) => {
-                    const row = document.createElement('div');
-                    row.style.display = 'flex';
-                    row.style.alignItems = 'center';
-                    row.style.fontSize = '14px';
-                    row.style.fontWeight = '600';
-                    row.innerHTML = `<span style="color: var(--apple-blue); width: 24px; font-weight:800;">${index + 1}</span> <span>${name}</span>`;
-                    listContainer.appendChild(row);
+            const updated = [...clubData.players, newPlayer];
+            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updated))
+                .then(() => {
+                    closePlayerAddModal();
+                    showToast("Игрок добавлен!");
+                })
+                .catch(e => {
+                    showToast("Ошибка сохранения: " + e.message);
                 });
+        }
 
-                if (registeredNames.length === 0) {
-                    listContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px;">Ожидание добавления игроков организатором...</div>';
-                }
-
-                container.appendChild(listContainer);
+        function openPlayerEditModal(player) {
+            editPlayerTarget = player;
+            document.getElementById('edit-player-name').value = player.fullName;
+            document.getElementById('edit-player-rating').value = player.rating.toFixed(1);
+            document.getElementById('edit-player-subtitle').textContent = `ID профиля: #${player.id}`;
+            document.getElementById('player-edit-modal').style.display = 'flex';
+        }
+        function closePlayerEditModal() {
+            editPlayerTarget = null;
+            document.getElementById('player-edit-modal').style.display = 'none';
+        }
+        function submitEditPlayer() {
+            if (!editPlayerTarget) return;
+            const name = document.getElementById('edit-player-name').value.trim();
+            const ratingVal = parseFloat(document.getElementById('edit-player-rating').value);
+            if (!name || isNaN(ratingVal)) {
+                showToast("Заполните все поля!");
                 return;
             }
 
-            // Header info (Active Tournament)
-            const header = document.createElement('div');
-            header.className = 'active-header-card';
-            header.innerHTML = `
-                <div class="active-header-badge"><i class="fa-solid fa-satellite-dish"></i></div>
-                <div class="active-header-info">
-                    <div class="active-header-title">${draft.name || "Турнир в процессе"}</div>
-                    <div class="active-header-desc">Участников: ${playerNames.length} • Победы: до ${draft.winsToWin}</div>
-                </div>
-            `;
-            container.appendChild(header);
-
-            // Display names list with fallback for active game table resolution
-            const playerNamesWithFallback = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
-
-            // 1. Render active tables
-            const activeMatches = draft.activeRoundRobinMatches || [];
-            const activeHeader = document.createElement('h4');
-            activeHeader.className = 'section-title';
-            activeHeader.textContent = '🏓 Кто играет сейчас';
-            container.appendChild(activeHeader);
-
-            const activeListContainer = document.createElement('div');
-            activeListContainer.className = 'active-tables-container';
-
-            let hasActiveMatches = false;
-            activeMatches.forEach((matchStr, index) => {
-                if (matchStr && matchStr.includes("_")) {
-                    const parts = matchStr.split("_");
-                    const p1Idx = parseInt(parts[0]);
-                    const p2Idx = parseInt(parts[1]);
-                    
-                    const name1 = playerNames[p1Idx] || "";
-                    const name2 = playerNames[p2Idx] || "";
-
-                    const card = document.createElement('div');
-                    card.className = 'active-table-card';
-                    card.innerHTML = `
-                        <div class="active-table-number">${index + 1}</div>
-                        <div class="active-table-match">
-                            <span>${name1}</span>
-                            <span class="active-table-vs">vs</span>
-                            <span>${name2}</span>
-                        </div>
-                        <span class="active-table-badge">Идёт игра</span>
-                    `;
-                    activeListContainer.appendChild(card);
-                    hasActiveMatches = true;
+            const updated = clubData.players.map(p => {
+                if (p.id === editPlayerTarget.id) {
+                    return { ...p, fullName: name, rating: ratingVal };
                 }
+                return p;
             });
 
-            if (!hasActiveMatches) {
-                activeListContainer.innerHTML = `
-                    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; color: var(--text-secondary); width: 100%; font-size: 13px;">
-                        Ожидаются свободные столы или свободные участники...
-                    </div>
-                `;
-            }
-            container.appendChild(activeListContainer);
-
-            // 2. Render Results
-            const resultsHeader = document.createElement('h4');
-            resultsHeader.className = 'section-title';
-            resultsHeader.textContent = '📊 Таблицы результатов';
-            container.appendChild(resultsHeader);
-
-            if (playerNames.length <= 10) {
-                // Round Robin table
-                const wrapper = document.createElement('div');
-                wrapper.className = 'table-scroll-wrapper';
-                
-                const table = document.createElement('table');
-                table.className = 'rr-grid';
-
-                // Header
-                const trHead = document.createElement('tr');
-                trHead.innerHTML = `<th>№</th><th class="player-col-header">Участник</th>`;
-                for (let i = 0; i < playerNames.length; i++) {
-                    trHead.innerHTML += `<th>${i+1}</th>`;
-                }
-                trHead.innerHTML += `<th>О</th><th>М</th>`;
-                table.appendChild(trHead);
-
-                // Standings calculation
-                const scoresMap = draft.matchScores || {};
-                const standings = calculateRoundRobinStandings(playerNames.length, scoresMap);
-                const placesByPlayer = standings.reduce((map, stat, idx) => {
-                    map[stat.index] = idx + 1;
-                    return map;
-                }, {});
-
-                // Rows
-                playerNames.forEach((name, rIdx) => {
-                    const tr = document.createElement('tr');
-                    
-                    const noTd = document.createElement('td');
-                    noTd.textContent = rIdx + 1;
-                    
-                    const nameTd = document.createElement('td');
-                    nameTd.className = 'player-col-header';
-                    nameTd.textContent = name;
-                    if (withdrawnPlayers.has(rIdx)) {
-                        nameTd.style.textDecoration = 'line-through';
-                        nameTd.style.color = 'var(--text-secondary)';
-                    }
-                    
-                    tr.appendChild(noTd);
-                    tr.appendChild(nameTd);
-
-                    // Scores cells
-                    for (let cIdx = 0; cIdx < playerNames.length; cIdx++) {
-                        const td = document.createElement('td');
-                        td.className = 'score-cell';
-                        
-                        if (rIdx === cIdx) {
-                            td.className += ' diagonal-cell';
-                        } else {
-                            const matchKey = `${rIdx}_${cIdx}`;
-                            const score = scoresMap[matchKey];
-                            
-                            // Check if active match
-                            const isMatchActive = activeMatches.some(str => {
-                                if (!str) return false;
-                                const parts = str.split("_");
-                                return (parts[0] == rIdx && parts[1] == cIdx) || (parts[0] == cIdx && parts[1] == rIdx);
-                            });
-
-                            if (score) {
-                                td.textContent = score;
-                                if (score === 'W' || (score.includes(":") && parseInt(score.split(":")[0]) > parseInt(score.split(":")[1]))) {
-                                    td.className += ' score-win';
-                                } else {
-                                    td.className += ' score-lost';
-                                }
-                            } else if (isMatchActive) {
-                                td.className += ' score-active';
-                                td.textContent = 'ИГРА';
-                            } else {
-                                td.textContent = '–';
-                            }
-                        }
-                        tr.appendChild(td);
-                    }
-
-                    // Total points
-                    const pointsTd = document.createElement('td');
-                    pointsTd.className = 'points-cell';
-                    const playerStat = standings.find(s => s.index === rIdx);
-                    pointsTd.textContent = playerStat ? playerStat.points : 0;
-                    tr.appendChild(pointsTd);
-
-                    // Place
-                    const placeTd = document.createElement('td');
-                    placeTd.className = 'place-cell';
-                    placeTd.textContent = placesByPlayer[rIdx] || '-';
-                    tr.appendChild(placeTd);
-
-                    table.appendChild(tr);
+            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updated))
+                .then(() => {
+                    closePlayerEditModal();
+                    showToast("Профиль изменен!");
+                })
+                .catch(e => {
+                    showToast("Ошибка сохранения: " + e.message);
                 });
-
-                wrapper.appendChild(table);
-                container.appendChild(wrapper);
-            } else {
-                // Playoff brackets
-                const wrapper = document.createElement('div');
-                wrapper.className = 'playoff-bracket-wrapper';
-
-                const playoffScores = draft.playoffScores || {};
-
-                // We display a hardcoded 8-player grid mockup (since the actual playoff code dynamically aligns matches in columns)
-                // 1/4 Finals
-                const quarterColumn = document.createElement('div');
-                quarterColumn.className = 'playoff-column';
-                for (let i = 1; i <= 4; i++) {
-                    quarterColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
-                }
-                wrapper.appendChild(quarterColumn);
-
-                // 1/2 Finals
-                const semiColumn = document.createElement('div');
-                semiColumn.className = 'playoff-column';
-                for (let i = 5; i <= 6; i++) {
-                    semiColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
-                }
-                wrapper.appendChild(semiColumn);
-
-                // Final
-                const finalColumn = document.createElement('div');
-                finalColumn.className = 'playoff-column';
-                finalColumn.appendChild(createPlayoffMatchBox(7, playoffScores, playerNames, true));
-                wrapper.appendChild(finalColumn);
-
-                container.appendChild(wrapper);
+        }
+        function submitDeletePlayer() {
+            if (!editPlayerTarget) return;
+            if (!confirm(`Вы действительно хотите безвозвратно удалить игрока "${editPlayerTarget.fullName}"?`)) {
+                return;
             }
+
+            const updated = clubData.players.filter(p => p.id !== editPlayerTarget.id);
+            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updated))
+                .then(() => {
+                    closePlayerEditModal();
+                    showToast("Игрок удален!");
+                })
+                .catch(e => {
+                    showToast("Ошибка сохранения: " + e.message);
+                });
         }
 
-        // Helper for playoff card
-        function createPlayoffMatchBox(id, scores, names, isFinal = false) {
-            const box = document.createElement('div');
-            box.className = `playoff-match-box${isFinal ? ' final-box' : ''}`;
-            
-            // Deciding default text
-            let p1Name = "?";
-            let p2Name = "?";
-            
-            // Simple mapping for demo: Quarter 1 has player index 0 and 1, etc.
-            if (id === 1) { p1Name = names[0] || "?"; p2Name = names[1] || "?"; }
-            else if (id === 2) { p1Name = names[2] || "?"; p2Name = names[3] || "?"; }
-            else if (id === 3) { p1Name = names[4] || "?"; p2Name = names[5] || "?"; }
-            else if (id === 4) { p1Name = names[6] || "?"; p2Name = names[7] || "?"; }
-            else {
-                // For semis and finals, we can fetch previous winners based on scores or just show standard info
-                p1Name = getPlayoffParticipant(id, 1, scores, names);
-                p2Name = getPlayoffParticipant(id, 2, scores, names);
-            }
-
-            const score = scores[id] || "-";
-            const score1 = score.includes(":") ? score.split(":")[0] : "-";
-            const score2 = score.includes(":") ? score.split(":")[1] : "-";
-
-            const row1Winner = score1 !== "-" && score2 !== "-" && parseInt(score1) > parseInt(score2);
-            const row2Winner = score1 !== "-" && score2 !== "-" && parseInt(score2) > parseInt(score1);
-
-            box.innerHTML = `
-                <div class="playoff-row${row1Winner ? ' winner' : ''}">
-                    <span>${p1Name}</span>
-                    <span class="playoff-score">${score1}</span>
-                </div>
-                <div class="playoff-divider"></div>
-                <div class="playoff-row${row2Winner ? ' winner' : ''}">
-                    <span>${p2Name}</span>
-                    <span class="playoff-score">${score2}</span>
-                </div>
-            `;
-            return box;
-        }
-
-        function getPlayoffParticipant(matchId, slot, scores, names) {
-            // Basic layout resolution logic for display purposes:
-            // Match 5 (Semi 1) is Winner 1 vs Winner 2
-            // Match 6 (Semi 2) is Winner 3 vs Winner 4
-            // Match 7 (Final) is Winner 5 vs Winner 6
-            if (matchId === 5) {
-                const prevId = slot === 1 ? 1 : 2;
-                return getWinnerOfMatch(prevId, scores, names) || "?";
-            }
-            if (matchId === 6) {
-                const prevId = slot === 1 ? 3 : 4;
-                return getWinnerOfMatch(prevId, scores, names) || "?";
-            }
-            if (matchId === 7) {
-                const prevId = slot === 1 ? 5 : 6;
-                return getWinnerOfMatch(prevId, scores, names) || "?";
-            }
-            return "?";
-        }
-
-        function getWinnerOfMatch(id, scores, names) {
-            const score = scores[id];
-            if (!score || !score.includes(":")) return null;
-            const parts = score.split(":");
-            const s1 = parseInt(parts[0]);
-            const s2 = parseInt(parts[1]);
-            
-            // Standard mapping fallback
-            if (id === 1) return s1 > s2 ? names[0] : names[1];
-            if (id === 2) return s1 > s2 ? names[2] : names[3];
-            if (id === 3) return s1 > s2 ? names[4] : names[5];
-            if (id === 4) return s1 > s2 ? names[6] : names[7];
-            
-            if (id === 5) return s1 > s2 ? getWinnerOfMatch(1, scores, names) : getWinnerOfMatch(2, scores, names);
-            if (id === 6) return s1 > s2 ? getWinnerOfMatch(3, scores, names) : getWinnerOfMatch(4, scores, names);
-            return null;
-        }
-
-        function calculateRoundRobinStandings(playerCount, scores) {
-            const wins = new Array(playerCount).fill(0);
-            
-            for (let f = 0; f < playerCount; f++) {
-                for (let s = f + 1; s < playerCount; s++) {
-                    const scoreKey = `${f}_${s}`;
-                    const score = scores[scoreKey];
-                    if (score) {
-                        if (score === 'W') {
-                            wins[f]++;
-                        } else if (score === 'L') {
-                            wins[s]++;
-                        } else if (score.includes(":")) {
-                            const parts = score.split(":");
-                            const p1 = parseInt(parts[0]);
-                            const p2 = parseInt(parts[1]);
-                            if (p1 > p2) wins[f]++;
-                            else if (p2 > p1) wins[s]++;
-                        }
-                    }
-                }
-            }
-
-            const list = [];
-            for (let i = 0; i < playerCount; i++) {
-                list.push({ index: i, points: wins[i] });
-            }
-
-            // Sort by points descending
-            list.sort((a, b) => b.points - a.points);
-            return list;
-        }
-
-        // RENDER HISTORY
-        function renderHistory() {
-            const listEl = document.getElementById('history-list-el');
-            listEl.innerHTML = '';
-
-            clubData.history.forEach(entry => {
-                const card = document.createElement('div');
-                card.className = 'history-card';
-                card.addEventListener('click', () => openHistoryModal(entry));
-
-                const header = document.createElement('div');
-                header.className = 'history-card-header';
-                
-                const titleCol = document.createElement('div');
-                titleCol.innerHTML = `
-                    <div class="history-card-title">${entry.name}</div>
-                    <div class="history-card-date">${entry.dateText}</div>
-                `;
-
-                const playersCount = document.createElement('span');
-                playersCount.className = 'history-card-players';
-                playersCount.textContent = `${entry.playersCount} игроков`;
-
-                header.appendChild(titleCol);
-                header.appendChild(playersCount);
-
-                const summary = document.createElement('div');
-                summary.className = 'history-card-summary';
-                summary.innerHTML = `🥇 Победитель: <span class="history-card-winner">${entry.winnerName}</span>`;
-
-                card.appendChild(header);
-                card.appendChild(summary);
-
-                listEl.appendChild(card);
-            });
-
-            if (clubData.history.length === 0) {
-                listEl.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">История турниров пуста</div>';
-            }
-        }
-
-                // DECODE URL ENCODED STRINGS (FOR PLAYERS AND MATCHES FROM FIREBASE)
+        // DECODE URL ENCODED STRINGS (FOR PLAYERS AND MATCHES FROM FIREBASE)
         function decodeName(str) {
             if (!str) return "";
             try {
@@ -2614,6 +2768,1141 @@
             document.getElementById('player-modal').style.display = 'none';
         }
 
+        // RENDER ACTIVE TOURNAMENT OR DRAFT SETUP PANEL (IF ADMIN)
+        function updateActiveTournament() {
+            const container = document.getElementById('active-tournament-container');
+            container.innerHTML = '';
+
+            const draft = clubData.draft;
+
+            // Empty state check
+            if (!draft || (!draft.isListGenerated && !draft.name)) {
+                if (isAdmin) {
+                    renderDraftSetupPanel(container);
+                } else {
+                    container.innerHTML = `
+                        <div class="active-tournament-empty">
+                            <i class="fa-solid fa-hourglass-start"></i>
+                            <h3>Нет активного турнира</h3>
+                            <p>Как только организатор начнет новый турнир в клубе, сетка и текущие результаты появятся здесь в реальном времени.</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // Decode player fields (1-to-1 mapping to preserve indexing for active games)
+            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
+            const playerNames = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
+            const withdrawnPlayers = new Set(draft.withdrawnPlayers || []);
+
+            // If setup phase (draft is not active but name is present)
+            if (!draft.isListGenerated) {
+                if (isAdmin) {
+                    renderDraftSetupPanel(container);
+                } else {
+                    const registeredNames = playerFields.map(f => decodeName(f.name).trim()).filter(n => n !== "");
+
+                    const header = document.createElement('div');
+                    header.className = 'active-header-card';
+                    header.innerHTML = `
+                        <div class="active-header-badge" style="background-color: rgba(255, 204, 0, 0.15); color: var(--apple-gold);"><i class="fa-solid fa-clock"></i></div>
+                        <div class="active-header-info">
+                            <div class="active-header-title">${draft.name || "Новый турнир"}</div>
+                            <div class="active-header-desc">Регистрация участников • Добавлено: ${registeredNames.length} • Победы: до ${draft.winsToWin || 2}</div>
+                        </div>
+                    `;
+                    container.appendChild(header);
+
+                    const activeHeader = document.createElement('h4');
+                    activeHeader.className = 'section-title';
+                    activeHeader.textContent = '👥 Зарегистрированные игроки';
+                    container.appendChild(activeHeader);
+
+                    const listContainer = document.createElement('div');
+                    listContainer.style.backgroundColor = 'var(--bg-card)';
+                    listContainer.style.border = '1px solid var(--border-color)';
+                    listContainer.style.borderRadius = '16px';
+                    listContainer.style.padding = '16px';
+                    listContainer.style.display = 'flex';
+                    listContainer.style.flexDirection = 'column';
+                    listContainer.style.gap = '10px';
+
+                    registeredNames.forEach((name, index) => {
+                        const row = document.createElement('div');
+                        row.style.display = 'flex';
+                        row.style.alignItems = 'center';
+                        row.style.fontSize = '14px';
+                        row.style.fontWeight = '600';
+                        row.innerHTML = `<span style="color: var(--apple-blue); width: 24px; font-weight:800;">${index + 1}</span> <span>${name}</span>`;
+                        listContainer.appendChild(row);
+                    });
+
+                    if (registeredNames.length === 0) {
+                        listContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px;">Ожидание добавления игроков организатором...</div>';
+                    }
+
+                    container.appendChild(listContainer);
+                }
+                return;
+            }
+
+            // Header info (Active Tournament)
+            const header = document.createElement('div');
+            header.className = 'active-header-card';
+            header.innerHTML = `
+                <div class="active-header-badge"><i class="fa-solid fa-satellite-dish"></i></div>
+                <div class="active-header-info">
+                    <div class="active-header-title">${draft.name || "Турнир в процессе"}</div>
+                    <div class="active-header-desc">Участников: ${playerNames.length} • Победы: до ${draft.winsToWin}</div>
+                </div>
+            `;
+            container.appendChild(header);
+
+            // Display names list with fallback for active game table resolution
+            const playerNamesWithFallback = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
+
+            // 1. Render active tables
+            const activeMatches = draft.activeRoundRobinMatches || [];
+            const activeHeader = document.createElement('h4');
+            activeHeader.className = 'section-title';
+            activeHeader.textContent = '🏓 Кто играет сейчас';
+            container.appendChild(activeHeader);
+
+            const activeListContainer = document.createElement('div');
+            activeListContainer.className = 'active-tables-container';
+
+            let hasActiveMatches = false;
+            activeMatches.forEach((matchStr, index) => {
+                if (matchStr && matchStr.includes("_")) {
+                    const parts = matchStr.split("_");
+                    const p1Idx = parseInt(parts[0]);
+                    const p2Idx = parseInt(parts[1]);
+                    
+                    const name1 = playerNamesWithFallback[p1Idx] || "";
+                    const name2 = playerNamesWithFallback[p2Idx] || "";
+
+                    const card = document.createElement('div');
+                    card.className = 'active-table-card';
+                    card.innerHTML = `
+                        <div class="active-table-number">${index + 1}</div>
+                        <div class="active-table-match">
+                            <span>${name1}</span>
+                            <span class="active-table-vs">vs</span>
+                            <span>${name2}</span>
+                        </div>
+                        <span class="active-table-badge">Идёт игра</span>
+                    `;
+
+                    if (isAdmin) {
+                        card.style.cursor = 'pointer';
+                        card.addEventListener('click', () => {
+                            openAdminScoreDialog(p1Idx, p2Idx, matchStr, index);
+                        });
+                    }
+
+                    activeListContainer.appendChild(card);
+                    hasActiveMatches = true;
+                }
+            });
+
+            if (!hasActiveMatches) {
+                activeListContainer.innerHTML = `
+                    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; color: var(--text-secondary); width: 100%; font-size: 13px;">
+                        Ожидаются свободные столы или свободные участники...
+                    </div>
+                `;
+            }
+            container.appendChild(activeListContainer);
+
+            // 2. Render Results
+            const resultsHeader = document.createElement('h4');
+            resultsHeader.className = 'section-title';
+            resultsHeader.textContent = '📊 Таблицы результатов';
+            container.appendChild(resultsHeader);
+
+            if (playerNames.length <= 10) {
+                // Round Robin table
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-scroll-wrapper';
+                
+                const table = document.createElement('table');
+                table.className = 'rr-grid';
+
+                // Header
+                const trHead = document.createElement('tr');
+                trHead.innerHTML = `<th>№</th><th class="player-col-header">Участник</th>`;
+                for (let i = 0; i < playerNames.length; i++) {
+                    trHead.innerHTML += `<th>${i+1}</th>`;
+                }
+                trHead.innerHTML += `<th>О</th><th>М</th>`;
+                table.appendChild(trHead);
+
+                // Standings calculation
+                const scoresMap = draft.matchScores || {};
+                const standings = calculateRoundRobinStandings(playerNames.length, scoresMap);
+                const placesByPlayer = standings.reduce((map, stat, idx) => {
+                    map[stat.index] = idx + 1;
+                    return map;
+                }, {});
+
+                for (let f = 0; f < playerNames.length; f++) {
+                    const tr = document.createElement('tr');
+                    
+                    const isWithdrawn = withdrawnPlayers.has(f);
+                    const strikeStyle = isWithdrawn ? 'text-decoration: line-through; opacity: 0.5;' : '';
+
+                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}</td>`;
+                    
+                    for (let s = 0; s < playerNames.length; s++) {
+                        if (f === s) {
+                            rowHTML += `<td class="diagonal-cell"></td>`;
+                        } else {
+                            const scoreKey = f < s ? `${f}_${s}` : `${s}_${f}`;
+                            const rawScore = scoresMap[scoreKey];
+                            
+                            let displayScore = "-";
+                            let cellClass = "";
+
+                            if (rawScore) {
+                                if (rawScore === 'W') {
+                                    displayScore = f < s ? 'W' : 'L';
+                                    cellClass = f < s ? 'win' : 'lost';
+                                } else if (rawScore === 'L') {
+                                    displayScore = f < s ? 'L' : 'W';
+                                    cellClass = f < s ? 'lost' : 'win';
+                                } else if (rawScore.includes(":")) {
+                                    const parts = rawScore.split(":");
+                                    const s1 = parseInt(parts[0]);
+                                    const s2 = parseInt(parts[1]);
+                                    if (f < s) {
+                                        displayScore = `${s1}:${s2}`;
+                                        cellClass = s1 > s2 ? 'win' : 'lost';
+                                    } else {
+                                        displayScore = `${s2}:${s1}`;
+                                        cellClass = s2 > s1 ? 'win' : 'lost';
+                                    }
+                                }
+                            }
+
+                            rowHTML += `<td class="score-cell ${cellClass}" data-f="${f}" data-s="${s}" data-key="${scoreKey}">${displayScore}</td>`;
+                        }
+                    }
+
+                    const points = standings.find(x => x.index === f).points;
+                    const place = placesByPlayer[f] || "-";
+
+                    rowHTML += `<td style="font-weight: 800; color: var(--apple-blue);">${points}</td><td>${place}</td>`;
+                    tr.innerHTML = rowHTML;
+                    
+                    // Attach click handler to grid cells if admin
+                    if (isAdmin) {
+                        tr.querySelectorAll('.score-cell').forEach(cell => {
+                            cell.style.cursor = 'pointer';
+                            cell.addEventListener('click', () => {
+                                const fIdx = parseInt(cell.getAttribute('data-f'));
+                                const sIdx = parseInt(cell.getAttribute('data-s'));
+                                const key = cell.getAttribute('data-key');
+                                openAdminScoreDialog(fIdx, sIdx, key);
+                            });
+                        });
+                    }
+
+                    table.appendChild(tr);
+                }
+                wrapper.appendChild(table);
+                container.appendChild(wrapper);
+
+                // Check if tournament is finished (all matches scored)
+                if (isAdmin) {
+                    const finishBtn = document.createElement('button');
+                    finishBtn.className = 'finish-tourney-btn';
+                    finishBtn.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> Завершить турнир и рассчитать дельты`;
+                    finishBtn.addEventListener('click', openTournamentFinishModal);
+                    container.appendChild(finishBtn);
+                }
+
+            } else {
+                // Playoff brackets
+                const wrapper = document.createElement('div');
+                wrapper.className = 'playoff-bracket-wrapper';
+                
+                const playoffScores = draft.playoffScores || {};
+
+                const quarterColumn = document.createElement('div');
+                quarterColumn.className = 'playoff-column';
+                for (let i = 1; i <= 4; i++) {
+                    quarterColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
+                }
+                wrapper.appendChild(quarterColumn);
+
+                const semiColumn = document.createElement('div');
+                semiColumn.className = 'playoff-column';
+                for (let i = 5; i <= 6; i++) {
+                    semiColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
+                }
+                wrapper.appendChild(semiColumn);
+
+                const finalColumn = document.createElement('div');
+                finalColumn.className = 'playoff-column';
+                finalColumn.appendChild(createPlayoffMatchBox(7, playoffScores, playerNames, true));
+                wrapper.appendChild(finalColumn);
+
+                container.appendChild(wrapper);
+
+                if (isAdmin) {
+                    const finishBtn = document.createElement('button');
+                    finishBtn.className = 'finish-tourney-btn';
+                    finishBtn.innerHTML = `<i class="fa-solid fa-square-check"></i> Завершить плей-офф и обновить рейтинги`;
+                    finishBtn.addEventListener('click', openTournamentFinishModal);
+                    container.appendChild(finishBtn);
+                }
+            }
+        }
+
+        // DRAFT SETUP PANEL VIEW (INLINE IN ACTIVE TAB FOR ADMINS)
+        function renderDraftSetupPanel(parentContainer) {
+            const card = document.createElement('div');
+            card.className = 'draft-setup-card';
+            
+            // Generate default name
+            const dateStr = new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const defaultName = `Вечерний турнир ${dateStr}`;
+
+            card.innerHTML = `
+                <div class="draft-setup-title"><i class="fa-solid fa-square-poll-horizontal"></i> Создание нового турнира</div>
+                
+                <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Название турнира</label>
+                    <input type="text" id="draft-name-input" class="login-input" style="margin:0;" value="${defaultName}">
+                </div>
+
+                <div class="counter-row">
+                    <span class="counter-label">👥 Лимит участников</span>
+                    <div class="counter-controls">
+                        <button class="counter-btn" onclick="adjustDraftVal('players', -1)">-</button>
+                        <span class="counter-val" id="draft-players-val">6</span>
+                        <button class="counter-btn" onclick="adjustDraftVal('players', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="counter-row">
+                    <span class="counter-label">🏓 Доступные столы</span>
+                    <div class="counter-controls">
+                        <button class="counter-btn" onclick="adjustDraftVal('tables', -1)">-</button>
+                        <span class="counter-val" id="draft-tables-val">2</span>
+                        <button class="counter-btn" onclick="adjustDraftVal('tables', 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="counter-row">
+                    <span class="counter-label">🏆 Побед в матче (Партий)</span>
+                    <div class="wins-segments">
+                        <button class="wins-segment-btn" id="wins-btn-1" onclick="selectDraftWins(1)">До 1</button>
+                        <button class="wins-segment-btn active" id="wins-btn-2" onclick="selectDraftWins(2)">До 2</button>
+                        <button class="wins-segment-btn" id="wins-btn-3" onclick="selectDraftWins(3)">До 3</button>
+                    </div>
+                </div>
+
+                <h4 class="section-title" style="margin-top:8px;">👥 Выберите участников из списка</h4>
+                <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0;" oninput="renderDraftPlayersSelector()">
+                
+                <div id="draft-players-list-selector" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <button onclick="submitCreateTournament()" class="login-btn" style="margin-top:12px; background-color: var(--apple-blue);">
+                    🏆 Создать турнир
+                </button>
+            `;
+
+            parentContainer.appendChild(card);
+            
+            // Initialize draft parameters in local memory
+            if (!window.draftSetup) {
+                window.draftSetup = {
+                    playersCount: 6,
+                    tablesCount: 2,
+                    winsToWin: 2
+                };
+            } else {
+                // Ensure values are displayed correctly
+                setTimeout(() => {
+                    document.getElementById('draft-players-val').textContent = window.draftSetup.playersCount;
+                    document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
+                    selectDraftWins(window.draftSetup.winsToWin);
+                }, 10);
+            }
+
+            renderDraftPlayersSelector();
+        }
+
+        // ADJUST COUNTERS
+        window.adjustDraftVal = function(type, delta) {
+            if (!window.draftSetup) return;
+            if (type === 'players') {
+                window.draftSetup.playersCount = Math.max(2, window.draftSetup.playersCount + delta);
+                document.getElementById('draft-players-val').textContent = window.draftSetup.playersCount;
+            } else if (type === 'tables') {
+                window.draftSetup.tablesCount = Math.max(1, window.draftSetup.tablesCount + delta);
+                document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
+            }
+        };
+
+        // WINS COUNT SEGMENT SELECTOR
+        window.selectDraftWins = function(wins) {
+            if (!window.draftSetup) return;
+            window.draftSetup.winsToWin = wins;
+            document.querySelectorAll('.wins-segment-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.getElementById(`wins-btn-${wins}`);
+            if (activeBtn) activeBtn.classList.add('active');
+        };
+
+        // RENDER CHECKBOX SELECTOR FOR DRAFT SETUP
+        window.renderDraftPlayersSelector = function() {
+            const listSelector = document.getElementById('draft-players-list-selector');
+            if (!listSelector) return;
+            listSelector.innerHTML = '';
+
+            const query = (document.getElementById('draft-player-search').value || '').trim().toLowerCase();
+            const sorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
+
+            sorted.forEach(p => {
+                if (query && !p.fullName.toLowerCase().includes(query)) return;
+                
+                const item = document.createElement('div');
+                const isSelected = selectedPlayerIdsForDraft.has(p.id);
+                item.className = `draft-player-item ${isSelected ? 'selected' : ''}`;
+                
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:12px; color:var(--text-secondary); font-weight:700;">★${p.rating.toFixed(0)}</span>
+                        <span style="font-size:14px; font-weight:700;">${p.fullName}</span>
+                    </div>
+                    <div class="draft-player-checkbox"><i class="fa-solid fa-check"></i></div>
+                `;
+
+                item.addEventListener('click', () => {
+                    if (selectedPlayerIdsForDraft.has(p.id)) {
+                        selectedPlayerIdsForDraft.delete(p.id);
+                    } else {
+                        selectedPlayerIdsForDraft.add(p.id);
+                    }
+                    renderDraftPlayersSelector();
+                });
+
+                listSelector.appendChild(item);
+            });
+
+            if (listSelector.children.length === 0) {
+                listSelector.innerHTML = '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:12px;">Игроки не найдены</div>';
+            }
+        };
+
+        // SUBMIT CREATE TOURNAMENT AND SYNC DRAFT TO FIREBASE
+        window.submitCreateTournament = function() {
+            const name = document.getElementById('draft-name-input').value.trim();
+            if (!name) {
+                showToast("Укажите название турнира!");
+                return;
+            }
+            if (selectedPlayerIdsForDraft.size < 2) {
+                showToast("Выберите как минимум 2 участников!");
+                return;
+            }
+
+            showLoader(true);
+
+            // Fetch selected players profiles
+            const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id))
+                .sort((a, b) => b.rating - a.rating); // sort by rating descending
+
+            // Format playerFields list
+            const playerFields = selectedPlayers.map((p, idx) => {
+                return {
+                    id: idx,
+                    name: safe_encode(p.fullName)
+                };
+            });
+
+            // Calculate starting fixed K
+            const avgRating = selectedPlayers.reduce((sum, p) => sum + p.rating, 0) / selectedPlayers.length;
+            const fixedK = avgRating < 250.0 ? 0.20 : (avgRating < 350.0 ? 0.25 : 0.30);
+
+            const draftObj = {
+                name: name,
+                playersCount: selectedPlayers.length,
+                tablesCount: window.draftSetup.tablesCount,
+                winsToWin: window.draftSetup.winsToWin,
+                isListGenerated: true,
+                fixedK: fixedK,
+                ratingApplied: false,
+                historySaved: false,
+                playerFieldsJson: JSON.stringify(playerFields),
+                matchScores: {},
+                withdrawnPlayers: [],
+                lastFinishedPlayers: [],
+                activeRoundRobinMatches: []
+            };
+
+            // Run scheduling for round robin
+            if (selectedPlayers.length <= 10) {
+                refreshActiveRoundRobinMatches(draftObj, selectedPlayers.length, window.draftSetup.tablesCount);
+            } else {
+                // Initialize playoff empty scores map
+                draftObj.playoffScores = {};
+            }
+
+            db.ref(`clubs/${activeClubId}/draft`).setValue(draftObj)
+                .then(() => {
+                    selectedPlayerIdsForDraft.clear();
+                    showLoader(false);
+                    showToast("Турнир успешно создан!");
+                })
+                .catch(e => {
+                    showLoader(false);
+                    showToast("Ошибка создания: " + e.message);
+                });
+        };
+
+        // PLAYOFF HELPER CARDS
+        function createPlayoffMatchBox(id, scores, names, isFinal = false) {
+            const box = document.createElement('div');
+            box.className = `playoff-match-box${isFinal ? ' final-box' : ''}`;
+
+            const score = scores[id] || "-";
+            const scoreP1 = score.includes(":") ? score.split(":")[0] : "-";
+            const scoreP2 = score.includes(":") ? score.split(":")[1] : "-";
+
+            let p1Name = "?";
+            let p2Name = "?";
+            
+            if (names.length >= 8) {
+                p1Name = getPlayoffParticipant(id, 1, scores, names);
+                p2Name = getPlayoffParticipant(id, 2, scores, names);
+            }
+
+            const row1Winner = scoreP1 !== "-" && parseInt(scoreP1) > parseInt(scoreP2);
+            const row2Winner = scoreP2 !== "-" && parseInt(scoreP2) > parseInt(scoreP1);
+
+            box.innerHTML = `
+                <div class="playoff-row${row1Winner ? ' winner' : ''}">
+                    <span class="playoff-player-name">${p1Name}</span>
+                    <span class="playoff-score">${scoreP1}</span>
+                </div>
+                <div class="playoff-divider"></div>
+                <div class="playoff-row${row2Winner ? ' winner' : ''}">
+                    <span class="playoff-player-name">${p2Name}</span>
+                    <span class="playoff-score">${scoreP2}</span>
+                </div>
+            `;
+
+            if (isAdmin && p1Name !== "?" && p2Name !== "?") {
+                box.style.cursor = 'pointer';
+                box.addEventListener('click', () => {
+                    openAdminPlayoffScoreDialog(id, p1Name, p2Name);
+                });
+            }
+
+            return box;
+        }
+
+        function getPlayoffParticipant(matchId, slot, scores, names) {
+            if (matchId === 5) {
+                const prevId = slot === 1 ? 1 : 2;
+                return getWinnerOfMatch(prevId, scores, names) || "?";
+            }
+            if (matchId === 6) {
+                const prevId = slot === 1 ? 3 : 4;
+                return getWinnerOfMatch(prevId, scores, names) || "?";
+            }
+            if (matchId === 7) {
+                const prevId = slot === 1 ? 5 : 6;
+                return getWinnerOfMatch(prevId, scores, names) || "?";
+            }
+            // Match 1, 2, 3, 4 quarterfinals are mapped to index 0..7
+            if (matchId === 1) return slot === 1 ? names[0] : names[1];
+            if (matchId === 2) return slot === 1 ? names[2] : names[3];
+            if (matchId === 3) return slot === 1 ? names[4] : names[5];
+            if (matchId === 4) return slot === 1 ? names[6] : names[7];
+            return "?";
+        }
+
+        function getWinnerOfMatch(id, scores, names) {
+            const score = scores[id];
+            if (!score || !score.includes(":")) return null;
+            const parts = score.split(":");
+            const s1 = parseInt(parts[0]);
+            const s2 = parseInt(parts[1]);
+            
+            if (id === 1) return s1 > s2 ? names[0] : names[1];
+            if (id === 2) return s1 > s2 ? names[2] : names[3];
+            if (id === 3) return s1 > s2 ? names[4] : names[5];
+            if (id === 4) return s1 > s2 ? names[6] : names[7];
+            
+            if (id === 5) return s1 > s2 ? getWinnerOfMatch(1, scores, names) : getWinnerOfMatch(2, scores, names);
+            if (id === 6) return s1 > s2 ? getWinnerOfMatch(3, scores, names) : getWinnerOfMatch(4, scores, names);
+            return null;
+        }
+
+        function calculateRoundRobinStandings(playerCount, scores) {
+            const wins = new Array(playerCount).fill(0);
+            
+            for (let f = 0; f < playerCount; f++) {
+                for (let s = f + 1; s < playerCount; s++) {
+                    const scoreKey = `${f}_${s}`;
+                    const score = scores[scoreKey];
+                    if (score) {
+                        if (score === 'W') {
+                            wins[f]++;
+                        } else if (score === 'L') {
+                            wins[s]++;
+                        } else if (score.includes(":")) {
+                            const parts = score.split(":");
+                            const p1 = parseInt(parts[0]);
+                            const p2 = parseInt(parts[1]);
+                            if (p1 > p2) wins[f]++;
+                            else if (p2 > p1) wins[s]++;
+                        }
+                    }
+                }
+            }
+
+            const list = [];
+            for (let i = 0; i < playerCount; i++) {
+                list.push({ index: i, points: wins[i] });
+            }
+
+            // Sort by points descending
+            list.sort((a, b) => b.points - a.points);
+            return list;
+        }
+
+        // ADMIN MATCH SCORING CONTROLLERS
+        function openAdminScoreDialog(fIdx, sIdx, scoreKey, tableIndex = null) {
+            const playerFields = JSON.parse(clubData.draft.playerFieldsJson || "[]");
+            const name1 = decodeName(playerFields[fIdx].name);
+            const name2 = decodeName(playerFields[sIdx].name);
+            
+            activeScoreMatch = { f: fIdx, s: sIdx, scoreKey: scoreKey, index: tableIndex };
+
+            document.getElementById('admin-score-match-title').textContent = `${name1} vs ${name2}`;
+
+            // Show compact if winsToWin == 1
+            const winsToWin = clubData.draft.winsToWin || 2;
+            const compactContainer = document.getElementById('admin-score-compact-container');
+            const standardContainer = document.getElementById('admin-score-standard-container');
+
+            if (winsToWin === 1) {
+                compactContainer.style.display = 'flex';
+                standardContainer.style.display = 'none';
+            } else {
+                compactContainer.style.display = 'none';
+                standardContainer.style.display = 'flex';
+                
+                const btnsGrid = document.getElementById('admin-score-btns-grid');
+                btnsGrid.innerHTML = '';
+
+                // Generate standard scores
+                // winsToWin == 2 -> 2:0, 2:1, 0:2, 1:2
+                // winsToWin == 3 -> 3:0, 3:1, 3:2, 0:3, 1:3, 2:3
+                const possibleScores = [];
+                for (let l = 0; l < winsToWin; l++) {
+                    possibleScores.push({ w: winsToWin, l: l });
+                }
+                
+                const rowLeft = document.createElement('div');
+                rowLeft.style.display = 'flex';
+                rowLeft.style.gap = '8px';
+                
+                const rowRight = document.createElement('div');
+                rowRight.style.display = 'flex';
+                rowRight.style.gap = '8px';
+                rowRight.style.marginTop = '8px';
+
+                possibleScores.forEach(item => {
+                    const btnW = document.createElement('button');
+                    btnW.className = 'dialog-score-btn score-btn-won';
+                    btnW.style.flex = '1';
+                    btnW.textContent = `${item.w} : ${item.l}`;
+                    btnW.addEventListener('click', () => submitQuickScore(`${item.w}:${item.l}`));
+                    rowLeft.appendChild(btnW);
+
+                    const btnL = document.createElement('button');
+                    btnL.className = 'dialog-score-btn score-btn-lost';
+                    btnL.style.flex = '1';
+                    btnL.textContent = `${item.l} : ${item.w}`;
+                    btnL.addEventListener('click', () => submitQuickScore(`${item.l}:${item.w}`));
+                    rowRight.appendChild(btnL);
+                });
+
+                btnsGrid.appendChild(rowLeft);
+                btnsGrid.appendChild(rowRight);
+            }
+
+            // Set withdraw names
+            document.getElementById('withdraw-p1-btn').textContent = `Снять: ${name1}`;
+            document.getElementById('withdraw-p2-btn').textContent = `Снять: ${name2}`;
+
+            document.getElementById('admin-score-modal').style.display = 'flex';
+        }
+
+        function closeAdminScoreModal() {
+            activeScoreMatch = null;
+            document.getElementById('admin-score-modal').style.display = 'none';
+        }
+
+        // SAVE MATCH RESULT (ROUND ROBIN)
+        window.submitQuickScore = function(score) {
+            if (!activeScoreMatch) return;
+            showLoader(true);
+
+            const draft = { ...clubData.draft };
+            if (!draft.matchScores) draft.matchScores = {};
+            
+            draft.matchScores[activeScoreMatch.scoreKey] = score;
+
+            // Track last finished players
+            draft.lastFinishedPlayers = [activeScoreMatch.f, activeScoreMatch.s];
+
+            // If match was played at a table, clear table assignment
+            if (activeScoreMatch.index !== null && draft.activeRoundRobinMatches) {
+                draft.activeRoundRobinMatches[activeScoreMatch.index] = null;
+            }
+
+            // Reschedule next match
+            refreshActiveRoundRobinMatches(draft, draft.playersCount, draft.tablesCount);
+
+            db.ref(`clubs/${activeClubId}/draft`).setValue(draft)
+                .then(() => {
+                    closeAdminScoreModal();
+                    showLoader(false);
+                    showToast("Счет сохранен!");
+                })
+                .catch(e => {
+                    showLoader(false);
+                    showToast("Ошибка сохранения: " + e.message);
+                });
+        };
+
+        // WITHDRAW PLAYER (ROUND ROBIN)
+        window.submitPlayerWithdrawal = function(slotIdx) {
+            if (!activeScoreMatch) return;
+            const targetPlayerIdx = slotIdx === 0 ? activeScoreMatch.f : activeScoreMatch.s;
+            const targetPlayerName = decodeName(JSON.parse(clubData.draft.playerFieldsJson || "[]")[targetPlayerIdx].name);
+
+            if (!confirm(`Вы действительно хотите снять игрока "${targetPlayerName}" с текущего турнира? Все его несыгранные матчи будут аннулированы.`)) {
+                return;
+            }
+
+            showLoader(true);
+            const draft = { ...clubData.draft };
+            if (!draft.withdrawnPlayers) draft.withdrawnPlayers = [];
+            
+            // Add to withdrawn list
+            if (!draft.withdrawnPlayers.includes(targetPlayerIdx)) {
+                draft.withdrawnPlayers.push(targetPlayerIdx);
+            }
+
+            // Void all remaining matches for this player in matchScores
+            const playerCount = draft.playersCount;
+            for (let idx = 0; idx < playerCount; idx++) {
+                if (idx === targetPlayerIdx) continue;
+                const scoreKey = targetPlayerIdx < idx ? `${targetPlayerIdx}_${idx}` : `${idx}_${targetPlayerIdx}`;
+                if (!draft.matchScores[scoreKey]) {
+                    draft.matchScores[scoreKey] = targetPlayerIdx < idx ? "0:2" : "2:0"; // auto-defeat (0:2 sets)
+                }
+            }
+
+            // Clear table slots if occupied
+            if (draft.activeRoundRobinMatches) {
+                for (let i = 0; i < draft.activeRoundRobinMatches.length; i++) {
+                    const match = draft.activeRoundRobinMatches[i];
+                    if (match && (match.startsWith(`${targetPlayerIdx}_`) || match.endsWith(`_${targetPlayerIdx}`))) {
+                        draft.activeRoundRobinMatches[i] = null;
+                    }
+                }
+            }
+
+            // Reschedule next matches
+            refreshActiveRoundRobinMatches(draft, playerCount, draft.tablesCount);
+
+            db.ref(`clubs/${activeClubId}/draft`).setValue(draft)
+                .then(() => {
+                    closeAdminScoreModal();
+                    showLoader(false);
+                    showToast(`Игрок "${targetPlayerName}" снят с турнира`);
+                })
+                .catch(e => {
+                    showLoader(false);
+                    showToast("Ошибка сохранения: " + e.message);
+                });
+        };
+
+        // PLAYOFF SCORE MODALS
+        function openAdminPlayoffScoreDialog(matchId, p1Name, p2Name) {
+            activePlayoffMatchId = matchId;
+            document.getElementById('admin-playoff-match-title').textContent = `${p1Name} vs ${p2Name}`;
+            document.getElementById('admin-playoff-score-modal').style.display = 'flex';
+        }
+        function closeAdminPlayoffScoreModal() {
+            activePlayoffMatchId = null;
+            document.getElementById('admin-playoff-score-modal').style.display = 'none';
+        }
+        window.submitPlayoffScore = function(score) {
+            if (!activePlayoffMatchId) return;
+            showLoader(true);
+
+            db.ref(`clubs/${activeClubId}/draft/playoffScores/${activePlayoffMatchId}`).setValue(score)
+                .then(() => {
+                    closeAdminPlayoffScoreModal();
+                    showLoader(false);
+                    showToast("Счет сохранен!");
+                })
+                .catch(e => {
+                    showLoader(false);
+                    showToast("Ошибка сохранения: " + e.message);
+                });
+        };
+
+        // RTTF RATING CALCULATION LOGIC (PORT FROM KOTLIN)
+        function calculateDeltas(playerNames, scores, K, applyPlaceBonuses, playersList) {
+            const tournamentPlayers = playerNames.map(name => {
+                const p = playersList.find(pl => pl.fullName.toLowerCase() === name.toLowerCase());
+                return p ? { ...p } : { id: 999, fullName: name, rating: 200.0, tournamentsPlayed: 0, wins: 0, losses: 0 };
+            });
+
+            const accumulatedDeltas = {};
+            const winIncrements = {};
+            const lossIncrements = {};
+            tournamentPlayers.forEach(p => {
+                accumulatedDeltas[p.fullName.toLowerCase()] = 0.0;
+                winIncrements[p.fullName.toLowerCase()] = 0;
+                lossIncrements[p.fullName.toLowerCase()] = 0;
+            });
+
+            const parseScore = (str) => {
+                if (!str || !str.includes(":")) return null;
+                const p = str.split(":");
+                return [parseInt(p[0]), parseInt(p[1])];
+            };
+
+            for (let f = 0; f < playerNames.length; f++) {
+                for (let s = f + 1; s < playerNames.length; s++) {
+                    const scoreKey = `${f}_${s}`;
+                    const scoreStr = scores[scoreKey];
+                    const score = parseScore(scoreStr);
+                    if (!score || score[0] === score[1]) continue;
+
+                    const p1 = tournamentPlayers[f];
+                    const p2 = tournamentPlayers[s];
+
+                    const p1Won = score[0] > score[1];
+                    const winner = p1Won ? p1 : p2;
+                    const loser = p1Won ? p2 : p1;
+                    const winnerScore = p1Won ? score[0] : score[1];
+                    const loserScore = p1Won ? score[1] : score[0];
+
+                    const winnerName = winner.fullName.toLowerCase();
+                    const loserName = loser.fullName.toLowerCase();
+
+                    winIncrements[winnerName]++;
+                    lossIncrements[loserName]++;
+
+                    // rttfBaseDelta
+                    const diff = winner.rating - loser.rating;
+                    let baseDelta = 0.0;
+                    if (diff < 100.0) {
+                        baseDelta = (100.0 - diff) / 10.0;
+                    }
+
+                    if (baseDelta <= 0.0) continue;
+
+                    // scoreDominanceMultiplier
+                    let scoreCoeff = 1.0;
+                    if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
+                    else if (winnerScore === 3 && loserScore === 2) scoreCoeff = 0.8;
+                    else if (winnerScore === 3 && loserScore === 1) scoreCoeff = 0.9;
+                    else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
+
+                    const winnerIsNovice = winner.tournamentsPlayed <= 5;
+                    const loserIsNovice = loser.tournamentsPlayed <= 5;
+
+                    const winnerDelta = winnerIsNovice ? Math.round(baseDelta * 1.0 * 100) / 100 
+                                                       : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
+                    const loserDelta = loserIsNovice ? Math.round(baseDelta * 0.5 * 100) / 100 
+                                                     : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
+
+                    accumulatedDeltas[winnerName] += winnerDelta;
+                    accumulatedDeltas[loserName] -= loserDelta;
+                }
+            }
+
+            // Standings
+            const standings = calculateRoundRobinStandings(playerNames.length, scores);
+            if (applyPlaceBonuses && playerNames.length >= 3) {
+                const bonus1 = 1.5;
+                const bonus2 = 1.0;
+                const bonus3 = 0.5;
+
+                const p1Name = tournamentPlayers[standings[0].index].fullName.toLowerCase();
+                const p2Name = tournamentPlayers[standings[1].index].fullName.toLowerCase();
+                const p3Name = tournamentPlayers[standings[2].index].fullName.toLowerCase();
+
+                accumulatedDeltas[p1Name] += bonus1;
+                accumulatedDeltas[p2Name] += bonus2;
+                accumulatedDeltas[p3Name] += bonus3;
+            }
+
+            return {
+                deltas: accumulatedDeltas,
+                wins: winIncrements,
+                losses: lossIncrements,
+                standings: standings
+            };
+        }
+
+        // OPEN TOURNAMENT FINALIZE / REVIEW MODAL
+        window.calculatedResult = null; // store calculation outcome
+
+        function openTournamentFinishModal() {
+            const draft = clubData.draft;
+            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
+            const playerNames = playerFields.map(f => decodeName(f.name).trim());
+            const scores = draft.matchScores || {};
+            const K = draft.fixedK || 0.20;
+
+            const applyPlaceBonuses = document.getElementById('finish-bonuses-checkbox').checked;
+            
+            // Calculate
+            const result = calculateDeltas(playerNames, scores, K, applyPlaceBonuses, clubData.players);
+            window.calculatedResult = result;
+
+            const tbody = document.getElementById('finish-tourney-ratings-tbody');
+            tbody.innerHTML = '';
+
+            result.standings.forEach((item, idx) => {
+                const name = playerNames[item.index];
+                const p = clubData.players.find(pl => pl.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
+                const delta = result.deltas[name.toLowerCase()] || 0.0;
+                const newRating = p.rating + delta;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${idx + 1}</td>
+                    <td>${name}</td>
+                    <td>${p.rating.toFixed(1)} → <strong>${newRating.toFixed(1)}</strong></td>
+                    <td style="text-align:right; font-weight:800; color:${delta >= 0 ? 'var(--apple-green)' : 'var(--apple-red)'};">
+                        ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('tournament-finish-modal').style.display = 'flex';
+        }
+
+        function closeTournamentFinishModal() {
+            window.calculatedResult = null;
+            document.getElementById('tournament-finish-modal').style.display = 'none';
+        }
+
+        // Re-calculate when place bonuses checkbox changes
+        document.getElementById('finish-bonuses-checkbox').addEventListener('change', () => {
+            if (document.getElementById('tournament-finish-modal').style.display === 'flex') {
+                openTournamentFinishModal();
+            }
+        });
+
+        // APPLY RATINGS AND SAVE TOURNAMENT TO HISTORY (FINALIZE)
+        window.submitFinalizeTournament = function() {
+            if (!window.calculatedResult) return;
+            showLoader(true);
+
+            const result = window.calculatedResult;
+            const draft = clubData.draft;
+            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
+            const playerNames = playerFields.map(f => decodeName(f.name).trim());
+            const K = draft.fixedK || 0.20;
+
+            // 1. Update player ratings, wins, losses, tournaments count, and medals in player base
+            const updatedPlayers = clubData.players.map(p => {
+                const nameKey = p.fullName.toLowerCase();
+                const delta = result.deltas[nameKey];
+                if (delta !== undefined) {
+                    const winsInc = result.wins[nameKey] || 0;
+                    const lossesInc = result.losses[nameKey] || 0;
+                    
+                    let goldInc = 0;
+                    let silverInc = 0;
+                    let bronzeInc = 0;
+
+                    const finalPlace = result.standings.findIndex(item => playerNames[item.index].toLowerCase() === nameKey) + 1;
+                    if (finalPlace === 1) goldInc = 1;
+                    else if (finalPlace === 2) silverInc = 1;
+                    else if (finalPlace === 3) bronzeInc = 1;
+
+                    return {
+                        ...p,
+                        rating: Math.max(0.0, p.rating + delta),
+                        tournamentsPlayed: p.tournamentsPlayed + 1,
+                        wins: p.wins + winsInc,
+                        losses: p.losses + lossesInc,
+                        goldMedals: p.goldMedals + goldInc,
+                        silverMedals: p.silverMedals + silverInc,
+                        bronzeMedals: p.bronzeMedals + bronzeInc
+                    };
+                }
+                return p;
+            });
+
+            // 2. Format structuredRatings string: name::oldRating::newRating::delta
+            const srRows = [];
+            result.standings.forEach((item) => {
+                const name = playerNames[item.index];
+                const p = clubData.players.find(pl => pl.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
+                const delta = result.deltas[name.toLowerCase()] || 0.0;
+                const newRating = p.rating + delta;
+                srRows.push(`${safe_encode(name)}::${p.rating.toFixed(1)}::${newRating.toFixed(1)}::${delta.toFixed(2)}`);
+            });
+            const structuredRatings = srRows.join(";;");
+
+            // 3. Format structuredMatches string: p1::p2::score::p1Delta::p2Delta
+            const smRows = [];
+            const scores = draft.matchScores || {};
+            for (let f = 0; f < playerNames.length; f++) {
+                for (let s = f + 1; s < playerNames.length; s++) {
+                    const scoreKey = `${f}_${s}`;
+                    const score = scores[scoreKey];
+                    if (score && score.includes(":")) {
+                        const name1 = playerNames[f];
+                        const name2 = playerNames[s];
+                        
+                        // Deltas for this individual match
+                        const p1 = clubData.players.find(pl => pl.fullName.toLowerCase() === name1.toLowerCase()) || { rating: 200.0 };
+                        const p2 = clubData.players.find(pl => pl.fullName.toLowerCase() === name2.toLowerCase()) || { rating: 200.0 };
+                        const matchParts = score.split(":");
+                        const s1 = parseInt(matchParts[0]);
+                        const s2 = parseInt(matchParts[1]);
+                        
+                        const p1Won = s1 > s2;
+                        const winner = p1Won ? p1 : p2;
+                        const loser = p1Won ? p2 : p1;
+                        const winnerScore = p1Won ? s1 : s2;
+                        const loserScore = p1Won ? s2 : s1;
+
+                        const diff = winner.rating - loser.rating;
+                        let baseDelta = 0.0;
+                        if (diff < 100.0) {
+                            baseDelta = (100.0 - diff) / 10.0;
+                        }
+
+                        let matchDelta = 0.0;
+                        if (baseDelta > 0.0) {
+                            let scoreCoeff = 1.0;
+                            if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
+                            else if (winnerScore === 3 && loserScore === 2) scoreCoeff = 0.8;
+                            else if (winnerScore === 3 && loserScore === 1) scoreCoeff = 0.9;
+                            else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
+
+                            const winnerIsNovice = winner.tournamentsPlayed <= 5;
+                            matchDelta = winnerIsNovice ? baseDelta * 1.0 : baseDelta * K * scoreCoeff;
+                            matchDelta = Math.round(matchDelta * 100) / 100;
+                        }
+
+                        const p1Delta = p1Won ? matchDelta : -matchDelta;
+                        const p2Delta = p1Won ? -matchDelta : matchDelta;
+
+                        const p1DeltaStr = (p1Delta >= 0 ? '+' : '') + p1Delta.toFixed(2);
+                        const p2DeltaStr = (p2Delta >= 0 ? '+' : '') + p2Delta.toFixed(2);
+                        smRows.push(safe_encode(name1) + "::" + safe_encode(name2) + "::" + score + "::" + p1DeltaStr + "::" + p2DeltaStr);
+                    }
+                }
+            }
+            const structuredMatches = smRows.join(";;");
+
+            // 4. Create History Entry
+            const winnerName = playerNames[result.standings[0].index];
+            const historyEntry = {
+                id: Date.now(),
+                name: draft.name || "Вечерний турнир",
+                dateText: new Date().toLocaleDateString('ru-RU') + " " + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                playersCount: playerNames.length,
+                winnerName: winnerName,
+                structuredRatings: structuredRatings,
+                structuredMatches: structuredMatches
+            };
+
+            const updatedHistory = [...clubData.history, historyEntry];
+
+            // 5. Save all to Firebase and clear draft
+            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updatedPlayers))
+                .then(() => {
+                    return db.ref(`clubs/${activeClubId}/history`).setValue(JSON.stringify(updatedHistory));
+                })
+                .then(() => {
+                    // Reset/remove draft
+                    return db.ref(`clubs/${activeClubId}/draft`).remove();
+                })
+                .then(() => {
+                    closeTournamentFinishModal();
+                    showLoader(false);
+                    showToast("Турнир успешно сохранен в историю!");
+                })
+                .catch(e => {
+                    showLoader(false);
+                    showToast("Ошибка сохранения: " + e.message);
+                });
+        };
+
+        // RENDER HISTORY
+        function renderHistory() {
+            const listEl = document.getElementById('history-list-el');
+            listEl.innerHTML = '';
+
+            // Copy and reverse order to show newest first
+            const reversed = [...clubData.history].reverse();
+
+            reversed.forEach(entry => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                card.addEventListener('click', () => openHistoryModal(entry));
+
+                const header = document.createElement('div');
+                header.className = 'history-card-header';
+                
+                const titleCol = document.createElement('div');
+                titleCol.innerHTML = `
+                    <div class="history-card-title">${entry.name}</div>
+                    <div class="history-card-date">${entry.dateText}</div>
+                `;
+
+                const playersCount = document.createElement('span');
+                playersCount.className = 'history-card-winner-badge';
+                playersCount.innerHTML = `<i class="fa-solid fa-users"></i> ${entry.playersCount}`;
+
+                header.appendChild(titleCol);
+                header.appendChild(playersCount);
+
+                const winnerRow = document.createElement('div');
+                winnerRow.className = 'history-card-winner-row';
+                winnerRow.innerHTML = `
+                    <span>🥇 Победитель:</span>
+                    <span class="history-card-winner">${entry.winnerName}</span>
+                `;
+
+                card.appendChild(header);
+                card.appendChild(winnerRow);
+                listEl.appendChild(card);
+            });
+
+            if (reversed.length === 0) {
+                listEl.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">История турниров пуста</div>';
+            }
+        }
+
         // MODAL: OPEN TOURNAMENT DETAILS FROM HISTORY
         function openHistoryModal(entry) {
             const modal = document.getElementById('history-modal');
@@ -2645,7 +3934,7 @@
                         <div style="font-weight: 700;">${medal} <span style="margin-left: 6px;">${name}</span></div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <div style="color: var(--apple-blue); font-weight: 800;">${rating}</div>
-                            ${delta !== 0 ? `<div style="font-size:11px; font-weight:700; color:${delta > 0 ? 'var(--apple-green)' : 'var(--apple-red)'};">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</div>` : ''}
+                            ${delta !== 0 ? '<div style="font-size:11px; font-weight:700; color:' + (delta > 0 ? 'var(--apple-green)' : 'var(--apple-red)') + '">' + (delta > 0 ? '+' : '') + delta.toFixed(1) + '</div>' : ''}
                         </div>
                     `;
                     standingsEl.appendChild(row);
@@ -2690,8 +3979,19 @@
         window.addEventListener('click', (e) => {
             const playerModal = document.getElementById('player-modal');
             const historyModal = document.getElementById('history-modal');
+            const playerAddModal = document.getElementById('player-add-modal');
+            const playerEditModal = document.getElementById('player-edit-modal');
+            const adminScoreModal = document.getElementById('admin-score-modal');
+            const adminPlayoffScoreModal = document.getElementById('admin-playoff-score-modal');
+            const tournamentFinishModal = document.getElementById('tournament-finish-modal');
+
             if (e.target === playerModal) closePlayerModal();
             if (e.target === historyModal) closeHistoryModal();
+            if (e.target === playerAddModal) closePlayerAddModal();
+            if (e.target === playerEditModal) closePlayerEditModal();
+            if (e.target === adminScoreModal) closeAdminScoreModal();
+            if (e.target === adminPlayoffScoreModal) closeAdminPlayoffScoreModal();
+            if (e.target === tournamentFinishModal) closeTournamentFinishModal();
         });
         </script>
 </body>
