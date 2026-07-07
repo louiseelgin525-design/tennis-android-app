@@ -1003,11 +1003,11 @@ private fun playerSuggestions(
         .take(limit)
 }
 
-private fun encodeHistoryField(value: String): String =
-    URLEncoder.encode(value, "UTF-8")
+private fun encodeHistoryField(value: String?): String =
+    URLEncoder.encode(value.orEmpty(), "UTF-8")
 
-private fun decodeHistoryField(value: String): String =
-    URLDecoder.decode(value, "UTF-8")
+private fun decodeHistoryField(value: String?): String =
+    URLDecoder.decode(value.orEmpty(), "UTF-8")
 
 private fun loadTournamentHistory(context: Context, clubId: String): List<TournamentHistoryEntry> {
     val saved = context
