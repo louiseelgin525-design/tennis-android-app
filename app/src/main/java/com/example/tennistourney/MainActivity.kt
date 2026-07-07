@@ -485,8 +485,8 @@ data class TournamentHistoryEntry(
     val dateText: String,
     val playersCount: Int,
     val winnerName: String,
-    val standingsText: String,
-    val ratingText: String,
+    val standingsText: String?,
+    val ratingText: String?,
     val structuredMatches: String = "",
     val structuredRatings: String = ""
 )
@@ -1561,6 +1561,14 @@ fun TennisApp() {
         mutableStateOf(defaultClub)
     }
 
+    val currentClubDisplayName = remember(currentClubId) {
+        if (currentClubId != null) {
+            loadClubsRegistry(context).find { it.clubId == currentClubId }?.displayName ?: currentClubId!!
+        } else {
+            ""
+        }
+    }
+
     var currentScreen by remember {
         val startScreen = when {
             initialClubs.isEmpty() -> AppScreen.ClubLogin
@@ -1867,6 +1875,7 @@ fun TennisApp() {
     MaterialTheme(typography = AppTypography) {
         CompositionLocalProvider(
             LocalCurrentClubId provides currentClubId,
+            LocalCurrentClubName provides currentClubDisplayName,
             LocalIsAdmin provides isAdmin
         ) {
             when (currentScreen) {
@@ -1874,7 +1883,17 @@ fun TennisApp() {
                 draft = draft,
                 clubPlayers = clubPlayers,
                 tournamentHistory = tournamentHistory,
-                onNavigateToCreate = { currentScreen = AppScreen.CreateTournament },
+                onNavigateToCreate = {
+                    if (draft.name.isBlank()) {
+                        val now = java.util.Date()
+                        val dateText = SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(now)
+                        draft.name = "${currentClubDisplayName.ifBlank { "Турнир" }} $dateText"
+                        if (currentClubId != null) {
+                            FirebaseStorage.syncDraftProperty(currentClubId!!, "name", draft.name)
+                        }
+                    }
+                    currentScreen = AppScreen.CreateTournament
+                },
                 onNavigateToPlayerBase = { currentScreen = AppScreen.PlayerBase },
                 onNavigateToHistory = { currentScreen = AppScreen.History },
                 onChangeClub = {
@@ -3245,8 +3264,8 @@ fun TournamentHistoryScreen(
             history.filter { entry ->
                 entry.name.lowercase().contains(query) ||
                         entry.winnerName.lowercase().contains(query) ||
-                        entry.standingsText.lowercase().contains(query) ||
-                        entry.ratingText.lowercase().contains(query)
+                        entry.standingsText.orEmpty().lowercase().contains(query) ||
+                        entry.ratingText.orEmpty().lowercase().contains(query)
             }
         }
     }
@@ -3538,7 +3557,7 @@ fun TournamentDetailsDialog(
                             Text("Нажмите на игрока, чтобы увидеть результаты его матчей", style = AppTypography.bodySmall, color = AppleBlue)
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            val lines = entry.standingsText.split("\n").filter { it.isNotBlank() }
+                            val lines = entry.standingsText.orEmpty().split("\n").filter { it.isNotBlank() }
                             lines.forEachIndexed { index, line ->
                                 val parts = line.split(". ", limit = 2)
                                 if (parts.size == 2) {

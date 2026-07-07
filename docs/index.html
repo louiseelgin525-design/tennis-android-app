@@ -1884,6 +1884,7 @@
 
         // GLOBAL STATE
         let activeClubId = null;
+        let activeClubDisplayName = "";
         let isAdmin = false;
         let selectedRole = 'viewer'; // 'viewer' or 'admin'
         let clubData = {
@@ -2067,6 +2068,7 @@
                         
                         // Set header
                         const displayClubName = config.displayName || (clubId.charAt(0).toUpperCase() + clubId.slice(1));
+                        activeClubDisplayName = displayClubName;
                         headerClubName.innerHTML = `${displayClubName} ${isAdmin ? '<span class="admin-badge">' + SVG_ICONS.crown + ' Админ</span>' : ''}`;
                         
                         const roleEl = document.getElementById('header-club-role');
@@ -3586,9 +3588,11 @@
             const card = document.createElement('div');
             card.className = 'draft-setup-card';
             
-            // Generate default name
-            const dateStr = new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const defaultName = `Вечерний турнир ${dateStr}`;
+            // Generate default name: club name + current date and time
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const defaultName = `${activeClubDisplayName || "Турнир"} ${dateStr} ${timeStr}`;
 
             card.innerHTML = `
                 <div class="draft-setup-title">${SVG_ICONS.poll} Создание нового турнира</div>
