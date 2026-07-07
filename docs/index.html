@@ -1306,7 +1306,7 @@
                 Войти <i class="fa-solid fa-arrow-right"></i>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.0.7 (07.07.2026 13:15)
+                Версия веб-приложения: 1.0.8 (07.07.2026 19:25)
             </div>
         </form>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
@@ -4366,7 +4366,6 @@
             const matchesEl = document.getElementById('modal-history-matches');
             matchesEl.innerHTML = '';
             
-            const matchesList = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
             matchesList.forEach(matchStr => {
                 const parts = matchStr.split("::");
                 if (parts.length >= 3) {
