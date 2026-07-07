@@ -3544,7 +3544,12 @@ fun TournamentDetailsDialog(
                                 if (parts.size == 2) {
                                     val place = parts[0]
                                     val details = parts[1] // e.g. "Смирнов Михаил — 3 очка (3:0)"
-                                    val playerName = details.split(" — ").getOrNull(0) ?: details
+                                    var playerName = details.split(" — ").getOrNull(0) ?: details
+                                    playerName = playerName.replace("🥇", "")
+                                        .replace("🥈", "")
+                                        .replace("🥉", "")
+                                        .replace("🏆", "")
+                                        .trim()
 
                                     val isExpanded = expandedPlayer == playerName
                                     val overallDelta = ratingChangesMap[playerName] ?: 0.0
