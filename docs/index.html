@@ -1189,12 +1189,19 @@
 
     <script>
         // FIREBASE CONFIGURATION
-        const firebaseConfig = {
-            databaseURL: "https://tennis-tourney-8255a-default-rtdb.europe-west1.firebasedatabase.app"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        let db = null;
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyCqwljuUFZHWcVJh6lKsbqDhVEq3wRsTNE",
+                projectId: "tennis-tourney-8255a",
+                databaseURL: "https://tennis-tourney-8255a-default-rtdb.europe-west1.firebasedatabase.app"
+            };
+            
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+        }
 
         // APP STATE
         let activeClubId = null;
@@ -1300,6 +1307,11 @@
 
         // LOGIN ATTEMPT
         function attemptLogin(clubId) {
+            if (!db) {
+                showLoader(false);
+                showToast("Ошибка: База данных не инициализирована!");
+                return;
+            }
             showLoader(true);
             try {
                 // Validate clubConfig exists
