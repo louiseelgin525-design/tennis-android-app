@@ -20,12 +20,12 @@
 
     <style>
         :root {
-            --bg-main: #0f172a;
-            --bg-card: #1e293b;
-            --bg-input: #1e293b;
-            --border-color: #334155;
-            --text-main: #f8fafc;
-            --text-secondary: #94a3b8;
+            --bg-main: #f2f2f7;
+            --bg-card: #ffffff;
+            --bg-input: #e9e9eb;
+            --border-color: #e5e5ea;
+            --text-main: #000000;
+            --text-secondary: #8e8e93;
             --apple-blue: #007aff;
             --apple-green: #34c759;
             --apple-red: #ff3b30;
@@ -80,7 +80,7 @@
             font-size: 32px;
             font-weight: 800;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--text-main), #38bdf8);
+            background: linear-gradient(135deg, var(--apple-blue), #5856d6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -152,7 +152,7 @@
         /* HEADER */
         .app-header {
             height: 64px;
-            background-color: rgba(15, 23, 42, 0.85);
+            background-color: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
@@ -218,7 +218,7 @@
             left: 0;
             right: 0;
             height: calc(64px + var(--safe-area-bottom));
-            background-color: rgba(30, 41, 59, 0.85);
+            background-color: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid var(--border-color);
@@ -313,7 +313,7 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background-color: #334155;
+            background-color: var(--bg-input);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -535,7 +535,7 @@
         }
 
         .rr-grid th {
-            background-color: rgba(15, 23, 42, 0.3);
+            background-color: rgba(0, 0, 0, 0.03);
             font-weight: 700;
             color: var(--text-secondary);
         }
@@ -552,7 +552,7 @@
         }
 
         .rr-grid .diagonal-cell {
-            background-color: rgba(15, 23, 42, 0.6);
+            background-color: rgba(0, 0, 0, 0.05);
         }
 
         .rr-grid .score-cell {
@@ -710,7 +710,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: rgba(15, 23, 42, 0.75);
+            background-color: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 500;
@@ -747,7 +747,7 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(0, 0, 0, 0.05);
             border: none;
             color: var(--text-main);
             font-size: 16px;
@@ -784,7 +784,7 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background-color: #334155;
+            background-color: var(--bg-input);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -793,7 +793,7 @@
             margin-bottom: 12px;
             background-size: cover;
             background-position: center;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .player-modal-stats-grid {
@@ -805,7 +805,7 @@
         }
 
         .player-modal-stat-box {
-            background-color: rgba(15, 23, 42, 0.4);
+            background-color: rgba(0, 0, 0, 0.02);
             border: 1px solid var(--border-color);
             border-radius: 14px;
             padding: 12px 8px;
@@ -831,7 +831,7 @@
             justify-content: center;
             gap: 16px;
             padding: 12px;
-            background-color: rgba(15, 23, 42, 0.4);
+            background-color: rgba(0, 0, 0, 0.02);
             border: 1px solid var(--border-color);
             border-radius: 14px;
             margin-bottom: 20px;
@@ -856,7 +856,7 @@
         }
 
         .modal-match-item {
-            background-color: rgba(15, 23, 42, 0.3);
+            background-color: rgba(0, 0, 0, 0.02);
             border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 10px 12px;
@@ -904,7 +904,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: rgba(15, 23, 42, 0.6);
+            background-color: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             z-index: 1000;
@@ -940,7 +940,7 @@
             font-weight: 700;
             z-index: 2000;
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
             white-space: nowrap;
         }
 
@@ -950,7 +950,7 @@
 
         /* CHART BUTTONS & STYLING */
         .chart-range-btn {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.03);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             color: var(--text-secondary);
@@ -979,7 +979,7 @@
             align-items: center;
         }
         .results-tourney-card {
-            background: rgba(30, 41, 59, 0.4);
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 14px;
@@ -992,7 +992,7 @@
             font-size: 14px;
             font-weight: 700;
             margin-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 8px;
         }
         .results-table {
@@ -1010,7 +1010,7 @@
             border-bottom: 1px solid var(--border-color);
         }
         .results-table td {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-color);
             color: var(--text-main);
         }
         .results-table .score-col {
@@ -1031,7 +1031,7 @@
         }
         .role-btn {
             flex: 1;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-input);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
             padding: 10px;
@@ -1108,7 +1108,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 12px;
         }
         .counter-label {
@@ -1124,7 +1124,7 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.08);
+            background: var(--bg-input);
             border: 1px solid var(--border-color);
             color: var(--text-main);
             font-weight: 700;
@@ -1135,7 +1135,7 @@
             justify-content: center;
         }
         .counter-btn:active {
-            background: rgba(255,255,255,0.15);
+            background: rgba(0,0,0,0.05);
         }
         .counter-val {
             font-weight: 800;
@@ -1146,7 +1146,7 @@
         .wins-segments {
             display: flex;
             gap: 6px;
-            background: rgba(0,0,0,0.2);
+            background: var(--bg-input);
             padding: 4px;
             border-radius: 10px;
         }
@@ -1164,7 +1164,7 @@
         .wins-segment-btn.active {
             background: var(--bg-card);
             color: var(--text-main);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .draft-player-item {
             display: flex;
@@ -1172,7 +1172,7 @@
             justify-content: space-between;
             padding: 10px 12px;
             border-radius: 12px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(0,0,0,0.02);
             border: 1px solid transparent;
             cursor: pointer;
             transition: all 0.2s;
@@ -1266,7 +1266,7 @@
         .finish-grid-table th, .finish-grid-table td {
             padding: 10px;
             text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid var(--border-color);
         }
         .finish-grid-table th {
             color: var(--text-secondary);
@@ -1423,7 +1423,7 @@
             <!-- AWARDS / MEDALS GROUPED -->
             <div id="player-awards-section" style="display:none; width: 100%; margin-bottom: 24px;">
                 <h4 class="section-title">Награды</h4>
-                <div id="player-awards-list" style="background: rgba(15,23,42,0.3); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
+                <div id="player-awards-list" style="background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
                     <!-- Filled dynamically -->
                 </div>
             </div>
@@ -1431,7 +1431,7 @@
             <!-- H2H MATCHUPS SECTION -->
             <div id="player-h2h-section" style="display:none; width: 100%; margin-bottom: 24px;">
                 <h4 class="section-title">⚔️ Личные встречи (H2H)</h4>
-                <div id="player-h2h-list" style="background: rgba(15,23,42,0.3); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
+                <div id="player-h2h-list" style="background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
                     <!-- Filled dynamically -->
                 </div>
             </div>
