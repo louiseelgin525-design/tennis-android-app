@@ -1389,7 +1389,7 @@
             <section id="view-ratings" class="view">
                 <div class="search-bar">
                     <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    <input type="text" id="player-search" class="search-input" placeholder="Поиск по фамилии или имени">
+                    <input type="text" id="player-search" class="search-input" placeholder="Поиск по фамилии или имени" autocomplete="off" autocapitalize="words">
                 </div>
                 <div class="players-list" id="players-list-el">
                     <!-- Loaded dynamically -->
@@ -1516,7 +1516,7 @@
                 
                 <div class="stat-group">
                     <label>ФИО игрока</label>
-                    <input type="text" id="add-player-name" class="login-input" placeholder="Фамилия Имя" autocomplete="off" style="margin:0; text-align:left;">
+                    <input type="text" id="add-player-name" class="login-input" placeholder="Фамилия Имя" autocomplete="off" autocapitalize="words" style="margin:0; text-align:left;">
                 </div>
                 
                 <div class="stat-group">
@@ -1581,7 +1581,7 @@
                 
                 <div class="stat-group">
                     <label>ФИО игрока</label>
-                    <input type="text" id="edit-player-name" class="login-input" placeholder="Фамилия Имя" autocomplete="off" style="margin:0; text-align:left;">
+                    <input type="text" id="edit-player-name" class="login-input" placeholder="Фамилия Имя" autocomplete="off" autocapitalize="words" style="margin:0; text-align:left;">
                 </div>
                 
                 <div class="stat-group">
@@ -2319,6 +2319,27 @@
             reader.readAsDataURL(file);
         };
 
+        function capitalizeName(name) {
+            if (!name) return "";
+            return name
+                .trim()
+                .split(/\s+/)
+                .map(word => {
+                    return word
+                        .split('-')
+                        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                        .join('-');
+                })
+                .join(' ');
+        }
+
+        document.getElementById('add-player-name').addEventListener('blur', function() {
+            this.value = capitalizeName(this.value);
+        });
+        document.getElementById('edit-player-name').addEventListener('blur', function() {
+            this.value = capitalizeName(this.value);
+        });
+
         function openPlayerAddModal() {
             document.getElementById('add-player-name').value = '';
             document.getElementById('add-player-rating').value = '';
@@ -2341,7 +2362,7 @@
             document.getElementById('player-add-modal').style.display = 'none';
         }
         function submitAddPlayer() {
-            const name = document.getElementById('add-player-name').value.trim();
+            const name = capitalizeName(document.getElementById('add-player-name').value);
             const ratingVal = parseFloat(document.getElementById('add-player-rating').value);
             if (!name || isNaN(ratingVal)) {
                 showToast("Заполните имя и рейтинг!");
@@ -2419,7 +2440,7 @@
         }
         function submitEditPlayer() {
             if (!editPlayerTarget) return;
-            const name = document.getElementById('edit-player-name').value.trim();
+            const name = capitalizeName(document.getElementById('edit-player-name').value);
             const ratingVal = parseFloat(document.getElementById('edit-player-rating').value);
             if (!name || isNaN(ratingVal)) {
                 showToast("Заполните все поля!");
@@ -3506,7 +3527,7 @@
                 </div>
 
                 <h4 class="section-title" style="margin-top:8px;">👥 Выберите участников из списка</h4>
-                <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0;" oninput="renderDraftPlayersSelector()">
+                <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0;" autocomplete="off" autocapitalize="words" oninput="renderDraftPlayersSelector()">
                 
                 <div id="draft-players-list-selector" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px;">
                     <!-- Rendered dynamically -->
