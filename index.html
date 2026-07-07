@@ -1663,7 +1663,6 @@
 
             // Display names list with fallback for active game table resolution
             const playerNamesWithFallback = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
-            const withdrawnPlayers = new Set(draft.withdrawnPlayers || []);
 
             // 1. Render active tables
             const activeMatches = draft.activeRoundRobinMatches || [];
@@ -2693,6 +2692,7 @@
             const historyModal = document.getElementById('history-modal');
             if (e.target === playerModal) closePlayerModal();
             if (e.target === historyModal) closeHistoryModal();
-        });\n\n        </script>
+        });
+        </script>
 </body>
 </html>
