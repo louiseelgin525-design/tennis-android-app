@@ -1413,9 +1413,14 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.1.7 (07.07.2026 23:48)
+                Версия веб-приложения: 1.1.8 (08.07.2026 00:00)
             </div>
         </form>
+        <div style="margin-top: 16px;">
+            <button type="button" onclick="openCreateClubModal()" style="background: none; border: none; color: var(--apple-blue); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+                🏢 Создать новый клуб
+            </button>
+        </div>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
             <div>[System] Лог инициализации...</div>
         </div>
@@ -1477,6 +1482,38 @@
                 История
             </button>
         </nav>
+    </div>
+
+    <!-- MODAL: CREATE CLUB -->
+    <div id="create-club-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px; width: 100%;">
+            <button class="modal-close-btn" onclick="closeCreateClubModal()"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+            
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:36px; margin-bottom:8px;">🏢</div>
+                <h3 class="modal-title">Создание нового клуба</h3>
+                <span class="modal-subtitle">Зарегистрируйте теннисный клуб в базе данных</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Название клуба</label>
+                    <input type="text" id="create-club-name" class="login-input" style="margin:0;" placeholder="Например: Сатурн" autocomplete="off">
+                </div>
+                <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">ПИН-код администратора</label>
+                    <input type="password" id="create-club-pin" class="login-input" style="margin:0;" placeholder="Для авторизации организатора" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password">
+                </div>
+                <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Секретное слово</label>
+                    <input type="text" id="create-club-secret" class="login-input" style="margin:0;" placeholder="Например: теннис" autocomplete="off">
+                </div>
+                
+                <button onclick="submitCreateClub()" class="login-btn" style="margin-top:12px; background-color: var(--apple-blue);">
+                    ✨ Создать клуб
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL: PLAYER DETAIL -->
@@ -2051,6 +2088,94 @@
                 toast.classList.remove('show');
             }, 3000);
         }
+
+        // CLUB CREATION DIALOGS & ACTION
+        window.openCreateClubModal = function() {
+            document.getElementById('create-club-name').value = '';
+            document.getElementById('create-club-pin').value = '';
+            document.getElementById('create-club-secret').value = '';
+            document.getElementById('create-club-modal').style.display = 'flex';
+            debugLog("Модальное окно создания клуба открыто.");
+        };
+
+        window.closeCreateClubModal = function() {
+            document.getElementById('create-club-modal').style.display = 'none';
+            debugLog("Модальное окно создания клуба закрыто.");
+        };
+
+        window.submitCreateClub = function() {
+            const nameRaw = document.getElementById('create-club-name').value.trim();
+            const pinRaw = document.getElementById('create-club-pin').value.trim();
+            const secretRaw = document.getElementById('create-club-secret').value.trim();
+
+            if (!nameRaw || !pinRaw || !secretRaw) {
+                showToast("Заполните все поля!");
+                return;
+            }
+
+            // Convert to lowercase and strip whitespace (equivalent to Kotlin replace("\\s+".toRegex(), ""))
+            const formattedId = nameRaw.toLowerCase().replace(/[\s\u200B-\u200D\uFEFF]+/g, '').normalize('NFC');
+            if (!formattedId) {
+                showToast("Недопустимое название!");
+                return;
+            }
+
+            if (!db) {
+                showToast("Ошибка: База данных не инициализирована!");
+                return;
+            }
+
+            showLoader(true);
+            debugLog("Проверка уникальности ID нового клуба: '" + formattedId + "'...");
+
+            db.ref("clubConfigs").child(formattedId).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    showLoader(false);
+                    showToast("Такой клуб уже существует в базе!");
+                    debugLog("Ошибка создания: Клуб '" + formattedId + "' уже зарегистрирован.");
+                } else {
+                    const newConfig = {
+                        clubId: formattedId,
+                        displayName: nameRaw,
+                        adminPin: pinRaw,
+                        secretWord: secretRaw
+                    };
+
+                    const jsonString = JSON.stringify(newConfig);
+
+                    const updates = {};
+                    updates[`clubConfigs/${formattedId}`] = jsonString;
+                    updates[`clubs/${formattedId}/players`] = "[]";
+                    updates[`clubs/${formattedId}/history`] = "[]";
+                    updates[`clubs/${formattedId}/draft`] = null;
+
+                    debugLog("Сохранение конфигурации нового клуба в Firebase...");
+                    db.ref().update(updates)
+                        .then(() => {
+                            showLoader(false);
+                            closeCreateClubModal();
+                            showToast("Клуб успешно создан!");
+                            debugLog("Клуб '" + formattedId + "' успешно зарегистрирован. Выполняется авто-вход...");
+                            
+                            // Automate admin login
+                            selectedRole = 'admin';
+                            if (document.getElementById('role-admin-btn')) {
+                                setRole('admin');
+                            }
+                            attemptLogin(formattedId, pinRaw);
+                        })
+                        .catch(err => {
+                            showLoader(false);
+                            showToast("Ошибка сохранения: " + err.message);
+                            debugLog("Ошибка Firebase при создании: " + err.message);
+                        });
+                }
+            }, (error) => {
+                showLoader(false);
+                showToast("Ошибка соединения: " + error.message);
+                debugLog("Ошибка Firebase соединения: " + error.message);
+            });
+        };
 
         // LOGIN ATTEMPT
         function attemptLogin(clubId, pin) {
