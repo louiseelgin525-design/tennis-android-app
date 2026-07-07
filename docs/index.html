@@ -2634,6 +2634,15 @@
             }
         }
 
+        // NORMALIZE AND CLEAN NAMES FOR RELIABLE CROSS-PLATFORM COMPARISONS
+        function cleanNameString(s) {
+            if (!s) return "";
+            try {
+                s = decodeURIComponent(s.replace(/\+/g, ' '));
+            } catch (e) {}
+            return s.trim().replace(/\s+/g, ' ').toLowerCase();
+        }
+
         // CHART DATA HELPERS
         let currentChartRange = 'all';
 
@@ -3422,12 +3431,15 @@
                     listContainer.style.gap = '10px';
 
                     registeredNames.forEach((name, index) => {
+                        const pProfile = clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(name));
+                        const ratingStr = pProfile ? ` <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
+                        
                         const row = document.createElement('div');
                         row.style.display = 'flex';
                         row.style.alignItems = 'center';
                         row.style.fontSize = '14px';
                         row.style.fontWeight = '600';
-                        row.innerHTML = `<span style="color: var(--apple-blue); width: 24px; font-weight:800;">${index + 1}</span> <span>${name}</span>`;
+                        row.innerHTML = `<span style="color: var(--apple-blue); width: 24px; font-weight:800;">${index + 1}</span> <span>${name}${ratingStr}</span>`;
                         listContainer.appendChild(row);
                     });
 
@@ -3545,7 +3557,7 @@
                     const isWithdrawn = withdrawnPlayers.has(f);
                     const strikeStyle = isWithdrawn ? 'text-decoration: line-through; opacity: 0.5;' : '';
                     
-                    const pProfile = clubData.players.find(p => p.fullName.trim().toLowerCase() === playerNames[f].trim().toLowerCase());
+                    const pProfile = clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(playerNames[f]));
                     const ratingStr = pProfile ? ` <span style="font-size:11px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
 
                     let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${ratingStr}</td>`;
@@ -3803,7 +3815,7 @@
                     chip.style.transition = 'all 0.15s';
                     
                     chip.innerHTML = `
-                        <span>${p.fullName}</span>
+                        <span>${p.fullName} <span style="font-size:10px; opacity:0.75; font-weight:normal;">★${p.rating.toFixed(0)}</span></span>
                         <span style="font-weight:900; font-size:14px; opacity:0.6; padding-left: 2px;">×</span>
                     `;
                     
@@ -4064,14 +4076,19 @@
             const row1Winner = scoreP1 !== "-" && parseInt(scoreP1) > parseInt(scoreP2);
             const row2Winner = scoreP2 !== "-" && parseInt(scoreP2) > parseInt(scoreP1);
 
+            const p1Profile = p1Name !== "?" ? clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(p1Name)) : null;
+            const p2Profile = p2Name !== "?" ? clubData.players.find(p => cleanNameString(p.fullName) === cleanNameString(p2Name)) : null;
+            const p1Display = p1Profile ? `${p1Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p1Profile.rating.toFixed(0)}</span>` : p1Name;
+            const p2Display = p2Profile ? `${p2Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p2Profile.rating.toFixed(0)}</span>` : p2Name;
+
             box.innerHTML = `
                 <div class="playoff-row${row1Winner ? ' winner' : ''}">
-                    <span class="playoff-player-name">${p1Name}</span>
+                    <span class="playoff-player-name">${p1Display}</span>
                     <span class="playoff-score">${scoreP1}</span>
                 </div>
                 <div class="playoff-divider"></div>
                 <div class="playoff-row${row2Winner ? ' winner' : ''}">
-                    <span class="playoff-player-name">${p2Name}</span>
+                    <span class="playoff-player-name">${p2Display}</span>
                     <span class="playoff-score">${scoreP2}</span>
                 </div>
             `;
