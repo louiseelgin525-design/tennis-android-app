@@ -947,6 +947,80 @@
         .toast-msg.show {
             transform: translateX(-50%) translateY(0);
         }
+
+        /* CHART BUTTONS & STYLING */
+        .chart-range-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .chart-range-btn:active {
+            transform: scale(0.95);
+        }
+        .chart-range-btn.active {
+            background: var(--apple-blue);
+            color: white;
+            border-color: var(--apple-blue);
+        }
+
+        /* TABLES IN RESULTS */
+        .results-tourney-header {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .results-tourney-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 14px;
+            margin-top: 10px;
+        }
+        .results-player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 8px;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .results-table th, .results-table td {
+            padding: 6px 8px;
+            text-align: left;
+        }
+        .results-table th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .results-table td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+        }
+        .results-table .score-col {
+            font-weight: 800;
+            text-align: center;
+        }
+        .results-table .delta-col {
+            font-weight: 800;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -1032,7 +1106,7 @@
 
     <!-- MODAL: PLAYER DETAIL -->
     <div id="player-modal" class="modal-overlay">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width: 600px; width: 100%;">
             <button class="modal-close-btn" onclick="closePlayerModal()"><i class="fa-solid fa-xmark"></i></button>
             <div class="player-modal-header">
                 <div class="player-modal-avatar" id="modal-player-avatar">И</div>
@@ -1061,9 +1135,35 @@
                 <div class="modal-medal-item">🥉 <span id="modal-medal-bronze">0</span></div>
             </div>
 
-            <h4 class="section-title" style="margin-top: 12px;">Сыгранные матчи клуба</h4>
-            <div class="matches-scroll-list" id="modal-matches-list">
-                <!-- Loaded dynamically -->
+            <!-- RATING HISTORY CHART -->
+            <div id="chart-section-block" style="display:none; width: 100%; margin-bottom: 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                    <span id="chart-max-rating" style="font-size: 13px; font-weight:700; color:var(--apple-gold);">Максимальный: -</span>
+                    <div class="chart-ranges" style="display:flex; gap:4px;">
+                        <button class="chart-range-btn active" data-range="all" onclick="changeChartRange('all')">Все время</button>
+                        <button class="chart-range-btn" data-range="year" onclick="changeChartRange('year')">Год</button>
+                        <button class="chart-range-btn" data-range="6m" onclick="changeChartRange('6m')">6 мес</button>
+                        <button class="chart-range-btn" data-range="10" onclick="changeChartRange('10')">10 игр</button>
+                    </div>
+                </div>
+                <div style="position:relative; width: 100%; height: 220px; background: rgba(15,23,42,0.3); border-radius:16px; border: 1px solid var(--border-color); padding: 8px;">
+                    <canvas id="rating-chart" style="width:100%; height:100%;"></canvas>
+                    <div id="chart-tooltip" style="position:absolute; display:none; background:rgba(30,41,59,0.95); border:1px solid var(--border-color); padding:8px 12px; border-radius:8px; font-size:11px; z-index:1000; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+                </div>
+            </div>
+
+            <!-- AWARDS / MEDALS GROUPED -->
+            <div id="player-awards-section" style="display:none; width: 100%; margin-bottom: 24px;">
+                <h4 class="section-title">Награды</h4>
+                <div id="player-awards-list" style="background: rgba(15,23,42,0.3); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
+            <!-- RESULTS LIST -->
+            <h4 class="section-title">Результаты матчей</h4>
+            <div id="player-results-list" style="width: 100%; display:flex; flex-direction:column; gap:16px;">
+                <!-- Filled dynamically -->
             </div>
         </div>
     </div>
@@ -1748,8 +1848,380 @@
             }
         }
 
+                // DECODE URL ENCODED STRINGS (FOR PLAYERS AND MATCHES FROM FIREBASE)
+        function decodeName(str) {
+            if (!str) return "";
+            try {
+                return decodeURIComponent(str.replace(/\+/g, ' '));
+            } catch (e) {
+                return str;
+            }
+        }
+
+        // CHART DATA HELPERS
+        let currentChartRange = 'all';
+
+        function changeChartRange(range) {
+            currentChartRange = range;
+            document.querySelectorAll('.chart-range-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-range') === range) {
+                    btn.classList.add('active');
+                }
+            });
+            updateChartData();
+        }
+
+        function updateChartData() {
+            const modal = document.getElementById('player-modal');
+            const playerHistory = modal.playerHistory || [];
+            if (playerHistory.length === 0) return;
+
+            const timeline = [];
+            
+            // Add starting rating point before first tournament
+            timeline.push({
+                rating: playerHistory[0].oldRating,
+                dateText: playerHistory[0].dateText,
+                tourneyName: 'Стартовый рейтинг',
+                place: null,
+                timestamp: playerHistory[0].timestamp - 86400000 // 1 day before
+            });
+
+            playerHistory.forEach(h => {
+                timeline.push({
+                    rating: h.newRating,
+                    dateText: h.dateText,
+                    tourneyName: h.tournamentName,
+                    place: h.place,
+                    timestamp: h.timestamp
+                });
+            });
+
+            // Filter by range
+            let filtered = [];
+            const now = Date.now();
+            if (currentChartRange === 'year') {
+                const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
+                filtered = timeline.filter(t => t.timestamp >= oneYearAgo);
+                if (filtered.length < 2) filtered = timeline.slice(-5);
+            } else if (currentChartRange === '6m') {
+                const sixMonthsAgo = now - 182 * 24 * 60 * 60 * 1000;
+                filtered = timeline.filter(t => t.timestamp >= sixMonthsAgo);
+                if (filtered.length < 2) filtered = timeline.slice(-5);
+            } else if (currentChartRange === '10') {
+                filtered = timeline.slice(-10);
+            } else {
+                filtered = timeline;
+            }
+
+            // Max rating
+            let maxRating = 0;
+            let maxPoint = null;
+            timeline.forEach(t => {
+                if (t.rating > maxRating) {
+                    maxRating = t.rating;
+                    maxPoint = t;
+                }
+            });
+
+            const maxLabelEl = document.getElementById('chart-max-rating');
+            if (maxPoint) {
+                maxLabelEl.textContent = `Максимальный: ★${maxRating.toFixed(1)} (${maxPoint.dateText})`;
+            } else {
+                maxLabelEl.textContent = '';
+            }
+
+            drawCanvasChart(filtered);
+        }
+
+        function drawCanvasChart(points) {
+            const canvas = document.getElementById('rating-chart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (points.length === 0) return;
+
+            const paddingLeft = 32;
+            const paddingRight = 12;
+            const paddingTop = 12;
+            const paddingBottom = 24;
+
+            const chartWidth = width - paddingLeft - paddingRight;
+            const chartHeight = height - paddingTop - paddingBottom;
+
+            const ratings = points.map(p => p.rating);
+            let maxVal = Math.max(...ratings);
+            let minVal = Math.min(...ratings);
+
+            const diff = maxVal - minVal;
+            if (diff === 0) {
+                maxVal += 50;
+                minVal = Math.max(0, minVal - 50);
+            } else {
+                maxVal += diff * 0.15;
+                minVal = Math.max(0, minVal - diff * 0.15);
+            }
+
+            // Draw Y Grid lines & Labels
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 0.5;
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            const gridCount = 5;
+            for (let i = 0; i < gridCount; i++) {
+                const fraction = i / (gridCount - 1);
+                const val = minVal + (maxVal - minVal) * fraction;
+                const y = paddingTop + chartHeight - (chartHeight * fraction);
+
+                ctx.beginPath();
+                ctx.moveTo(paddingLeft, y);
+                ctx.lineTo(width - paddingRight, y);
+                ctx.stroke();
+
+                ctx.fillText(Math.round(val), paddingLeft - 6, y);
+            }
+
+            const getX = (idx) => {
+                if (points.length <= 1) return paddingLeft + chartWidth / 2;
+                return paddingLeft + (chartWidth * (idx / (points.length - 1)));
+            };
+
+            const getY = (val) => {
+                return paddingTop + chartHeight - (chartHeight * ((val - minVal) / (maxVal - minVal)));
+            };
+
+            // Area under curve
+            if (points.length >= 2) {
+                ctx.beginPath();
+                ctx.moveTo(getX(0), paddingTop + chartHeight);
+                for (let i = 0; i < points.length; i++) {
+                    ctx.lineTo(getX(i), getY(points[i].rating));
+                }
+                ctx.lineTo(getX(points.length - 1), paddingTop + chartHeight);
+                ctx.closePath();
+
+                const grad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+                grad.addColorStop(0, 'rgba(0, 122, 255, 0.2)');
+                grad.addColorStop(1, 'rgba(0, 122, 255, 0.0)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+
+            // Line
+            ctx.beginPath();
+            ctx.strokeStyle = '#007aff';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            for (let i = 0; i < points.length; i++) {
+                const x = getX(i);
+                const y = getY(points[i].rating);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Points
+            points.forEach((p, idx) => {
+                const x = getX(idx);
+                const y = getY(p.rating);
+
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = '#007aff';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            });
+
+            // Date labels on X Axis
+            ctx.fillStyle = '#94a3b8';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            if (points.length >= 2) {
+                ctx.fillText(points[0].dateText, getX(0), paddingTop + chartHeight + 6);
+                ctx.fillText(points[points.length - 1].dateText, getX(points.length - 1), paddingTop + chartHeight + 6);
+            } else if (points.length === 1) {
+                ctx.fillText(points[0].dateText, getX(0), paddingTop + chartHeight + 6);
+            }
+
+            // Tooltip and Hover
+            const redrawWithHover = (hoverIdx) => {
+                ctx.clearRect(0, 0, width, height);
+
+                // Grid
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 0.5;
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+
+                for (let i = 0; i < gridCount; i++) {
+                    const fraction = i / (gridCount - 1);
+                    const val = minVal + (maxVal - minVal) * fraction;
+                    const y = paddingTop + chartHeight - (chartHeight * fraction);
+                    ctx.beginPath();
+                    ctx.moveTo(paddingLeft, y);
+                    ctx.lineTo(width - paddingRight, y);
+                    ctx.stroke();
+                    ctx.fillText(Math.round(val), paddingLeft - 6, y);
+                }
+
+                // Area
+                if (points.length >= 2) {
+                    ctx.beginPath();
+                    ctx.moveTo(getX(0), paddingTop + chartHeight);
+                    for (let i = 0; i < points.length; i++) {
+                        ctx.lineTo(getX(i), getY(points[i].rating));
+                    }
+                    ctx.lineTo(getX(points.length - 1), paddingTop + chartHeight);
+                    ctx.closePath();
+                    const grad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+                    grad.addColorStop(0, 'rgba(0, 122, 255, 0.2)');
+                    grad.addColorStop(1, 'rgba(0, 122, 255, 0.0)');
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                }
+
+                // Line
+                ctx.beginPath();
+                ctx.strokeStyle = '#007aff';
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
+                for (let i = 0; i < points.length; i++) {
+                    const x = getX(i);
+                    const y = getY(points[i].rating);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Dates X Axis
+                ctx.fillStyle = '#94a3b8';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                if (points.length >= 2) {
+                    ctx.fillText(points[0].dateText, getX(0), paddingTop + chartHeight + 6);
+                    ctx.fillText(points[points.length - 1].dateText, getX(points.length - 1), paddingTop + chartHeight + 6);
+                } else if (points.length === 1) {
+                    ctx.fillText(points[0].dateText, getX(0), paddingTop + chartHeight + 6);
+                }
+
+                // Points & vertical lines
+                points.forEach((p, idx) => {
+                    const x = getX(idx);
+                    const y = getY(p.rating);
+
+                    if (idx === hoverIdx) {
+                        // Dash line
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                        ctx.setLineDash([4, 4]);
+                        ctx.beginPath();
+                        ctx.moveTo(x, paddingTop);
+                        ctx.lineTo(x, paddingTop + chartHeight);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        // Glow
+                        ctx.beginPath();
+                        ctx.arc(x, y, 7, 0, 2 * Math.PI);
+                        ctx.fillStyle = 'rgba(0, 122, 255, 0.4)';
+                        ctx.fill();
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#007aff';
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                });
+
+                const tooltip = document.getElementById('chart-tooltip');
+                if (hoverIdx !== -1) {
+                    const p = points[hoverIdx];
+                    const medalText = p.place ? ` • ${p.place} место` : '';
+                    tooltip.innerHTML = `
+                        <div style="font-weight:700; color:white; font-size:12px;">★${p.rating.toFixed(1)}</div>
+                        <div style="color:var(--text-secondary); margin-top:2px;">${p.tourneyName}${medalText}</div>
+                        <div style="color:var(--text-secondary); font-size:10px; margin-top:2px;">${p.dateText}</div>
+                    `;
+                    tooltip.style.display = 'block';
+
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const pointX = getX(hoverIdx);
+                    const pointY = getY(p.rating);
+
+                    let left = pointX + 12;
+                    if (left + 140 > canvasRect.width) {
+                        left = pointX - 150;
+                    }
+                    let top = pointY - 20;
+                    if (top < 10) top = 10;
+
+                    tooltip.style.left = `${left}px`;
+                    tooltip.style.top = `${top}px`;
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            };
+
+            const handleXMove = (clientX) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = clientX - rect.left;
+
+                let closestIdx = 0;
+                let minDist = Infinity;
+
+                for (let i = 0; i < points.length; i++) {
+                    const dist = Math.abs(getX(i) - mouseX);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestIdx = i;
+                    }
+                }
+
+                if (minDist < 40) {
+                    redrawWithHover(closestIdx);
+                } else {
+                    redrawWithHover(-1);
+                }
+            };
+
+            canvas.onmousemove = (e) => handleXMove(e.clientX);
+            canvas.onmouseleave = () => redrawWithHover(-1);
+            canvas.ontouchstart = (e) => {
+                if (e.touches.length > 0) handleXMove(e.touches[0].clientX);
+            };
+            canvas.ontouchmove = (e) => {
+                if (e.touches.length > 0) handleXMove(e.touches[0].clientX);
+            };
+            canvas.ontouchend = () => redrawWithHover(-1);
+        }
+
         // MODAL: OPEN PLAYER PROFILE
         function openPlayerModal(player) {
+            currentChartRange = 'all';
             const modal = document.getElementById('player-modal');
             
             document.getElementById('modal-player-name').textContent = player.fullName;
@@ -1773,68 +2245,216 @@
                 avatarEl.textContent = player.fullName.charAt(0).toUpperCase();
             }
 
-            // Matches played
-            const matchesListEl = document.getElementById('modal-matches-list');
-            matchesListEl.innerHTML = '';
-
-            let hasMatches = false;
-
-            // We scan the history of tournaments to extract matches this player participated in!
-            clubData.history.forEach(entry => {
-                const sMatches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
-                sMatches.forEach(matchStr => {
-                    // Match format: p1|p2|score
-                    const parts = matchStr.split("|");
-                    if (parts.size >= 3 || parts.length >= 3) {
-                        const p1 = parts[0];
-                        const p2 = parts[1];
-                        const score = parts[2];
-
-                        const isP1 = p1.toLowerCase() === player.fullName.toLowerCase();
-                        const isP2 = p2.toLowerCase() === player.fullName.toLowerCase();
-
-                        if (isP1 || isP2) {
-                            const opponent = isP1 ? p2 : p1;
-                            const scoreParts = score.split(":");
-                            
-                            let isWin = false;
-                            let displayScore = score;
-
-                            if (score === 'W') { isWin = true; }
-                            else if (score === 'L') { isWin = false; }
-                            else if (scoreParts.length === 2) {
-                                const s1 = parseInt(scoreParts[0]);
-                                const s2 = parseInt(scoreParts[1]);
-                                if (isP1) {
-                                    isWin = s1 > s2;
-                                    displayScore = `${s1}:${s2}`;
-                                } else {
-                                    isWin = s2 > s1;
-                                    displayScore = `${s2}:${s1}`;
-                                }
-                            }
-
-                            const matchRow = document.createElement('div');
-                            matchRow.className = 'modal-match-item';
-                            matchRow.innerHTML = `
-                                <div class="modal-match-opp">
-                                    <span style="color: var(--text-secondary); font-size:11px; display:block; font-weight:400;">Против:</span>
-                                    ${opponent}
-                                </div>
-                                <div class="modal-match-score-badge">
-                                    <span class="modal-match-score">${displayScore}</span>
-                                    <span class="modal-match-outcome ${isWin ? 'outcome-win' : 'outcome-lost'}">${isWin ? 'Победа' : 'Пораж.'}</span>
-                                </div>
-                            `;
-                            matchesListEl.appendChild(matchRow);
-                            hasMatches = true;
+            // Extract player history
+            const playerHistory = [];
+            const sortedHistory = [...clubData.history].sort((a, b) => a.id - b.id);
+            
+            sortedHistory.forEach(entry => {
+                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                let playerRatingChange = null;
+                let playerPlaceIdx = -1;
+                
+                ratings.forEach((rStr, idx) => {
+                    const p = rStr.split("::");
+                    if (p.length >= 4) {
+                        const name = decodeName(p[0]);
+                        if (name.toLowerCase() === player.fullName.toLowerCase()) {
+                            playerRatingChange = {
+                                oldRating: parseFloat(p[1]),
+                                newRating: parseFloat(p[2]),
+                                delta: parseFloat(p[3])
+                            };
+                            playerPlaceIdx = idx;
                         }
                     }
                 });
+
+                if (playerRatingChange) {
+                    const matches = [];
+                    const sMatches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
+                    sMatches.forEach(matchStr => {
+                        const p = matchStr.split("::");
+                        if (p.length >= 5) {
+                            const p1 = decodeName(p[0]);
+                            const p2 = decodeName(p[1]);
+                            const score = p[2];
+                            const p1Delta = parseFloat(p[3]);
+                            const p2Delta = parseFloat(p[4]);
+
+                            const isP1 = p1.toLowerCase() === player.fullName.toLowerCase();
+                            const isP2 = p2.toLowerCase() === player.fullName.toLowerCase();
+
+                            if (isP1 || isP2) {
+                                const opponent = isP1 ? p2 : p1;
+                                const delta = isP1 ? p1Delta : p2Delta;
+                                const scoreParts = score.split(":");
+                                let isWin = false;
+                                let displayScore = score;
+
+                                if (score === 'W') { isWin = true; }
+                                else if (score === 'L') { isWin = false; }
+                                else if (scoreParts.length === 2) {
+                                    const s1 = parseInt(scoreParts[0]);
+                                    const s2 = parseInt(scoreParts[1]);
+                                    if (isP1) {
+                                        isWin = s1 > s2;
+                                        displayScore = `${s1}:${s2}`;
+                                    } else {
+                                        isWin = s2 > s1;
+                                        displayScore = `${s2}:${s1}`;
+                                    }
+                                }
+
+                                // Opponent rating
+                                let oppRating = null;
+                                ratings.forEach(rStr => {
+                                    const op = rStr.split("::");
+                                    if (op.length >= 2) {
+                                        const opName = decodeName(op[0]);
+                                        if (opName.toLowerCase() === opponent.toLowerCase()) {
+                                            oppRating = parseFloat(op[1]);
+                                        }
+                                    }
+                                });
+
+                                matches.push({
+                                    opponent: opponent,
+                                    oppRating: oppRating,
+                                    score: displayScore,
+                                    isWin: isWin,
+                                    delta: delta
+                                });
+                            }
+                        }
+                    });
+
+                    playerHistory.push({
+                        tournamentName: entry.name,
+                        dateText: entry.dateText.split(" ")[0],
+                        playersCount: entry.playersCount,
+                        oldRating: playerRatingChange.oldRating,
+                        newRating: playerRatingChange.newRating,
+                        place: playerPlaceIdx + 1,
+                        matches: matches,
+                        timestamp: entry.id
+                    });
+                }
             });
 
-            if (!hasMatches) {
-                matchesListEl.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;">Сыгранных матчей не найдено</div>';
+            modal.playerHistory = playerHistory;
+
+            // Render Chart
+            const chartSection = document.getElementById('chart-section-block');
+            if (playerHistory.length > 0) {
+                chartSection.style.display = 'block';
+                setTimeout(updateChartData, 50);
+            } else {
+                chartSection.style.display = 'none';
+            }
+
+            // Render Awards
+            const awardsSection = document.getElementById('player-awards-section');
+            const awardsListEl = document.getElementById('player-awards-list');
+            awardsListEl.innerHTML = '';
+            
+            const awardsMap = {};
+            playerHistory.forEach(h => {
+                if (h.place <= 3) {
+                    const nameBase = h.tournamentName.replace(/\d+[\.\/]\d+[\.\/]\d+/g, '').replace(/ - /g, '').trim();
+                    if (!awardsMap[nameBase]) awardsMap[nameBase] = [];
+                    awardsMap[nameBase].push(h.place);
+                }
+            });
+
+            const awardNames = Object.keys(awardsMap);
+            if (awardNames.length > 0) {
+                awardsSection.style.display = 'block';
+                awardNames.forEach(name => {
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.alignItems = 'center';
+                    row.style.fontSize = '13px';
+                    row.style.fontWeight = '600';
+                    
+                    const medalsHTML = awardsMap[name].map(p => {
+                        if (p === 1) return '🟡';
+                        if (p === 2) return '⚪';
+                        if (p === 3) return '🟤';
+                        return '';
+                    }).join('');
+                    
+                    row.innerHTML = `<span>${name}</span><span>${medalsHTML}</span>`;
+                    awardsListEl.appendChild(row);
+                });
+            } else {
+                awardsSection.style.display = 'none';
+            }
+
+            // Render Results
+            const resultsListEl = document.getElementById('player-results-list');
+            resultsListEl.innerHTML = '';
+
+            if (playerHistory.length > 0) {
+                const reversed = [...playerHistory].reverse();
+                reversed.forEach(h => {
+                    const card = document.createElement('div');
+                    card.className = 'results-tourney-card';
+
+                    const header = document.createElement('div');
+                    header.className = 'results-tourney-header';
+                    header.innerHTML = `
+                        <span>${h.dateText} • ${h.playersCount} участников</span>
+                        <span style="font-weight:700;">${h.tournamentName}</span>
+                    `;
+
+                    const playerInfo = document.createElement('div');
+                    playerInfo.className = 'results-player-info';
+                    
+                    let medal = '';
+                    if (h.place === 1) medal = '🥇 ';
+                    else if (h.place === 2) medal = '🥈 ';
+                    else if (h.place === 3) medal = '🥉 ';
+
+                    playerInfo.innerHTML = `
+                        <span>${player.fullName} <span style="color:var(--apple-blue); font-weight:800;">★${h.newRating.toFixed(1)}</span></span>
+                        <span style="font-size:12px; color:var(--text-secondary);">${medal}${h.place} место</span>
+                    `;
+
+                    const table = document.createElement('table');
+                    table.className = 'results-table';
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Соперник</th>
+                                <th class="score-col">Счет</th>
+                                <th class="delta-col">+/-</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    h.matches.forEach(m => {
+                        const tr = document.createElement('tr');
+                        const oppRatingText = m.oppRating ? ` <span style="color:var(--text-secondary); font-size:11px;">★${m.oppRating.toFixed(1)}</span>` : '';
+                        
+                        tr.innerHTML = `
+                            <td>${m.opponent}${oppRatingText}</td>
+                            <td class="score-col ${m.isWin ? 'outcome-win' : 'outcome-lost'}" style="background:none;">${m.score}</td>
+                            <td class="delta-col" style="color:${m.delta >= 0 ? 'var(--apple-green)' : 'var(--apple-red)'}; font-weight:800;">${m.delta >= 0 ? '+' : ''}${m.delta.toFixed(2)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    card.appendChild(header);
+                    card.appendChild(playerInfo);
+                    card.appendChild(table);
+                    resultsListEl.appendChild(card);
+                });
+            } else {
+                resultsListEl.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;">Результаты турниров отсутствуют</div>';
             }
 
             modal.style.display = 'flex';
@@ -1855,13 +2475,13 @@
             const standingsEl = document.getElementById('modal-history-standings');
             standingsEl.innerHTML = '';
             
-            // Format: "Иванов Иван|200.0;;Петров Петр|180.0"
             const playersList = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
             playersList.forEach((playerStr, idx) => {
-                const parts = playerStr.split("|");
-                if (parts.length >= 2) {
-                    const name = parts[0];
-                    const rating = parseFloat(parts[1]).toFixed(1);
+                const parts = playerStr.split("::");
+                if (parts.length >= 3) {
+                    const name = decodeName(parts[0]);
+                    const rating = parseFloat(parts[2]).toFixed(1);
+                    const delta = parseFloat(parts[3] || "0");
 
                     const row = document.createElement('div');
                     row.className = 'modal-match-item';
@@ -1873,7 +2493,10 @@
 
                     row.innerHTML = `
                         <div style="font-weight: 700;">${medal} <span style="margin-left: 6px;">${name}</span></div>
-                        <div style="color: var(--apple-blue); font-weight: 800;">${rating}</div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="color: var(--apple-blue); font-weight: 800;">${rating}</div>
+                            ${delta !== 0 ? `<div style="font-size:11px; font-weight:700; color:${delta > 0 ? 'var(--apple-green)' : 'var(--apple-red)'};">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</div>` : ''}
+                        </div>
                     `;
                     standingsEl.appendChild(row);
                 }
@@ -1885,10 +2508,10 @@
             
             const matchesList = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
             matchesList.forEach(matchStr => {
-                const parts = matchStr.split("|");
+                const parts = matchStr.split("::");
                 if (parts.length >= 3) {
-                    const p1 = parts[0];
-                    const p2 = parts[1];
+                    const p1 = decodeName(parts[0]);
+                    const p2 = decodeName(parts[1]);
                     const score = parts[2];
 
                     const row = document.createElement('div');
@@ -1919,7 +2542,6 @@
             const historyModal = document.getElementById('history-modal');
             if (e.target === playerModal) closePlayerModal();
             if (e.target === historyModal) closeHistoryModal();
-        });
-    </script>
+        });\n\n        </script>
 </body>
 </html>
