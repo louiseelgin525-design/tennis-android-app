@@ -1485,7 +1485,7 @@
             container.innerHTML = '';
 
             const draft = clubData.draft;
-            if (!draft || !draft.isListGenerated) {
+            if (!draft || (!draft.isListGenerated && !draft.name)) {
                 // Empty state
                 container.innerHTML = `
                     <div class="active-tournament-empty">
@@ -1497,21 +1497,72 @@
                 return;
             }
 
-            // Header info
+            // Decode player fields (1-to-1 mapping to preserve indexing for active games)
+            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
+            const playerNames = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
+            const withdrawnPlayers = new Set(draft.withdrawnPlayers || []);
+
+            // If setup phase (draft is not active but name is present)
+            if (!draft.isListGenerated) {
+                const registeredNames = playerFields.map(f => decodeName(f.name).trim()).filter(n => n !== "");
+
+                const header = document.createElement('div');
+                header.className = 'active-header-card';
+                header.innerHTML = `
+                    <div class="active-header-badge" style="background-color: rgba(255, 204, 0, 0.15); color: var(--apple-gold);"><i class="fa-solid fa-clock"></i></div>
+                    <div class="active-header-info">
+                        <div class="active-header-title">${draft.name || "Новый турнир"}</div>
+                        <div class="active-header-desc">Регистрация участников • Добавлено: ${registeredNames.length} • Победы: до ${draft.winsToWin || 2}</div>
+                    </div>
+                `;
+                container.appendChild(header);
+
+                const activeHeader = document.createElement('h4');
+                activeHeader.className = 'section-title';
+                activeHeader.textContent = '👥 Зарегистрированные игроки';
+                container.appendChild(activeHeader);
+
+                const listContainer = document.createElement('div');
+                listContainer.style.backgroundColor = 'var(--bg-card)';
+                listContainer.style.border = '1px solid var(--border-color)';
+                listContainer.style.borderRadius = '16px';
+                listContainer.style.padding = '16px';
+                listContainer.style.display = 'flex';
+                listContainer.style.flexDirection = 'column';
+                listContainer.style.gap = '10px';
+
+                registeredNames.forEach((name, index) => {
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.alignItems = 'center';
+                    row.style.fontSize = '14px';
+                    row.style.fontWeight = '600';
+                    row.innerHTML = `<span style="color: var(--apple-blue); width: 24px; font-weight:800;">${index + 1}</span> <span>${name}</span>`;
+                    listContainer.appendChild(row);
+                });
+
+                if (registeredNames.length === 0) {
+                    listContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px;">Ожидание добавления игроков организатором...</div>';
+                }
+
+                container.appendChild(listContainer);
+                return;
+            }
+
+            // Header info (Active Tournament)
             const header = document.createElement('div');
             header.className = 'active-header-card';
             header.innerHTML = `
                 <div class="active-header-badge"><i class="fa-solid fa-satellite-dish"></i></div>
                 <div class="active-header-info">
                     <div class="active-header-title">${draft.name || "Турнир в процессе"}</div>
-                    <div class="active-header-desc">Участников: ${draft.playerFields ? JSON.parse(draft.playerFieldsJson || "[]").length : 0} • Победы: до ${draft.winsToWin}</div>
+                    <div class="active-header-desc">Участников: ${playerNames.length} • Победы: до ${draft.winsToWin}</div>
                 </div>
             `;
             container.appendChild(header);
 
-            // Decode player fields
-            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
-            const playerNames = playerFields.map((f, i) => f.name.trim() || `Игрок ${i+1}`);
+            // Display names list with fallback for active game table resolution
+            const playerNamesWithFallback = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
             const withdrawnPlayers = new Set(draft.withdrawnPlayers || []);
 
             // 1. Render active tables
