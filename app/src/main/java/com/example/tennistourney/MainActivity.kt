@@ -1901,6 +1901,12 @@ fun TennisApp() {
                             draft.playerFields.add(PlayerField(draft.nextFieldId++, player.fullName))
                             draft.playersCount = draft.playerFields.size
                         }
+                        val clubId = currentClubId ?: ""
+                        if (clubId.isNotBlank()) {
+                            FirebaseStorage.syncDraftPlayerFields(clubId, draft.playerFields)
+                            FirebaseStorage.syncDraftProperty(clubId, "playersCount", draft.playersCount)
+                            FirebaseStorage.syncDraftProperty(clubId, "nextFieldId", draft.nextFieldId)
+                        }
                         Toast.makeText(context, "Игрок добавлен в турнир", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -3817,7 +3823,10 @@ fun CreateTournamentScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             // Левая колонка: Участники
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
                                 Text("👥", fontSize = 24.sp)
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text("Участники", style = AppTypography.titleLarge, color = TextDark)
@@ -3862,7 +3871,10 @@ fun CreateTournamentScreen(
                             Spacer(modifier = Modifier.width(16.dp))
 
                             // Правая колонка: Формат до побед
-                            Column(modifier = Modifier.weight(1.3f)) {
+                            Column(
+                                modifier = Modifier.weight(1.3f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
                                 Text("🏆", fontSize = 24.sp)
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text("Победы", style = AppTypography.titleLarge, color = TextDark)
@@ -6469,58 +6481,97 @@ private fun RoundRobinScoreDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val isNarrow = maxWidth < 480.dp
-                    if (isNarrow) {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            QuickScoreRowRedesign(
-                                scores = firstPlayerWins,
-                                background = CellWonBg,
-                                foreground = AppleBlue,
-                                onSave = onSave
-                            )
-                            QuickScoreRowRedesign(
-                                scores = secondPlayerWins,
-                                background = CellLostBg,
-                                foreground = CellLostText,
-                                onSave = onSave
-                            )
+                if (setsToWin == 1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Button(
+                            onClick = { onSave("1:0") },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)), // Bright Green
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f).height(60.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                        ) {
+                            Text("1:0", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
                         }
-                    } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            QuickScoreRowRedesign(
-                                scores = firstPlayerWins,
-                                background = CellWonBg,
-                                foreground = AppleBlue,
-                                modifier = Modifier.weight(1f),
-                                onSave = onSave
-                            )
-                            QuickScoreRowRedesign(
-                                scores = secondPlayerWins,
-                                background = CellLostBg,
-                                foreground = CellLostText,
-                                modifier = Modifier.weight(1f),
-                                onSave = onSave
-                            )
+
+                        Button(
+                            onClick = { onSave("0:1") },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3B30)), // Bright Red
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f).height(60.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                        ) {
+                            Text("0:1", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(32.dp))
-                HorizontalDivider(color = BorderGray)
-                Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Text("Особые условия", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { showWithdrawalDialog = true },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        border = BorderStroke(1.dp, SwipeDeleteRed.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Снялся с турнира (L)", color = SwipeDeleteRed, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                } else {
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val isNarrow = maxWidth < 480.dp
+                        if (isNarrow) {
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                QuickScoreRowRedesign(
+                                    scores = firstPlayerWins,
+                                    background = CellWonBg,
+                                    foreground = AppleBlue,
+                                    onSave = onSave
+                                )
+                                QuickScoreRowRedesign(
+                                    scores = secondPlayerWins,
+                                    background = CellLostBg,
+                                    foreground = CellLostText,
+                                    onSave = onSave
+                                )
+                            }
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                QuickScoreRowRedesign(
+                                    scores = firstPlayerWins,
+                                    background = CellWonBg,
+                                    foreground = AppleBlue,
+                                    modifier = Modifier.weight(1f),
+                                    onSave = onSave
+                                )
+                                QuickScoreRowRedesign(
+                                    scores = secondPlayerWins,
+                                    background = CellLostBg,
+                                    foreground = CellLostText,
+                                    modifier = Modifier.weight(1f),
+                                    onSave = onSave
+                                )
+                            }
+                        }
+                    }
 
-                Button(
-                    onClick = { showWithdrawalDialog = true },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    border = BorderStroke(1.dp, SwipeDeleteRed.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Снялся с турнира (L)", color = SwipeDeleteRed, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Spacer(modifier = Modifier.height(32.dp))
+                    HorizontalDivider(color = BorderGray)
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text("Особые условия", style = AppTypography.bodyMedium, color = TextGray, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = { showWithdrawalDialog = true },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        border = BorderStroke(1.dp, SwipeDeleteRed.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Снялся с турнира (L)", color = SwipeDeleteRed, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
                 }
 
                 if (showWithdrawalDialog) {
