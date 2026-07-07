@@ -620,18 +620,22 @@
         }
 
         .rr-grid .score-cell.win {
-            background-color: rgba(52, 199, 89, 0.08) !important;
+            background-color: rgba(52, 199, 89, 0.12) !important;
             color: #24A148 !important;
         }
         .rr-grid .score-cell.lost {
-            background-color: rgba(255, 59, 48, 0.06) !important;
+            background-color: rgba(255, 59, 48, 0.08) !important;
             color: #FF3B30 !important;
         }
         .rr-grid .score-cell.active {
             background-color: rgba(0, 122, 255, 0.08) !important;
             color: var(--apple-blue) !important;
+            border: 1.5px solid var(--apple-blue) !important;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 800;
+        }
+        .rr-grid tbody tr:hover {
+            background-color: rgba(0, 122, 255, 0.02) !important;
         }
 
         .rr-grid .points-cell {
@@ -1398,7 +1402,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.1.4 (07.07.2026 23:03)
+                Версия веб-приложения: 1.1.5 (07.07.2026 23:29)
             </div>
         </form>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
@@ -3601,9 +3605,10 @@
                                 }
                             } else {
                                 const activeMatches = draft.activeRoundRobinMatches || [];
-                                const isActive = activeMatches.includes(scoreKey);
+                                const tableIdx = activeMatches.indexOf(scoreKey);
+                                const isActive = tableIdx >= 0;
                                 if (isActive) {
-                                    displayScore = "🏓";
+                                    displayScore = `С${tableIdx + 1}`;
                                     cellClass = "active";
                                 }
                             }
