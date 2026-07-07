@@ -1329,7 +1329,7 @@
                 Войти <i class="fa-solid fa-arrow-right"></i>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.1.0 (07.07.2026 19:40)
+                Версия веб-приложения: 1.1.1 (07.07.2026 19:42)
             </div>
         </form>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
@@ -3443,6 +3443,15 @@
                 <h4 class="section-title" style="margin-top:8px;">👥 Выберите участников из списка</h4>
                 <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0;" oninput="renderDraftPlayersSelector()">
                 
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:12px;">
+                    <span style="color:var(--text-secondary); font-weight:700;">Выбрано участников: <span id="draft-selected-count" style="color:var(--apple-blue); font-weight:800;">0</span></span>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+                    <button type="button" id="draft-select-top-btn" onclick="selectDraftTopN()" style="background:rgba(0,122,255,0.08); border:1px solid rgba(0,122,255,0.15); color:var(--apple-blue); font-size:11px; font-weight:700; padding:6px 10px; border-radius:8px; cursor:pointer;">Выбрать топ-6 по рейтингу</button>
+                    <button type="button" onclick="selectAllDraft()" style="background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-secondary); font-size:11px; font-weight:700; padding:6px 10px; border-radius:8px; cursor:pointer;">Выбрать всех</button>
+                    <button type="button" onclick="deselectAllDraft()" style="background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-secondary); font-size:11px; font-weight:700; padding:6px 10px; border-radius:8px; cursor:pointer;">Сбросить</button>
+                </div>
+                
                 <div id="draft-players-list-selector" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px;">
                     <!-- Rendered dynamically -->
                 </div>
@@ -3479,6 +3488,11 @@
             if (type === 'players') {
                 window.draftSetup.playersCount = Math.max(2, window.draftSetup.playersCount + delta);
                 document.getElementById('draft-players-val').textContent = window.draftSetup.playersCount;
+                
+                const selectTopBtn = document.getElementById('draft-select-top-btn');
+                if (selectTopBtn) {
+                    selectTopBtn.textContent = 'Выбрать топ-' + window.draftSetup.playersCount + ' по рейтингу';
+                }
             } else if (type === 'tables') {
                 window.draftSetup.tablesCount = Math.max(1, window.draftSetup.tablesCount + delta);
                 document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
@@ -3496,8 +3510,41 @@
             if (activeBtn) activeBtn.classList.add('active');
         };
 
+        // QUICK SELECTION HELPERS
+        window.selectDraftTopN = function() {
+            if (!window.draftSetup || !clubData.players) return;
+            const limit = window.draftSetup.playersCount;
+            const sorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
+            selectedPlayerIdsForDraft.clear();
+            sorted.slice(0, limit).forEach(p => {
+                selectedPlayerIdsForDraft.add(p.id);
+            });
+            renderDraftPlayersSelector();
+            showToast(`Выбрано топ-${selectedPlayerIdsForDraft.size} игроков по рейтингу!`);
+        };
+
+        window.selectAllDraft = function() {
+            if (!clubData.players) return;
+            clubData.players.forEach(p => {
+                selectedPlayerIdsForDraft.add(p.id);
+            });
+            renderDraftPlayersSelector();
+            showToast("Выбраны все игроки базы!");
+        };
+
+        window.deselectAllDraft = function() {
+            selectedPlayerIdsForDraft.clear();
+            renderDraftPlayersSelector();
+            showToast("Выбор участников сброшен.");
+        };
+
         // RENDER CHECKBOX SELECTOR FOR DRAFT SETUP
         window.renderDraftPlayersSelector = function() {
+            const selectedCountEl = document.getElementById('draft-selected-count');
+            if (selectedCountEl) {
+                selectedCountEl.textContent = selectedPlayerIdsForDraft.size;
+            }
+
             const listSelector = document.getElementById('draft-players-list-selector');
             if (!listSelector) return;
             listSelector.innerHTML = '';
