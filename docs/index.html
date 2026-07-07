@@ -619,13 +619,19 @@
             cursor: default;
         }
 
-        .rr-grid .score-win { color: var(--apple-green); }
-        .rr-grid .score-lost { color: var(--apple-red); }
-        .rr-grid .score-active {
-            color: var(--apple-green);
-            font-size: 10px;
+        .rr-grid .score-cell.win {
+            background-color: rgba(52, 199, 89, 0.08) !important;
+            color: #24A148 !important;
+        }
+        .rr-grid .score-cell.lost {
+            background-color: rgba(255, 59, 48, 0.06) !important;
+            color: #FF3B30 !important;
+        }
+        .rr-grid .score-cell.active {
+            background-color: rgba(0, 122, 255, 0.08) !important;
+            color: var(--apple-blue) !important;
+            font-size: 11px;
             font-weight: 700;
-            background-color: rgba(52, 199, 89, 0.08);
         }
 
         .rr-grid .points-cell {
@@ -3538,8 +3544,11 @@
                     
                     const isWithdrawn = withdrawnPlayers.has(f);
                     const strikeStyle = isWithdrawn ? 'text-decoration: line-through; opacity: 0.5;' : '';
+                    
+                    const pProfile = clubData.players.find(p => p.fullName.trim().toLowerCase() === playerNames[f].trim().toLowerCase());
+                    const ratingStr = pProfile ? ` <span style="font-size:11px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
 
-                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}</td>`;
+                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${ratingStr}</td>`;
                     
                     for (let s = 0; s < playerNames.length; s++) {
                         if (f === s) {
@@ -3569,6 +3578,13 @@
                                         displayScore = `${s2}:${s1}`;
                                         cellClass = s2 > s1 ? 'win' : 'lost';
                                     }
+                                }
+                            } else {
+                                const activeMatches = draft.activeRoundRobinMatches || [];
+                                const isActive = activeMatches.includes(scoreKey);
+                                if (isActive) {
+                                    displayScore = "🏓";
+                                    cellClass = "active";
                                 }
                             }
 
