@@ -1764,13 +1764,21 @@
         });
 
         // ROLE SELECTOR TOGGLE
-        function setRole(role) {
+        window.setRole = function(role) {
             selectedRole = role;
             document.getElementById('role-viewer-btn').classList.toggle('active', role === 'viewer');
             document.getElementById('role-admin-btn').classList.toggle('active', role === 'admin');
             document.getElementById('admin-pin-input').style.display = role === 'admin' ? 'block' : 'none';
             debugLog("Роль переключена на: " + role);
-        }
+        };
+
+        // Attach event listeners directly to selector buttons
+        window.addEventListener('DOMContentLoaded', () => {
+            const viewerBtn = document.getElementById('role-viewer-btn');
+            const adminBtn = document.getElementById('role-admin-btn');
+            if (viewerBtn) viewerBtn.addEventListener('click', () => window.setRole('viewer'));
+            if (adminBtn) adminBtn.addEventListener('click', () => window.setRole('admin'));
+        });
 
         // INITIAL DOM LOAD LOG
         window.addEventListener('DOMContentLoaded', () => {
