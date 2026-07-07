@@ -2102,7 +2102,7 @@
             };
 
             const updated = [...clubData.players, newPlayer];
-            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updated))
+            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updated))
                 .then(() => {
                     closePlayerAddModal();
                     showToast("Игрок добавлен!");
@@ -2139,7 +2139,7 @@
                 return p;
             });
 
-            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updated))
+            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updated))
                 .then(() => {
                     closePlayerEditModal();
                     showToast("Профиль изменен!");
@@ -2155,7 +2155,7 @@
             }
 
             const updated = clubData.players.filter(p => p.id !== editPlayerTarget.id);
-            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updated))
+            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updated))
                 .then(() => {
                     closePlayerEditModal();
                     showToast("Игрок удален!");
@@ -3335,7 +3335,7 @@
                 draftObj.playoffScores = {};
             }
 
-            db.ref(`clubs/${activeClubId}/draft`).setValue(draftObj)
+            db.ref(`clubs/${activeClubId}/draft`).set(draftObj)
                 .then(() => {
                     selectedPlayerIdsForDraft.clear();
                     showLoader(false);
@@ -3670,7 +3670,7 @@
             // Reschedule next match
             refreshActiveRoundRobinMatches(draft, draft.playersCount, draft.tablesCount);
 
-            db.ref(`clubs/${activeClubId}/draft`).setValue(draft)
+            db.ref(`clubs/${activeClubId}/draft`).set(draft)
                 .then(() => {
                     closeAdminScoreModal();
                     showLoader(false);
@@ -3724,7 +3724,7 @@
             // Reschedule next matches
             refreshActiveRoundRobinMatches(draft, playerCount, draft.tablesCount);
 
-            db.ref(`clubs/${activeClubId}/draft`).setValue(draft)
+            db.ref(`clubs/${activeClubId}/draft`).set(draft)
                 .then(() => {
                     closeAdminScoreModal();
                     showLoader(false);
@@ -3750,7 +3750,7 @@
             if (!activePlayoffMatchId) return;
             showLoader(true);
 
-            db.ref(`clubs/${activeClubId}/draft/playoffScores/${activePlayoffMatchId}`).setValue(score)
+            db.ref(`clubs/${activeClubId}/draft/playoffScores/${activePlayoffMatchId}`).set(score)
                 .then(() => {
                     closeAdminPlayoffScoreModal();
                     showLoader(false);
@@ -4033,9 +4033,9 @@
             const updatedHistory = [...clubData.history, historyEntry];
 
             // 5. Save all to Firebase and clear draft
-            db.ref(`clubs/${activeClubId}/players`).setValue(JSON.stringify(updatedPlayers))
+            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers))
                 .then(() => {
-                    return db.ref(`clubs/${activeClubId}/history`).setValue(JSON.stringify(updatedHistory));
+                    return db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory));
                 })
                 .then(() => {
                     // Reset/remove draft
