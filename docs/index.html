@@ -1038,12 +1038,12 @@
         <div class="login-logo">🏆</div>
         <h1 class="login-title">TT: Турниры</h1>
         <p class="login-subtitle">Введите ID клуба для просмотра онлайн результатов на iOS</p>
-        <div class="login-form">
+        <form id="login-form" class="login-form">
             <input type="text" id="club-id-input" class="login-input" placeholder="Название клуба (например: сатурн)" autocomplete="off" autocapitalize="off">
-            <button id="login-submit-btn" class="login-btn">
+            <button type="submit" id="login-submit-btn" class="login-btn">
                 Войти <i class="fa-solid fa-arrow-right"></i>
             </button>
-        </div>
+        </form>
     </div>
 
     <!-- 2. MAIN APP CONTAINER -->
@@ -1206,11 +1206,37 @@
         };
         let listeners = {};
 
+        // SAFE LOCAL STORAGE WRAPPER (Prevents crash in Safari Private Browsing mode)
+        const safeStorage = {
+            getItem(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    console.error("localStorage getItem failed:", e);
+                    return null;
+                }
+            },
+            setItem(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    console.error("localStorage setItem failed:", e);
+                }
+            },
+            removeItem(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    console.error("localStorage removeItem failed:", e);
+                }
+            }
+        };
+
         // DOM ELEMENTS
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
         const clubIdInput = document.getElementById('club-id-input');
-        const loginSubmitBtn = document.getElementById('login-submit-btn');
         const headerClubName = document.getElementById('header-club-name');
         const logoutBtn = document.getElementById('logout-btn');
         const loader = document.getElementById('loader');
@@ -1219,7 +1245,7 @@
 
         // INITIAL LAUNCH
         window.addEventListener('DOMContentLoaded', () => {
-            const cachedId = localStorage.getItem('tennis_club_id');
+            const cachedId = safeStorage.getItem('tennis_club_id');
             if (cachedId) {
                 attemptLogin(cachedId);
             } else {
@@ -1227,19 +1253,17 @@
             }
         });
 
-        // LOGIN CLICK
-        loginSubmitBtn.addEventListener('click', () => {
-            const raw = clubIdInput.value.trim();
-            if (!raw) return;
-            const clubId = raw.toLowerCase();
-            attemptLogin(clubId);
-        });
-
-        clubIdInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                loginSubmitBtn.click();
-            }
-        });
+        // FORM SUBMIT HANDLER (Supports "Go"/"Search" and click across iOS/Android devices)
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const raw = clubIdInput.value.trim();
+                if (!raw) return;
+                // Convert to lowercase and strip all spaces to match formattedId from APK
+                const clubId = raw.toLowerCase().replace(/\s+/g, '');
+                attemptLogin(clubId);
+            });
+        }
 
         // LOGOUT CLICK
         logoutBtn.addEventListener('click', () => {
@@ -1251,7 +1275,7 @@
                 db.ref(`clubs/${activeClubId}/draft`).off();
                 db.ref(`clubs/${activeClubId}/avatars`).off();
             }
-            localStorage.removeItem('tennis_club_id');
+            safeStorage.removeItem('tennis_club_id');
             activeClubId = null;
             
             // Switch views
@@ -1277,29 +1301,33 @@
         // LOGIN ATTEMPT
         function attemptLogin(clubId) {
             showLoader(true);
-            
-            // Validate clubConfig exists
-            db.ref(`clubConfigs/${clubId}`).once('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    // Save to local storage
-                    localStorage.setItem('tennis_club_id', clubId);
-                    activeClubId = clubId;
-                    
-                    // Set header
-                    const displayClubName = clubId.charAt(0).toUpperCase() + clubId.slice(1);
-                    headerClubName.textContent = displayClubName;
-                    
-                    // Load and listen to data
-                    initDatabaseListeners(clubId);
-                } else {
+            try {
+                // Validate clubConfig exists
+                db.ref(`clubConfigs/${clubId}`).once('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        // Save to local storage
+                        safeStorage.setItem('tennis_club_id', clubId);
+                        activeClubId = clubId;
+                        
+                        // Set header
+                        const displayClubName = clubId.charAt(0).toUpperCase() + clubId.slice(1);
+                        headerClubName.textContent = displayClubName;
+                        
+                        // Load and listen to data
+                        initDatabaseListeners(clubId);
+                    } else {
+                        showLoader(false);
+                        showToast("Клуб не найден в базе данных!");
+                        safeStorage.removeItem('tennis_club_id');
+                    }
+                }, (error) => {
                     showLoader(false);
-                    showToast("Клуб не найден в базе данных!");
-                    localStorage.removeItem('tennis_club_id');
-                }
-            }, (error) => {
+                    showToast("Ошибка соединения с интернетом!");
+                });
+            } catch (err) {
                 showLoader(false);
-                showToast("Ошибка соединения с интернетом!");
-            });
+                showToast("Ошибка запуска: " + err.message);
+            }
         }
 
         // INITIALIZE REAL-TIME LISTENERS
