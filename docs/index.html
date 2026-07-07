@@ -3291,6 +3291,57 @@
             document.getElementById('player-modal').style.display = 'none';
         }
 
+        function syncDraftSelectedPlayersToFirebase() {
+            const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id))
+                .sort((a, b) => b.rating - a.rating);
+            
+            const playerFields = selectedPlayers.map((p, idx) => {
+                return {
+                    id: idx,
+                    name: safe_encode(p.fullName)
+                };
+            });
+            
+            db.ref(`clubs/${activeClubId}/draft/playerFieldsJson`).set(JSON.stringify(playerFields));
+            db.ref(`clubs/${activeClubId}/draft/playersCount`).set(selectedPlayers.length);
+        }
+
+        function updateDraftSetupPanelInputs() {
+            const draft = clubData.draft;
+            if (!draft) return;
+            
+            const nameInput = document.getElementById('draft-name-input');
+            if (nameInput && document.activeElement !== nameInput) {
+                nameInput.value = draft.name || "";
+            }
+            
+            const playersVal = document.getElementById('draft-players-val');
+            if (playersVal) playersVal.textContent = draft.playersCount || 6;
+            
+            const tablesVal = document.getElementById('draft-tables-val');
+            if (tablesVal) tablesVal.textContent = draft.tablesCount || 2;
+            
+            const wins = draft.winsToWin || 2;
+            document.querySelectorAll('.wins-segment-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.getElementById(`wins-btn-${wins}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            // Sync local selectedPlayerIdsForDraft set from firebase
+            const fields = JSON.parse(draft.playerFieldsJson || "[]");
+            selectedPlayerIdsForDraft.clear();
+            fields.forEach(f => {
+                const decoded = decodeName(f.name).trim().toLowerCase();
+                const found = clubData.players.find(p => p.fullName.trim().toLowerCase() === decoded);
+                if (found) {
+                    selectedPlayerIdsForDraft.add(found.id);
+                }
+            });
+            
+            renderDraftPlayersSelector();
+        }
+
         // RENDER ACTIVE TOURNAMENT OR DRAFT SETUP PANEL (IF ADMIN)
         function updateActiveTournament() {
             const container = document.getElementById('active-tournament-container');
@@ -3322,7 +3373,20 @@
             // If setup phase (draft is not active but name is present)
             if (!draft.isListGenerated) {
                 if (isAdmin) {
-                    renderDraftSetupPanel(container);
+                    if (!document.getElementById('draft-name-input')) {
+                        const fields = JSON.parse(draft.playerFieldsJson || "[]");
+                        selectedPlayerIdsForDraft.clear();
+                        fields.forEach(f => {
+                            const decoded = decodeName(f.name).trim().toLowerCase();
+                            const found = clubData.players.find(p => p.fullName.trim().toLowerCase() === decoded);
+                            if (found) {
+                                selectedPlayerIdsForDraft.add(found.id);
+                            }
+                        });
+                        renderDraftSetupPanel(container);
+                    } else {
+                        updateDraftSetupPanelInputs();
+                    }
                 } else {
                     const registeredNames = playerFields.map(f => decodeName(f.name).trim()).filter(n => n !== "");
 
@@ -3644,21 +3708,32 @@
 
             parentContainer.appendChild(card);
             
-            // Initialize draft parameters in local memory
-            if (!window.draftSetup) {
-                window.draftSetup = {
-                    playersCount: 6,
-                    tablesCount: 2,
-                    winsToWin: 2
-                };
-            } else {
-                // Ensure values are displayed correctly
-                setTimeout(() => {
-                    document.getElementById('draft-players-val').textContent = window.draftSetup.playersCount;
-                    document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
-                    selectDraftWins(window.draftSetup.winsToWin);
-                }, 10);
-            }
+            // Initialize draft parameters from Firebase draft if available
+            const firebaseDraft = clubData.draft || {};
+            window.draftSetup = {
+                playersCount: firebaseDraft.playersCount || 6,
+                tablesCount: firebaseDraft.tablesCount || 2,
+                winsToWin: firebaseDraft.winsToWin || 2
+            };
+
+            setTimeout(() => {
+                const nameInput = document.getElementById('draft-name-input');
+                if (nameInput) {
+                    if (firebaseDraft.name) {
+                        nameInput.value = firebaseDraft.name;
+                    }
+                    nameInput.addEventListener('input', (e) => {
+                        db.ref(`clubs/${activeClubId}/draft/name`).set(e.target.value);
+                    });
+                }
+                const playersVal = document.getElementById('draft-players-val');
+                if (playersVal) playersVal.textContent = window.draftSetup.playersCount;
+                
+                const tablesVal = document.getElementById('draft-tables-val');
+                if (tablesVal) tablesVal.textContent = window.draftSetup.tablesCount;
+                
+                selectDraftWins(window.draftSetup.winsToWin);
+            }, 10);
 
             renderDraftPlayersSelector();
         }
@@ -3669,9 +3744,11 @@
             if (type === 'players') {
                 window.draftSetup.playersCount = Math.max(2, window.draftSetup.playersCount + delta);
                 document.getElementById('draft-players-val').textContent = window.draftSetup.playersCount;
+                db.ref(`clubs/${activeClubId}/draft/playersCount`).set(window.draftSetup.playersCount);
             } else if (type === 'tables') {
                 window.draftSetup.tablesCount = Math.max(1, window.draftSetup.tablesCount + delta);
                 document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
+                db.ref(`clubs/${activeClubId}/draft/tablesCount`).set(window.draftSetup.tablesCount);
             }
         };
 
@@ -3684,6 +3761,7 @@
             });
             const activeBtn = document.getElementById(`wins-btn-${wins}`);
             if (activeBtn) activeBtn.classList.add('active');
+            db.ref(`clubs/${activeClubId}/draft/winsToWin`).set(wins);
         };
 
         // RENDER CHECKBOX SELECTOR FOR DRAFT SETUP
@@ -3715,6 +3793,7 @@
                     
                     chip.addEventListener('click', () => {
                         selectedPlayerIdsForDraft.delete(p.id);
+                        syncDraftSelectedPlayersToFirebase();
                         renderDraftPlayersSelector();
                     });
                     
@@ -3756,6 +3835,7 @@
                     } else {
                         selectedPlayerIdsForDraft.add(p.id);
                     }
+                    syncDraftSelectedPlayersToFirebase();
                     renderDraftPlayersSelector();
                 });
 

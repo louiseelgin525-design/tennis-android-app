@@ -1894,6 +1894,9 @@ fun TennisApp() {
                     }
                     currentScreen = AppScreen.CreateTournament
                 },
+                onNavigateToActiveTournament = {
+                    currentScreen = if (draft.playerFields.size <= 10) AppScreen.RoundRobin else AppScreen.Playoff
+                },
                 onNavigateToPlayerBase = { currentScreen = AppScreen.PlayerBase },
                 onNavigateToHistory = { currentScreen = AppScreen.History },
                 onChangeClub = {
@@ -2088,6 +2091,7 @@ fun MainDashboardScreen(
     clubPlayers: List<ClubPlayer>,
     tournamentHistory: List<TournamentHistoryEntry>,
     onNavigateToCreate: () -> Unit,
+    onNavigateToActiveTournament: () -> Unit,
     onNavigateToPlayerBase: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onChangeClub: () -> Unit
@@ -2287,36 +2291,83 @@ fun MainDashboardScreen(
                 }
             }
         item {
-            Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(AppleBlue), contentAlignment = Alignment.Center) {
-                            Text(if (hasDraft) "📝" else "🏓", fontSize = 24.sp)
+            val isGenerated = draft.isListGenerated
+            if (isGenerated) {
+                Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(AppleGreen), contentAlignment = Alignment.Center) {
+                                Text("🏆", fontSize = 24.sp)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text("Активный турнир", style = AppTypography.titleLarge, color = TextDark)
+                                Text("Турнир сейчас идет в клубе", style = AppTypography.bodyMedium, color = TextGray)
+                            }
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(if (hasDraft) "Черновик турнира" else "Новый турнир", style = AppTypography.titleLarge, color = TextDark)
-                            Text(if (hasDraft) "Продолжите настройку" else "Создайте турнир", style = AppTypography.bodyMedium, color = TextGray)
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(draft.name, style = AppTypography.titleLarge, color = TextDark, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Участников: ${draft.playersCount} • Столов: ${draft.tablesCount}", style = AppTypography.bodyMedium, color = TextGray)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onNavigateToActiveTournament, colors = ButtonDefaults.buttonColors(containerColor = AppleBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                            Text(if (isAdmin) "✏️ Управлять турниром" else "📊 Посмотреть ход турнира", style = AppTypography.labelLarge, color = Color.White)
                         }
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    OutlinedTextField(
-                        value = draft.name, onValueChange = { 
-                            draft.name = it
-                            val clubId = currentClubId ?: ""
-                            if (clubId.isNotBlank()) {
-                                FirebaseStorage.syncDraftProperty(clubId, "name", it)
+                }
+            } else {
+                if (isAdmin) {
+                    Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(AppleBlue), contentAlignment = Alignment.Center) {
+                                    Text(if (hasDraft) "📝" else "🏓", fontSize = 24.sp)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(if (hasDraft) "Черновик турнира" else "Новый турнир", style = AppTypography.titleLarge, color = TextDark)
+                                    Text(if (hasDraft) "Продолжите настройку" else "Создайте турнир", style = AppTypography.bodyMedium, color = TextGray)
+                                }
                             }
-                        },
-                        placeholder = { Text("Введите название турнира", color = TextGray) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = BorderGray, focusedBorderColor = AppleBlue, unfocusedContainerColor = CardWhite, focusedContainerColor = CardWhite),
-                        shape = RoundedCornerShape(12.dp), singleLine = true,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onNavigateToCreate, colors = ButtonDefaults.buttonColors(containerColor = AppleBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(54.dp)) {
-                        Text(if (hasDraft) "✏️ Продолжить создание" else "🏆 Создать турнир", style = AppTypography.labelLarge, color = Color.White)
+                            Spacer(modifier = Modifier.height(20.dp))
+                            OutlinedTextField(
+                                value = draft.name, onValueChange = { 
+                                    draft.name = it
+                                    val clubId = currentClubId ?: ""
+                                    if (clubId.isNotBlank()) {
+                                        FirebaseStorage.syncDraftProperty(clubId, "name", it)
+                                    }
+                                },
+                                placeholder = { Text("Введите название турнира", color = TextGray) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = BorderGray, focusedBorderColor = AppleBlue, unfocusedContainerColor = CardWhite, focusedContainerColor = CardWhite),
+                                shape = RoundedCornerShape(12.dp), singleLine = true,
+                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = onNavigateToCreate, colors = ButtonDefaults.buttonColors(containerColor = AppleBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                                Text(if (hasDraft) "✏️ Продолжить создание" else "🏆 Создать турнир", style = AppTypography.labelLarge, color = Color.White)
+                            }
+                        }
+                    }
+                } else {
+                    Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(BorderGray), contentAlignment = Alignment.Center) {
+                                    Text("⏳", fontSize = 24.sp)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(if (hasDraft) "Турнир готовится" else "Нет активного турнира", style = AppTypography.titleLarge, color = TextDark)
+                                    Text(if (hasDraft) "Организатор настраивает параметры..." else "Ожидайте начала соревнований", style = AppTypography.bodyMedium, color = TextGray)
+                                }
+                            }
+                            if (hasDraft && draft.name.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(draft.name, style = AppTypography.bodyLarge, color = TextDark, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }
