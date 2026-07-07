@@ -2170,6 +2170,16 @@
             }
         }
 
+        // ENCODE URL FOR COMPATIBILITY WITH KOTLIN APP
+        function safe_encode(str) {
+            if (!str) return "";
+            try {
+                return encodeURIComponent(str).replace(/%20/g, '+');
+            } catch (e) {
+                return str;
+            }
+        }
+
         // CHART DATA HELPERS
         let currentChartRange = 'all';
 
