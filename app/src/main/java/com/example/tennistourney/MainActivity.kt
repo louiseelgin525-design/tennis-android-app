@@ -2426,7 +2426,6 @@ fun PlayerBaseScreen(
     onAddToTournament: (ClubPlayer) -> Unit
 ) {
     BackHandler { onBack() }
-    val isAdmin = LocalIsAdmin.current
     var searchQuery by remember { mutableStateOf("") }
     var playerToDelete by remember { mutableStateOf<ClubPlayer?>(null) }
     var playerToEdit by remember { mutableStateOf<ClubPlayer?>(null) }
@@ -2487,6 +2486,7 @@ fun PlayerBaseScreen(
                 )
             }
 
+            val isAdmin = LocalIsAdmin.current
             if (isAdmin) {
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -4522,7 +4522,6 @@ fun RoundRobinScreen(
 ) {
     BackHandler { onBack() }
     val currentClubId = LocalCurrentClubId.current ?: ""
-    val isAdmin = LocalIsAdmin.current
     val playerNames = draft.playerFields.mapIndexed { index, field ->
         field.name.trim().ifBlank { "Игрок ${index + 1}" }
     }
