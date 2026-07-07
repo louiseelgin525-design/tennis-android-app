@@ -3347,6 +3347,121 @@
                 });
         };
 
+        // ROUND ROBIN MATCH SCHEDULING (ported from Kotlin)
+        function refreshActiveRoundRobinMatches(draft, playerCount, tablesCount) {
+            const effectiveTablesCount = Math.max(1, Math.min(tablesCount || 1, Math.max(1, Math.floor(playerCount / 2))));
+
+            const withdrawnSet = new Set(draft.withdrawnPlayers || []);
+
+            // 1. Maintain the list size equal to tables count
+            if (!draft.activeRoundRobinMatches) draft.activeRoundRobinMatches = [];
+            while (draft.activeRoundRobinMatches.length < effectiveTablesCount) {
+                draft.activeRoundRobinMatches.push(null);
+            }
+            while (draft.activeRoundRobinMatches.length > effectiveTablesCount) {
+                draft.activeRoundRobinMatches.pop();
+            }
+
+            const scores = draft.matchScores || {};
+
+            // 2. Clear invalid assignments
+            for (let i = 0; i < draft.activeRoundRobinMatches.length; i++) {
+                const pair = draft.activeRoundRobinMatches[i];
+                if (!pair) continue;
+
+                // pair is stored as "f_s" string
+                let f, s;
+                if (typeof pair === 'string') {
+                    const parts = pair.split('_');
+                    f = parseInt(parts[0]);
+                    s = parseInt(parts[1]);
+                } else {
+                    continue;
+                }
+
+                const normalKey = Math.min(f, s) + '_' + Math.max(f, s);
+                const invalid = f < 0 || f >= playerCount ||
+                                s < 0 || s >= playerCount ||
+                                withdrawnSet.has(f) || withdrawnSet.has(s) ||
+                                scores[normalKey] !== undefined;
+
+                if (invalid) {
+                    draft.activeRoundRobinMatches[i] = null;
+                }
+            }
+
+            // Collect busy players
+            const busyPlayers = new Set();
+            for (const pair of draft.activeRoundRobinMatches) {
+                if (!pair) continue;
+                if (typeof pair === 'string') {
+                    const parts = pair.split('_');
+                    busyPlayers.add(parseInt(parts[0]));
+                    busyPlayers.add(parseInt(parts[1]));
+                }
+            }
+
+            // 3. Find empty slots
+            const emptySlots = [];
+            for (let i = 0; i < draft.activeRoundRobinMatches.length; i++) {
+                if (!draft.activeRoundRobinMatches[i]) emptySlots.push(i);
+            }
+            if (emptySlots.length === 0) return;
+
+            // Count matches played per player
+            const matchesPlayed = new Array(playerCount).fill(0);
+            for (let f = 0; f < playerCount; f++) {
+                for (let s = f + 1; s < playerCount; s++) {
+                    const key = f + '_' + s;
+                    if (scores[key] !== undefined) {
+                        matchesPlayed[f]++;
+                        matchesPlayed[s]++;
+                    }
+                }
+            }
+
+            const currentPairs = new Set();
+            for (const pair of draft.activeRoundRobinMatches) {
+                if (pair) currentPairs.add(pair);
+            }
+
+            const lastFinished = new Set(draft.lastFinishedPlayers || []);
+
+            // Build candidate pairs
+            const candidates = [];
+            for (let f = 0; f < playerCount; f++) {
+                if (withdrawnSet.has(f)) continue;
+                for (let s = f + 1; s < playerCount; s++) {
+                    if (withdrawnSet.has(s)) continue;
+
+                    const pairKey = f + '_' + s;
+                    if (scores[pairKey] === undefined && !currentPairs.has(pairKey)) {
+                        const p1Penalty = lastFinished.has(f) ? 20 : 0;
+                        const p2Penalty = lastFinished.has(s) ? 20 : 0;
+                        const weight = matchesPlayed[f] + matchesPlayed[s] + p1Penalty + p2Penalty;
+                        const distance = Math.abs(f - s);
+                        candidates.push({ f, s, priority: weight * 1000 - distance });
+                    }
+                }
+            }
+
+            candidates.sort((a, b) => a.priority - b.priority);
+
+            // Assign candidates to empty slots
+            let nextCandidateIdx = 0;
+            for (const slotIdx of emptySlots) {
+                while (nextCandidateIdx < candidates.length) {
+                    const candidate = candidates[nextCandidateIdx++];
+                    if (!busyPlayers.has(candidate.f) && !busyPlayers.has(candidate.s)) {
+                        draft.activeRoundRobinMatches[slotIdx] = candidate.f + '_' + candidate.s;
+                        busyPlayers.add(candidate.f);
+                        busyPlayers.add(candidate.s);
+                        break;
+                    }
+                }
+            }
+        }
+
         // PLAYOFF HELPER CARDS
         function createPlayoffMatchBox(id, scores, names, isFinal = false) {
             const box = document.createElement('div');
