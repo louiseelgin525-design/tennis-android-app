@@ -1306,7 +1306,7 @@
                 Войти <i class="fa-solid fa-arrow-right"></i>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.0.8 (07.07.2026 19:25)
+                Версия веб-приложения: 1.0.9 (07.07.2026 19:35)
             </div>
         </form>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
@@ -4293,18 +4293,21 @@
         }
 
         // MODAL: OPEN TOURNAMENT DETAILS FROM HISTORY
-        function openHistoryModal(entry) {
-            const modal = document.getElementById('history-modal');
-            
-            document.getElementById('modal-history-title').textContent = entry.name;
-            document.getElementById('modal-history-subtitle').textContent = entry.dateText;
+        let activeHistoryEntry = null;
 
+        function openHistoryModal(entry) {
+            activeHistoryEntry = entry;
+            renderHistoryModalContent(entry, null);
+            document.getElementById('history-modal').style.display = 'flex';
+        }
+
+        function renderHistoryModalContent(entry, selectedPlayerName) {
             // Standings list
             const standingsEl = document.getElementById('modal-history-standings');
             standingsEl.innerHTML = '';
             
             // Pre-calculate wins/losses per player from structuredMatches
-            const statsMap = {}; // { playerName: { wins: 0, losses: 0 } }
+            const statsMap = {}; // { playerName: { wins: 0, losses: 0, delta: 0 } }
             const matchesList = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
             matchesList.forEach(matchStr => {
                 const parts = matchStr.split("::");
@@ -4317,8 +4320,8 @@
                         const s1 = parseInt(scoreParts[0]) || 0;
                         const s2 = parseInt(scoreParts[1]) || 0;
                         
-                        if (!statsMap[p1]) statsMap[p1] = { wins: 0, losses: 0 };
-                        if (!statsMap[p2]) statsMap[p2] = { wins: 0, losses: 0 };
+                        if (!statsMap[p1]) statsMap[p1] = { wins: 0, losses: 0, delta: 0 };
+                        if (!statsMap[p2]) statsMap[p2] = { wins: 0, losses: 0, delta: 0 };
                         
                         if (s1 > s2) {
                             statsMap[p1].wins++;
@@ -4338,19 +4341,42 @@
                     const name = decodeName(parts[0]);
                     const rating = parseFloat(parts[2]).toFixed(1);
                     const delta = parseFloat(parts[3] || "0");
-                    const stats = statsMap[name] || { wins: 0, losses: 0 };
+                    if (!statsMap[name]) statsMap[name] = { wins: 0, losses: 0, delta: 0 };
+                    statsMap[name].delta = delta;
 
                     const row = document.createElement('div');
                     row.className = 'modal-match-item';
+                    row.style.cursor = 'pointer';
+                    row.style.padding = '8px 12px';
+                    row.style.borderRadius = '10px';
+                    row.style.transition = 'background 0.2s, border-color 0.2s';
+                    row.style.marginBottom = '4px';
+                    
+                    if (selectedPlayerName === name) {
+                        row.style.background = 'rgba(0, 122, 255, 0.08)';
+                        row.style.border = '1px solid rgba(0, 122, 255, 0.2)';
+                    } else {
+                        row.style.border = '1px solid transparent';
+                        row.style.background = 'transparent';
+                    }
+
+                    row.addEventListener('click', () => {
+                        if (selectedPlayerName === name) {
+                            renderHistoryModalContent(entry, null);
+                        } else {
+                            renderHistoryModalContent(entry, name);
+                        }
+                    });
                     
                     let medal = `${idx + 1}.`;
                     if (idx === 0) medal = '🥇';
                     else if (idx === 1) medal = '🥈';
                     else if (idx === 2) medal = '🥉';
 
+                    const stats = statsMap[name];
                     row.innerHTML = `
                         <div style="display:flex; flex-direction:column; gap:2px; text-align:left;">
-                            <div style="font-weight: 700;">${medal} <span style="margin-left: 6px;">${name}</span></div>
+                            <div style="font-weight: 700; color: var(--text-primary);">${medal} <span style="margin-left: 6px;">${name}</span></div>
                             <div style="font-size:11px; color:var(--text-secondary); margin-left: 24px;">Игр: ${stats.wins + stats.losses} (В-П: ${stats.wins}-${stats.losses})</div>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
@@ -4366,29 +4392,101 @@
             const matchesEl = document.getElementById('modal-history-matches');
             matchesEl.innerHTML = '';
             
+            let filteredMatchesCount = 0;
+            let playerWins = 0;
+            let playerLosses = 0;
+            let totalRatingChange = 0;
+
             matchesList.forEach(matchStr => {
                 const parts = matchStr.split("::");
                 if (parts.length >= 3) {
                     const p1 = decodeName(parts[0]);
                     const p2 = decodeName(parts[1]);
                     const score = parts[2];
+                    const p1Delta = parseFloat(parts[3] || "0");
+                    const p2Delta = parseFloat(parts[4] || "0");
+
+                    // Filter if selectedPlayerName is set
+                    if (selectedPlayerName && p1 !== selectedPlayerName && p2 !== selectedPlayerName) {
+                        return;
+                    }
+                    filteredMatchesCount++;
 
                     const row = document.createElement('div');
                     row.className = 'modal-match-item';
-                    row.innerHTML = `
-                        <div style="flex:1; text-align: left; font-weight: 600;">${p1}</div>
-                        <div style="font-weight: 800; color: var(--apple-blue); margin: 0 16px;">${score}</div>
-                        <div style="flex:1; text-align: right; font-weight: 600;">${p2}</div>
-                    `;
+                    row.style.padding = '8px 12px';
+                    row.style.borderBottom = '1px solid var(--border-color)';
+
+                    if (selectedPlayerName) {
+                        // Single player view
+                        const isP1 = p1 === selectedPlayerName;
+                        const opponent = isP1 ? p2 : p1;
+                        const oppParts = playersList.find(p => decodeName(p.split("::")[0]) === opponent);
+                        const oppRatingStr = oppParts ? ` ★${parseFloat(oppParts.split("::")[2]).toFixed(0)}` : '';
+                        
+                        let displayScore = score;
+                        let won = false;
+                        if (score && score.includes(":")) {
+                            const scoreParts = score.split(":");
+                            const s1 = parseInt(scoreParts[0]) || 0;
+                            const s2 = parseInt(scoreParts[1]) || 0;
+                            if (isP1) {
+                                displayScore = `${s1} : ${s2}`;
+                                won = s1 > s2;
+                            } else {
+                                displayScore = `${s2} : ${s1}`;
+                                won = s2 > s1;
+                            }
+                            if (won) playerWins++; else playerLosses++;
+                        }
+                        
+                        const myDelta = isP1 ? p1Delta : p2Delta;
+                        totalRatingChange += myDelta;
+
+                        const deltaSign = myDelta > 0 ? '+' : '';
+                        const deltaColor = myDelta > 0 ? 'var(--apple-green)' : (myDelta < 0 ? 'var(--apple-red)' : 'var(--text-secondary)');
+                        const deltaHtml = myDelta !== 0 ? `<span style="font-weight: 800; color: ${deltaColor};">${deltaSign}${myDelta.toFixed(1)}</span>` : '<span style="color: var(--text-secondary);">-</span>';
+
+                        row.innerHTML = `
+                            <div style="flex: 2; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-primary);">${opponent}<span style="color: var(--text-secondary); font-size: 11px; font-weight: normal;">${oppRatingStr}</span></div>
+                            <div style="flex: 1; font-weight: 800; color: ${won ? 'var(--apple-green)' : 'var(--text-secondary)'}; text-align: center; font-size: 13px;">${displayScore}</div>
+                            <div style="flex: 1; text-align: right; font-size: 13px;">${deltaHtml}</div>
+                        `;
+                    } else {
+                        // Show all matches view
+                        row.innerHTML = `
+                            <div style="flex:1; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-primary);">${p1}</div>
+                            <div style="font-weight: 800; color: var(--apple-blue); margin: 0 16px; font-size: 13px; text-align: center;">${score}</div>
+                            <div style="flex:1; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-primary);">${p2}</div>
+                        `;
+                    }
                     matchesEl.appendChild(row);
                 }
             });
 
-            if (matchesList.length === 0) {
-                matchesEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px;">Данные матчей отсутствуют</div>';
+            if (filteredMatchesCount === 0) {
+                matchesEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 12px 0;">Данные матчей отсутствуют</div>';
+            } else if (selectedPlayerName) {
+                // Add summary footer row for filtered player view
+                const footer = document.createElement('div');
+                footer.className = 'modal-match-item';
+                footer.style.borderTop = '2px solid var(--border-color)';
+                footer.style.marginTop = '8px';
+                footer.style.padding = '12px 12px 4px 12px';
+                footer.style.fontWeight = '800';
+                
+                const stats = statsMap[selectedPlayerName] || { wins: playerWins, losses: playerLosses, delta: totalRatingChange };
+                const finalDelta = stats.delta;
+                const deltaSign = finalDelta > 0 ? '+' : '';
+                const deltaColor = finalDelta > 0 ? 'var(--apple-green)' : (finalDelta < 0 ? 'var(--apple-red)' : 'var(--text-secondary)');
+                
+                footer.innerHTML = `
+                    <div style="flex: 2; text-align: left; color: var(--text-secondary); font-size: 12px;">Итого:</div>
+                    <div style="flex: 1; text-align: center; color: var(--text-primary); font-size: 14px;">${stats.wins} - ${stats.losses}</div>
+                    <div style="flex: 1; text-align: right; color: ${deltaColor}; font-size: 14px;">${deltaSign}${finalDelta.toFixed(1)}</div>
+                `;
+                matchesEl.appendChild(footer);
             }
-
-            modal.style.display = 'flex';
         }
 
         function closeHistoryModal() {
