@@ -3818,7 +3818,9 @@ fun CreateTournamentScreen(
                         ) {
                             // Левая колонка: Участники
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("👥 Участники", style = AppTypography.titleLarge, color = TextDark)
+                                Text("👥", fontSize = 24.sp)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text("Участники", style = AppTypography.titleLarge, color = TextDark)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -3861,7 +3863,9 @@ fun CreateTournamentScreen(
 
                             // Правая колонка: Формат до побед
                             Column(modifier = Modifier.weight(1.3f)) {
-                                Text("🏆 Победы", style = AppTypography.titleLarge, color = TextDark)
+                                Text("🏆", fontSize = 24.sp)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text("Победы", style = AppTypography.titleLarge, color = TextDark)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
