@@ -1398,7 +1398,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.1.3 (07.07.2026 21:08)
+                Версия веб-приложения: 1.1.4 (07.07.2026 23:03)
             </div>
         </form>
         <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
@@ -2125,10 +2125,16 @@
                 const rawJson = snapshot.val();
                 let list = [];
                 if (rawJson) {
-                    try {
-                        list = JSON.parse(rawJson);
-                    } catch (e) {
-                        list = [];
+                    if (typeof rawJson === 'string') {
+                        try {
+                            list = JSON.parse(rawJson);
+                        } catch (e) {
+                            list = [];
+                        }
+                    } else if (Array.isArray(rawJson)) {
+                        list = rawJson;
+                    } else if (typeof rawJson === 'object') {
+                        list = Object.values(rawJson);
                     }
                 }
                 clubData.history = list;
@@ -4669,10 +4675,10 @@
             const listEl = document.getElementById('history-list-el');
             listEl.innerHTML = '';
 
-            // Copy and reverse order to show newest first
-            const reversed = [...clubData.history].reverse();
+            // Sort by id descending to show newest first
+            const sorted = [...clubData.history].sort((a, b) => b.id - a.id);
 
-            reversed.forEach(entry => {
+            sorted.forEach(entry => {
                 const card = document.createElement('div');
                 card.className = 'history-card';
                 card.addEventListener('click', () => openHistoryModal(entry));
