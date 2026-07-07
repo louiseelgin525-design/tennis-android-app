@@ -2261,56 +2261,37 @@ fun MainDashboardScreen(
                     }
                 }
             }
-        val hasActive = draft.isListGenerated
-        val hasDraft = draft.name.isNotBlank() && !hasActive
-
-        if (isAdmin || hasActive) {
-            item {
-                Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(if (hasActive) GreenBadgeText else AppleBlue), contentAlignment = Alignment.Center) {
-                                Text(if (hasActive) "🏆" else if (hasDraft) "📝" else "🏓", fontSize = 24.sp)
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = CardWhite), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, BorderGray), modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(50.dp).clip(RoundedCornerShape(12.dp)).background(AppleBlue), contentAlignment = Alignment.Center) {
+                            Text(if (hasDraft) "📝" else "🏓", fontSize = 24.sp)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(if (hasDraft) "Черновик турнира" else "Новый турнир", style = AppTypography.titleLarge, color = TextDark)
+                            Text(if (hasDraft) "Продолжите настройку" else "Создайте турнир", style = AppTypography.bodyMedium, color = TextGray)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                    OutlinedTextField(
+                        value = draft.name, onValueChange = { 
+                            draft.name = it
+                            val clubId = currentClubId ?: ""
+                            if (clubId.isNotBlank()) {
+                                FirebaseStorage.syncDraftProperty(clubId, "name", it)
                             }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    if (hasActive) "Активный турнир" else if (hasDraft) "Черновик турнира" else "Новый турнир", 
-                                    style = AppTypography.titleLarge, 
-                                    color = TextDark
-                                )
-                                Text(
-                                    if (hasActive) "Турнир в процессе игры" else if (hasDraft) "Продолжите настройку" else "Создайте турнир", 
-                                    style = AppTypography.bodyMedium, 
-                                    color = TextGray
-                                )
-                            }
-                        }
-                        if (!hasActive) {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            OutlinedTextField(
-                                value = draft.name, onValueChange = { 
-                                    draft.name = it
-                                    val clubId = currentClubId ?: ""
-                                    if (clubId.isNotBlank()) {
-                                        FirebaseStorage.syncDraftProperty(clubId, "name", it)
-                                    }
-                                },
-                                placeholder = { Text("Введите название турнира", color = TextGray) },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = BorderGray, focusedBorderColor = AppleBlue, unfocusedContainerColor = CardWhite, focusedContainerColor = CardWhite),
-                                shape = RoundedCornerShape(12.dp), singleLine = true,
-                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onNavigateToCreate, colors = ButtonDefaults.buttonColors(containerColor = if (hasActive) GreenBadgeText else AppleBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(54.dp)) {
-                            Text(
-                                if (hasActive) "👁️ Просмотреть турнир" else if (hasDraft) "✏️ Продолжить создание" else "🏆 Создать турнир", 
-                                style = AppTypography.labelLarge, 
-                                color = Color.White
-                            )
-                        }
+                        },
+                        placeholder = { Text("Введите название турнира", color = TextGray) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = BorderGray, focusedBorderColor = AppleBlue, unfocusedContainerColor = CardWhite, focusedContainerColor = CardWhite),
+                        shape = RoundedCornerShape(12.dp), singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onNavigateToCreate, colors = ButtonDefaults.buttonColors(containerColor = AppleBlue), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                        Text(if (hasDraft) "✏️ Продолжить создание" else "🏆 Создать турнир", style = AppTypography.labelLarge, color = Color.White)
                     }
                 }
             }
@@ -2486,19 +2467,16 @@ fun PlayerBaseScreen(
                 )
             }
 
-            val isAdmin = LocalIsAdmin.current
-            if (isAdmin) {
-                Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-                IconButton(
-                    onClick = { showCreateDialog = true },
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(AppleBlue)
-                ) {
-                    Text("+", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                }
+            IconButton(
+                onClick = { showCreateDialog = true },
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppleBlue)
+            ) {
+                Text("+", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -2598,8 +2576,7 @@ fun PlayerBaseScreen(
 
                     SwipeToDismissBox(
                         state = dismissState,
-                        enableDismissFromStartToEnd = isAdmin,
-                        enableDismissFromEndToStart = isAdmin,
+                        enableDismissFromStartToEnd = true,
                         backgroundContent = {
                             val color = when (dismissState.dismissDirection) {
                                 SwipeToDismissBoxValue.StartToEnd -> GreenBadgeBg
@@ -2643,7 +2620,7 @@ fun PlayerBaseScreen(
                         content = {
                             PlayerRegistrationCard(
                                 player = player,
-                                onClick = { if (isAdmin) playerToEdit = player }
+                                onClick = { playerToEdit = player }
                             )
                         }
                     )
@@ -3249,7 +3226,6 @@ fun TournamentHistoryScreen(
     onHistoryChanged: (List<TournamentHistoryEntry>) -> Unit
 ) {
     BackHandler { onBack() }
-    val isAdmin = LocalIsAdmin.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedEntry by remember { mutableStateOf<TournamentHistoryEntry?>(null) }
     var entryToDelete by remember { mutableStateOf<TournamentHistoryEntry?>(null) }
@@ -3376,7 +3352,6 @@ fun TournamentHistoryScreen(
                     SwipeToDismissBox(
                         state = dismissState,
                         enableDismissFromStartToEnd = false,
-                        enableDismissFromEndToStart = isAdmin,
                         backgroundContent = {
                             Box(
                                 modifier = Modifier
@@ -4720,7 +4695,7 @@ fun RoundRobinScreen(
                         clubPlayers = clubPlayers,
                         configuredTablesCount = draft.tablesCount,
                         isVertical = true,
-                        onMatchClick = { pair -> if (isAdmin) selectedPair = pair }
+                        onMatchClick = { pair -> selectedPair = pair }
                     )
                 }
             }
@@ -4732,7 +4707,7 @@ fun RoundRobinScreen(
                 playerNames = playerNames,
                 clubPlayers = clubPlayers,
                 configuredTablesCount = draft.tablesCount,
-                onMatchClick = { pair -> if (isAdmin) selectedPair = pair }
+                onMatchClick = { pair -> selectedPair = pair }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -4756,19 +4731,17 @@ fun RoundRobinScreen(
                     searchQuery = "",
                     tableScale = tableScale,
                     onCellClick = { first, second ->
-                        if (isAdmin) {
-                            val score = draft.matchScores[first to second]
-                            if (score == "L" || score == "W") {
-                                val firstWithdrawn = first in draft.withdrawnPlayers
-                                val secondWithdrawn = second in draft.withdrawnPlayers
-                                if (firstWithdrawn) {
-                                    restorePlayerCandidate = first
-                                } else if (secondWithdrawn) {
-                                    restorePlayerCandidate = second
-                                }
-                            } else {
-                                selectedPair = first to second
+                        val score = draft.matchScores[first to second]
+                        if (score == "L" || score == "W") {
+                            val firstWithdrawn = first in draft.withdrawnPlayers
+                            val secondWithdrawn = second in draft.withdrawnPlayers
+                            if (firstWithdrawn) {
+                                restorePlayerCandidate = first
+                            } else if (secondWithdrawn) {
+                                restorePlayerCandidate = second
                             }
+                        } else {
+                            selectedPair = first to second
                         }
                     },
                     onPlayerClick = { playerIndex ->
@@ -5276,8 +5249,7 @@ private fun SimpleRoundRobinTopBar(
             )
         }
 
-        val isAdmin = LocalIsAdmin.current
-        if (tournamentIsComplete && isAdmin) {
+        if (tournamentIsComplete) {
             Button(
                 onClick = onFinish,
                 colors = ButtonDefaults.buttonColors(containerColor = AppleBlue),
@@ -6139,7 +6111,6 @@ private fun RoundRobinTable(
     onPlayerClick: (Int) -> Unit
 ) {
     val horizontalScroll = rememberScrollState()
-    val isAdmin = LocalIsAdmin.current
 
     val scale = tableScale.coerceIn(0.85f, 1.35f)
     val rowHeight = (64f * scale).dp
@@ -6328,7 +6299,7 @@ private fun RoundRobinTable(
                             else -> TextGray
                         }
 
-                        val canOpenScore = !isDiagonal && isAdmin
+                        val canOpenScore = !isDiagonal
 
                         val isWin = parsed != null && parsed.first > parsed.second
                         val isLoss = parsed != null && parsed.first < parsed.second
@@ -7554,12 +7525,8 @@ fun BracketMatchCard(draft: TournamentDraft, match: PlayoffMatch, onClick: (Play
     val scoreP1 = if (score.contains(":")) score.split(":")[0] else "-"
     val scoreP2 = if (score.contains(":")) score.split(":")[1] else "-"
 
-    val isAdmin = LocalIsAdmin.current
     Card(
-        modifier = Modifier
-            .width(180.dp)
-            .then(if (isAdmin) Modifier.clickable { onClick(match) } else Modifier)
-            .border(if (match.isFinal) 2.dp else 1.dp, if (match.isFinal) GoldBorder else BorderGray, RoundedCornerShape(8.dp)),
+        modifier = Modifier.width(180.dp).clickable { onClick(match) }.border(if (match.isFinal) 2.dp else 1.dp, if (match.isFinal) GoldBorder else BorderGray, RoundedCornerShape(8.dp)),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         shape = RoundedCornerShape(8.dp)
     ) {
