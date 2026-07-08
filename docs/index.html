@@ -1442,7 +1442,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.5.2 (08.07.2026 16:22)
+                Версия веб-приложения: 1.6.0 (08.07.2026 17:45)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -5591,6 +5591,197 @@
             document.getElementById('history-modal').style.display = 'none';
         }
 
+        // VISITOR ANALYTICS CONTROLLER
+        function openAnalyticsModal() {
+            if (!isAdmin) return;
+            const modal = document.getElementById('analytics-modal');
+            modal.style.display = 'flex';
+            showLoader(true);
+
+            db.ref(`clubs/${activeClubId}/analytics/events`).once('value')
+                .then(snapshot => {
+                    showLoader(false);
+                    const rawData = snapshot.val();
+                    
+                    const events = [];
+                    if (rawData) {
+                        Object.keys(rawData).forEach(key => {
+                            events.push({
+                                key: key,
+                                ...rawData[key]
+                            });
+                        });
+                    }
+
+                    // Prune oldest if exceeds 1000 records
+                    if (events.length > 1000) {
+                        events.sort((a, b) => a.timestamp - b.timestamp);
+                        const toDelete = events.slice(0, events.length - 1000);
+                        const updates = {};
+                        toDelete.forEach(ev => {
+                            updates[ev.key] = null;
+                        });
+                        db.ref(`clubs/${activeClubId}/analytics/events`).update(updates);
+                        // keep only remaining 1000 for display
+                        events.splice(0, events.length - 1000);
+                    }
+
+                    // Sort descending for dashboard views
+                    events.sort((a, b) => b.timestamp - a.timestamp);
+
+                    // 1. Visit Statistics (loads)
+                    const now = Date.now();
+                    const oneDayMs = 24 * 60 * 60 * 1000;
+                    const startOfToday = now - (now % oneDayMs);
+                    const startOfWeek = now - 7 * oneDayMs;
+
+                    const uniqueToday = new Set();
+                    const uniqueWeek = new Set();
+
+                    events.forEach(ev => {
+                        if (ev.type === 'load') {
+                            if (ev.timestamp >= startOfToday) {
+                                uniqueToday.add(ev.sessionId);
+                            }
+                            if (ev.timestamp >= startOfWeek) {
+                                uniqueWeek.add(ev.sessionId);
+                            }
+                        }
+                    });
+
+                    document.getElementById('analytics-loads-today').textContent = uniqueToday.size;
+                    document.getElementById('analytics-loads-week').textContent = uniqueWeek.size;
+
+                    // 2. Most popular profiles & searches
+                    const searchCounts = {};
+                    events.forEach(ev => {
+                        if (ev.type === 'view_profile') {
+                            const label = `📈 Профиль: ${ev.detail}`;
+                            searchCounts[label] = (searchCounts[label] || 0) + 1;
+                        } else if (ev.type === 'search') {
+                            const label = `🔍 Поиск: "${ev.detail}"`;
+                            searchCounts[label] = (searchCounts[label] || 0) + 1;
+                        }
+                    });
+
+                    const topSearchesEl = document.getElementById('analytics-top-searches');
+                    topSearchesEl.innerHTML = '';
+                    const sortedSearches = Object.entries(searchCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                    if (sortedSearches.length === 0) {
+                        topSearchesEl.innerHTML = '<div style="color:var(--text-secondary); font-size:12px; padding: 4px 0;">Нет данных</div>';
+                    } else {
+                        sortedSearches.forEach(([label, count]) => {
+                            const row = document.createElement('div');
+                            row.style.display = 'flex';
+                            row.style.justifyContent = 'space-between';
+                            row.style.padding = '4px 0';
+                            row.style.borderBottom = '1px solid #f2f2f7';
+                            row.innerHTML = `<span>${label}</span><strong style="color:var(--apple-blue);">${count} раз</strong>`;
+                            topSearchesEl.appendChild(row);
+                        });
+                    }
+
+                    // 3. Most popular tournaments
+                    const tourneyCounts = {};
+                    events.forEach(ev => {
+                        if (ev.type === 'view_history_tournament') {
+                            tourneyCounts[ev.detail] = (tourneyCounts[ev.detail] || 0) + 1;
+                        }
+                    });
+
+                    const topTourneysEl = document.getElementById('analytics-top-tournaments');
+                    topTourneysEl.innerHTML = '';
+                    const sortedTourneys = Object.entries(tourneyCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+                    if (sortedTourneys.length === 0) {
+                        topTourneysEl.innerHTML = '<div style="color:var(--text-secondary); font-size:12px; padding: 4px 0;">Нет данных</div>';
+                    } else {
+                        sortedTourneys.forEach(([name, count]) => {
+                            const row = document.createElement('div');
+                            row.style.display = 'flex';
+                            row.style.justifyContent = 'space-between';
+                            row.style.padding = '4px 0';
+                            row.style.borderBottom = '1px solid #f2f2f7';
+                            row.innerHTML = `<span>🏆 ${name}</span><strong style="color:var(--apple-green);">${count} просм.</strong>`;
+                            topTourneysEl.appendChild(row);
+                        });
+                    }
+
+                    // 4. Activity Feed (last 30)
+                    const feedEl = document.getElementById('analytics-recent-feed');
+                    feedEl.innerHTML = '';
+                    const feedEvents = events.slice(0, 30);
+                    if (feedEvents.length === 0) {
+                        feedEl.innerHTML = '<div style="color:var(--text-secondary); text-align:center; padding:12px 0;">Лента пуста</div>';
+                    } else {
+                        feedEvents.forEach(ev => {
+                            let iconText = '📝';
+                            let desc = '';
+                            if (ev.type === 'load') {
+                                iconText = '📱';
+                                desc = 'Вход в приложение';
+                            } else if (ev.type === 'tab_switch') {
+                                iconText = '🏓';
+                                let tabName = ev.detail;
+                                if (tabName === 'ratings') tabName = 'Рейтинг';
+                                else if (tabName === 'active') tabName = 'Турнир';
+                                else if (tabName === 'history') tabName = 'История';
+                                desc = `Переход на вкладку "${tabName}"`;
+                            } else if (ev.type === 'search') {
+                                iconText = '🔍';
+                                desc = `Поиск игрока: "${ev.detail}"`;
+                            } else if (ev.type === 'view_profile') {
+                                iconText = '📈';
+                                desc = `Просмотр профиля: ${ev.detail}`;
+                            } else if (ev.type === 'view_history_tournament') {
+                                iconText = '🏆';
+                                desc = `Открыт турнир из истории: "${ev.detail}"`;
+                            } else if (ev.type === 'expand_history_player') {
+                                iconText = '👤';
+                                desc = `Раскрыты матчи в истории: ${ev.detail}`;
+                            }
+
+                            const row = document.createElement('div');
+                            row.style.display = 'flex';
+                            row.style.justifyContent = 'space-between';
+                            row.style.alignItems = 'center';
+                            row.style.fontSize = '12px';
+                            row.style.padding = '6px 8px';
+                            row.style.borderRadius = '8px';
+                            row.style.backgroundColor = '#f8f8fa';
+
+                            row.innerHTML = `
+                                <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                                    <span style="font-size:16px;">${iconText}</span>
+                                    <span style="color:var(--text-main); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${desc}</span>
+                                </div>
+                                <span style="color:var(--text-secondary); font-size:11px; margin-left:8px; flex-shrink:0;">${getRelativeTime(ev.timestamp)}</span>
+                            `;
+                            feedEl.appendChild(row);
+                        });
+                    }
+                })
+                .catch(err => {
+                    showLoader(false);
+                    showToast("Ошибка загрузки аналитики: " + err.message);
+                });
+        }
+
+        function closeAnalyticsModal() {
+            document.getElementById('analytics-modal').style.display = 'none';
+        }
+
+        function getRelativeTime(timestamp) {
+            const diffMs = Date.now() - timestamp;
+            const diffSec = Math.floor(diffMs / 1000);
+            if (diffSec < 60) return "только что";
+            const diffMin = Math.floor(diffSec / 60);
+            if (diffMin < 60) return `${diffMin} мин назад`;
+            const diffHour = Math.floor(diffMin / 60);
+            if (diffHour < 24) return `${diffHour} ч назад`;
+            const diffDay = Math.floor(diffHour / 24);
+            return `${diffDay} дн назад`;
+        }
+
         // CLOSE ON CLICK OUTSIDE
         window.addEventListener('click', (e) => {
             const playerModal = document.getElementById('player-modal');
@@ -5600,6 +5791,7 @@
             const adminScoreModal = document.getElementById('admin-score-modal');
             const adminPlayoffScoreModal = document.getElementById('admin-playoff-score-modal');
             const tournamentFinishModal = document.getElementById('tournament-finish-modal');
+            const analyticsModal = document.getElementById('analytics-modal');
 
             if (e.target === playerModal) closePlayerModal();
             if (e.target === historyModal) closeHistoryModal();
@@ -5608,6 +5800,7 @@
             if (e.target === adminScoreModal) closeAdminScoreModal();
             if (e.target === adminPlayoffScoreModal) closeAdminPlayoffScoreModal();
             if (e.target === tournamentFinishModal) closeTournamentFinishModal();
+            if (e.target === analyticsModal) closeAnalyticsModal();
         });
         </script>
 </body>
