@@ -240,7 +240,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: calc(64px + var(--safe-area-bottom));
+            height: calc(68px + var(--safe-area-bottom));
             background-color: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -260,8 +260,8 @@
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 11px;
-            font-weight: 500;
-            gap: 4px;
+            font-weight: 600;
+            gap: 5px;
             transition: color 0.2s;
             background: none;
             border: none;
@@ -269,12 +269,100 @@
         }
 
         .nav-item i, .nav-item svg {
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
+            stroke-width: 2.2px;
         }
 
         .nav-item.active {
             color: var(--apple-blue);
+        }
+
+        /* HALL OF FAME STYLES */
+        .hall-card {
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 22px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.015);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .hall-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+        }
+        .hall-avatar {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            background-color: var(--apple-blue);
+            color: white;
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+        .hall-info {
+            flex: 1;
+            min-width: 0;
+            text-align: left;
+        }
+        .hall-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .hall-stats {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+        .hall-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .badge-wrapper {
+            position: relative;
+            display: inline-flex;
+        }
+        .badge-icon {
+            width: 38px;
+            height: 38px;
+            transition: transform 0.2s;
+        }
+        .badge-icon:hover {
+            transform: scale(1.15);
+        }
+        .badge-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background-color: var(--apple-red);
+            color: white;
+            font-size: 9px;
+            font-weight: 800;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
 
         /* RATING VIEW */
@@ -1442,7 +1530,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.6.4 (08.07.2026 19:02)
+                Версия веб-приложения: 1.7.0 (08.07.2026 23:20)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -1529,21 +1617,195 @@
                     <!-- Loaded dynamically -->
                 </div>
             </section>
+
+            <!-- TAB 4: HALL OF FAME -->
+            <section id="view-hall" class="view" style="display:none;">
+                <div class="hall-view-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div>
+                        <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">Зал славы</h2>
+                        <div id="hall-subtitle" style="font-size:13px; color:var(--text-secondary); margin-top:2px;">Достижения и рекорды игроков</div>
+                    </div>
+                </div>
+
+                <!-- Accordion Legend of Achievements -->
+                <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:20px; padding:16px; margin-bottom:20px; box-sizing:border-box;">
+                    <div onclick="toggleHallLegend()" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                        <span style="font-size:13px; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase;">📜 Легенда наград и ачивок</span>
+                        <span id="hall-legend-arrow" style="font-size:14px; font-weight:bold; color:var(--text-secondary); transition: transform 0.2s;">▼</span>
+                    </div>
+                    <div id="hall-legend-content" style="display:none; flex-direction:column; gap:12px; margin-top:14px; border-top:1px solid var(--border-color); padding-top:12px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
+                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                    <defs>
+                                        <linearGradient id="gold-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#FFE259" />
+                                            <stop offset="100%" stop-color="#FFA751" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M35 38 h30 v12 c0 8 -6 15 -15 15 s-15 -7 -15 -15 z" fill="url(#gold-grad-legend)"/>
+                                    <path d="M35 42 c-5 0 -8 4 -8 8 s3 8 8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
+                                    <path d="M65 42 c5 0 8 4 8 8 s-3 8 -8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
+                                    <path d="M46 65 h8 v10 h-8 z" fill="url(#gold-grad-legend)"/>
+                                    <path d="M30 75 h40 v6 h-40 z" fill="url(#gold-grad-legend)" rx="2"/>
+                                    <path d="M50 15 l2 4 h4 l-3 2.5 l1 4.5 l-4 -3 l-4 3 l1 -4.5 l-3 -2.5 h4 z" fill="#FFE259"/>
+                                </svg>
+                            </div>
+                            <div style="font-size:12px; text-align:left;">
+                                <strong style="color:var(--text-main); font-size:13px; display:block;">Серийный чемпион</strong>
+                                <span style="color:var(--text-secondary);">3 золота подряд (1-е место в 3 завершённых турнирах клуба подряд)</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
+                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                    <defs>
+                                        <linearGradient id="shield-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#00F2FE" />
+                                            <stop offset="100%" stop-color="#4FACFE" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M32 30 c12 0 18 -6 18 -6 s6 6 18 6 v22 c0 12 -18 20 -18 20 s-18 -8 -18 -20 z" fill="url(#shield-grad-legend)"/>
+                                    <path d="M50 34 l3 6 v18 h-6 v-18 z" fill="#FFFFFF"/>
+                                    <path d="M42 42 h16 v3 h-16 z" fill="#FFFFFF"/>
+                                    <path d="M49 61 h2 v4 h-2 z" fill="#FFFFFF"/>
+                                </svg>
+                            </div>
+                            <div style="font-size:12px; text-align:left;">
+                                <strong style="color:var(--text-main); font-size:13px; display:block;">Гроза авторитетов</strong>
+                                <span style="color:var(--text-secondary);">Победа в матче над игроком, чей текущий рейтинг выше на 100+ очков</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
+                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                    <defs>
+                                        <linearGradient id="rocket-grad-legend" x1="0%" y1="100%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#11998e" />
+                                            <stop offset="100%" stop-color="#38ef7d" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M34 66 c-2 8 2 12 6 10 l12 -12 l-6 -6 z" fill="#FF512F"/>
+                                    <path d="M40 60 l24 -24 c5 -5 10 -6 10 -6 s-1 5 -6 10 l-24 24 z" fill="url(#rocket-grad-legend)"/>
+                                    <path d="M43 57 l-9 3 l2 8 z" fill="#11998e"/>
+                                    <path d="M57 43 l3 -9 l8 2 z" fill="#11998e"/>
+                                    <circle cx="56" cy="44" r="3" fill="#FFFFFF" />
+                                </svg>
+                            </div>
+                            <div style="font-size:12px; text-align:left;">
+                                <strong style="color:var(--text-main); font-size:13px; display:block;">Взрывной рост</strong>
+                                <span style="color:var(--text-secondary);">Увеличение рейтинга на 50+ очков за последние 30 дней</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
+                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                    <defs>
+                                        <linearGradient id="iron-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#8e9eab" />
+                                            <stop offset="100%" stop-color="#eef2f3" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M30 32 c0 0 20 -8 20 -8 s20 8 20 8 v18 c0 16 -20 26 -20 26 s-20 -10 -20 -26 z" fill="url(#iron-grad-legend)"/>
+                                    <path d="M50 38 l3 8 h9 l-7 5.5 l2.5 8.5 l-7.5 -5 l-7.5 5 l2.5 -8.5 l-7 -5.5 h9 z" fill="#FF8C00"/>
+                                    <path d="M34 35 c0 0 16 -6 16 -6 s16 6 16 6 v15 c0 12 -16 21 -16 21 s-16 -9 -16 -21 z" fill="none" stroke="#2c3e50" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <div style="font-size:12px; text-align:left;">
+                                <strong style="color:var(--text-main); font-size:13px; display:block;">Железный человек</strong>
+                                <span style="color:var(--text-secondary);">Сыграно 50 и более турниров за всё время существования клуба</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
+                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                    <defs>
+                                        <linearGradient id="gold-grad2-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#F3904F" />
+                                            <stop offset="100%" stop-color="#3B4371" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M46 50 c-8 -8 -20 -4 -20 -4 s4 10 12 10 c4 0 8 -3 8 -6 z" fill="url(#gold-grad2-legend)"/>
+                                    <path d="M54 50 c8 -8 20 -4 20 -4 s-4 10 -12 10 c-4 0 -8 -3 -8 -6 z" fill="url(#gold-grad2-legend)"/>
+                                    <path d="M52 30 l-10 18 h12 l-6 20 l14 -22 h-12 z" fill="#FFE259"/>
+                                </svg>
+                            </div>
+                            <div style="font-size:12px; text-align:left;">
+                                <strong style="color:var(--text-main); font-size:13px; display:block;">Неуязвимый</strong>
+                                <span style="color:var(--text-secondary);">Завершение турнира со 100% результатом (без поражений во всех матчах турнира)</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
+                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                    <defs>
+                                        <linearGradient id="cyan-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#0575E6" />
+                                            <stop offset="100%" stop-color="#00F260" />
+                                        </linearGradient>
+                                    </defs>
+                                    <polygon points="50,22 68,36 50,78 32,36" fill="url(#cyan-grad-legend)" opacity="0.9"/>
+                                    <polygon points="50,22 68,36 50,42" fill="#FFFFFF" opacity="0.3"/>
+                                    <polygon points="50,22 32,36 50,42" fill="#FFFFFF" opacity="0.5"/>
+                                    <polygon points="32,36 50,78 50,42" fill="#000000" opacity="0.1"/>
+                                    <polygon points="68,36 50,78 50,42" fill="#FFFFFF" opacity="0.15"/>
+                                </svg>
+                            </div>
+                            <div style="font-size:12px; text-align:left;">
+                                <strong style="color:var(--text-main); font-size:13px; display:block;">Гроссмейстер</strong>
+                                <span style="color:var(--text-secondary);">Достижение текущего рейтинга 350.0 и выше</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid of Players Cards (Leaderboard) -->
+                <div id="hall-list-el" style="display:flex; flex-direction:column; gap:12px; margin-bottom: 24px;">
+                    <!-- Loaded dynamically -->
+                </div>
+            </section>
         </main>
 
         <!-- BOTTOM TAB NAV BAR -->
         <nav class="bottom-nav">
             <button class="nav-item active" data-view="ratings">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.2 1.8 4 4 4h1.86c.64 1.28 1.8 2.24 3.14 2.58V19H9v2h6v-2h-3v-2.42c1.34-.34 2.5-1.3 3.14-2.58H17c2.2 0 4-1.8 4-4V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z"/></svg>
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                    <path d="M4 22h16" />
+                    <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
+                    <path d="M12 2a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z" />
+                </svg>
                 Рейтинг
             </button>
             <button class="nav-item" data-view="active">
-                <svg class="svg-icon" viewBox="0 0 24 24" style="width:1.2em; height:1.2em;"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="2.5" fill="none"/><line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="17" cy="9" r="2.5" fill="var(--apple-blue)"/></svg>
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="10" cy="10" r="7" />
+                    <path d="M15 15l6 6" />
+                    <path d="M18 18l1.5-1.5" />
+                    <circle cx="17" cy="8" r="1.5" fill="currentColor" />
+                </svg>
                 Турнир
             </button>
             <button class="nav-item" data-view="history">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                    <path d="M12 7v5l4 2" />
+                </svg>
                 История
+            </button>
+            <button class="nav-item" data-view="hall">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
+                    <path d="M3 20h18" />
+                </svg>
+                Зал славы
             </button>
         </nav>
     </div>
@@ -2375,6 +2637,7 @@
                         
                         // Load and listen to data
                         initDatabaseListeners(clubId);
+                        logAnalyticsEvent('load');
                     } else {
                         debugLog("Ошибка: Клуб '" + clubId + "' не найден в db path 'clubConfigs'.");
                         showLoader(false);
@@ -2408,6 +2671,7 @@
                 }
                 clubData.players = list;
                 renderPlayers();
+                renderHall();
                 updateActiveTournament(); // refresh table names if active
             });
 
@@ -2430,6 +2694,7 @@
                 }
                 clubData.history = list;
                 renderHistory();
+                renderHall();
             });
 
             // 3. Draft/Active Tournament Listener
@@ -2473,12 +2738,27 @@
                 view.style.display = 'none';
             });
 
-            document.getElementById(`view-${tabId}`).style.display = 'block';
+            const targetView = document.getElementById(`view-${tabId}`);
+            if (targetView) targetView.style.display = 'block';
+
+            if (tabId === 'hall') {
+                renderHall();
+            }
+
+            logAnalyticsEvent('tab_switch', tabId);
         }
 
         // SEARCH INPUT FILTER
+        let searchLogTimeout = null;
         playerSearch.addEventListener('input', () => {
             renderPlayers();
+            clearTimeout(searchLogTimeout);
+            searchLogTimeout = setTimeout(() => {
+                const query = playerSearch.value.trim();
+                if (query) {
+                    logAnalyticsEvent('search', query);
+                }
+            }, 1000);
         });
 
         // RENDER READ-ONLY AND ADMIN PLAYERS LIST
@@ -3379,6 +3659,7 @@
         function openPlayerModal(player) {
             currentChartRange = 'all';
             const modal = document.getElementById('player-modal');
+            logAnalyticsEvent('view_profile', player.fullName);
             
             document.getElementById('modal-player-name').textContent = player.fullName;
             document.getElementById('modal-stat-rating').textContent = player.rating.toFixed(1);
@@ -5461,6 +5742,7 @@
             activeHistoryEntry = entry;
             renderHistoryModalContent(entry, null);
             document.getElementById('history-modal').style.display = 'flex';
+            logAnalyticsEvent('view_history_tournament', entry.name);
         }
 
         function renderHistoryModalContent(entry, selectedPlayerName) {
@@ -5531,6 +5813,7 @@
                         if (selectedPlayerName === name) {
                             renderHistoryModalContent(entry, null);
                         } else {
+                            logAnalyticsEvent('expand_history_player', name);
                             renderHistoryModalContent(entry, name);
                         }
                     });
@@ -5841,6 +6124,345 @@
             if (diffHour < 24) return `${diffHour} ч назад`;
             const diffDay = Math.floor(diffHour / 24);
             return `${diffDay} дн назад`;
+        }
+
+        // TOGGLE LEGEND ACCORDION IN HALL OF FAME
+        window.toggleHallLegend = function() {
+            const content = document.getElementById('hall-legend-content');
+            const arrow = document.getElementById('hall-legend-arrow');
+            if (content && arrow) {
+                const isHidden = content.style.display === 'none';
+                content.style.display = isHidden ? 'flex' : 'none';
+                arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        };
+
+        // VISITOR ANALYTICS WRITER
+        function logAnalyticsEvent(type, detail) {
+            if (isAdmin) return; // Don't log admin events
+            const sessionId = safeStorage.getItem('tennis_session_id') || Math.random().toString(36).substring(2, 10);
+            safeStorage.setItem('tennis_session_id', sessionId);
+            const event = {
+                type: type,
+                detail: detail || '',
+                timestamp: Date.now(),
+                sessionId: sessionId
+            };
+            if (db && activeClubId) {
+                db.ref(`clubs/${activeClubId}/analytics/events`).push(event).catch(err => console.error("Analytics error:", err));
+            }
+        }
+
+        // CALCULATE ACHIEVEMENTS FOR HALL OF FAME
+        function calculateAchievements() {
+            const achievements = {}; // { playerFullNameLower: { badgeName: count } }
+
+            // Initialize structure for all players
+            clubData.players.forEach(p => {
+                achievements[p.fullName.toLowerCase()] = {};
+            });
+
+            // 1. Серийный чемпион (Serial Champion)
+            const sortedHistory = [...clubData.history].sort((a, b) => a.id - b.id);
+            let currentWinner = "";
+            let streakCount = 0;
+            sortedHistory.forEach(entry => {
+                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                if (ratings.length > 0) {
+                    const p0 = ratings[0].split("::");
+                    if (p0.length >= 1) {
+                        const winnerName = decodeName(p0[0]).toLowerCase();
+                        if (winnerName === currentWinner) {
+                            streakCount++;
+                            if (streakCount === 3) {
+                                if (achievements[winnerName]) {
+                                    achievements[winnerName]['champion'] = (achievements[winnerName]['champion'] || 0) + 1;
+                                }
+                                streakCount = 0;
+                            }
+                        } else {
+                            currentWinner = winnerName;
+                            streakCount = 1;
+                        }
+                    }
+                }
+            });
+
+            // 2. Гроза авторитетов (Giant Slayer)
+            // 5. Неуязвимый (Invincible)
+            const giantSlayers = {};
+            const invincibles = {};
+            
+            clubData.history.forEach(entry => {
+                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                const ratingsMap = {};
+                ratings.forEach(rStr => {
+                    const p = rStr.split("::");
+                    if (p.length >= 2) {
+                        ratingsMap[decodeName(p[0]).toLowerCase()] = parseFloat(p[1]);
+                    }
+                });
+
+                const tourneyStats = {};
+                const matches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
+                matches.forEach(matchStr => {
+                    const p = matchStr.split("::");
+                    if (p.length >= 3) {
+                        const p1 = decodeName(p[0]).toLowerCase();
+                        const p2 = decodeName(p[1]).toLowerCase();
+                        const score = p[2];
+                        const r1 = ratingsMap[p1];
+                        const r2 = ratingsMap[p2];
+
+                        if (!tourneyStats[p1]) tourneyStats[p1] = { played: 0, wins: 0 };
+                        if (!tourneyStats[p2]) tourneyStats[p2] = { played: 0, wins: 0 };
+
+                        tourneyStats[p1].played++;
+                        tourneyStats[p2].played++;
+
+                        const scoreParts = score.split(":");
+                        let p1Won = false;
+                        if (score === 'W') p1Won = true;
+                        else if (score === 'L') p1Won = false;
+                        else if (scoreParts.length === 2) {
+                            p1Won = parseInt(scoreParts[0]) > parseInt(scoreParts[1]);
+                        }
+
+                        if (p1Won) {
+                            tourneyStats[p1].wins++;
+                            if (r1 !== undefined && r2 !== undefined && (r2 - r1 >= 100)) {
+                                giantSlayers[p1] = (giantSlayers[p1] || 0) + 1;
+                            }
+                        } else {
+                            tourneyStats[p2].wins++;
+                            if (r1 !== undefined && r2 !== undefined && (r1 - r2 >= 100)) {
+                                giantSlayers[p2] = (giantSlayers[p2] || 0) + 1;
+                            }
+                        }
+                    }
+                });
+
+                // Compute invincibles for this tourney
+                Object.keys(tourneyStats).forEach(name => {
+                    const stats = tourneyStats[name];
+                    if (stats.played >= 2 && stats.wins === stats.played) {
+                        invincibles[name] = (invincibles[name] || 0) + 1;
+                    }
+                });
+            });
+
+            // Map giantSlayers and invincibles
+            Object.keys(giantSlayers).forEach(name => {
+                if (achievements[name]) achievements[name]['slayer'] = giantSlayers[name];
+            });
+            Object.keys(invincibles).forEach(name => {
+                if (achievements[name]) achievements[name]['invincible'] = invincibles[name];
+            });
+
+            // 3. Взрывной рост (Explosive Growth)
+            const growthMap = {};
+            const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+            clubData.history.forEach(entry => {
+                if (entry.id >= thirtyDaysAgo) {
+                    const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                    ratings.forEach(rStr => {
+                        const p = rStr.split("::");
+                        if (p.length >= 4) {
+                            const name = decodeName(p[0]).toLowerCase();
+                            const delta = parseFloat(p[3] || "0");
+                            growthMap[name] = (growthMap[name] || 0) + delta;
+                        }
+                    });
+                }
+            });
+            Object.keys(growthMap).forEach(name => {
+                if (growthMap[name] >= 50 && achievements[name]) {
+                    achievements[name]['growth'] = 1;
+                }
+            });
+
+            // 4. Железный человек (Iron Man)
+            // 6. Гроссмейстер (Grandmaster)
+            clubData.players.forEach(p => {
+                const name = p.fullName.toLowerCase();
+                if (!achievements[name]) achievements[name] = {};
+
+                if (p.tournamentsPlayed >= 100) {
+                    achievements[name]['iron'] = 2;
+                } else if (p.tournamentsPlayed >= 50) {
+                    achievements[name]['iron'] = 1;
+                }
+
+                if (p.rating >= 350.0) {
+                    achievements[name]['grandmaster'] = 1;
+                }
+            });
+
+            return achievements;
+        }
+
+        // GET BADGE SVG GRAPHICS
+        function getBadgeSvg(type) {
+            switch(type) {
+                case 'champion':
+                    return `
+                        <svg viewBox="0 0 100 100" class="badge-icon" title="Серийный чемпион">
+                            <path d="M35 38 h30 v12 c0 8 -6 15 -15 15 s-15 -7 -15 -15 z" fill="url(#gold-grad-legend)"/>
+                            <path d="M35 42 c-5 0 -8 4 -8 8 s3 8 8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
+                            <path d="M65 42 c5 0 8 4 8 8 s-3 8 -8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
+                            <path d="M46 65 h8 v10 h-8 z" fill="url(#gold-grad-legend)"/>
+                            <path d="M30 75 h40 v6 h-40 z" fill="url(#gold-grad-legend)" rx="2"/>
+                            <path d="M50 15 l2 4 h4 l-3 2.5 l1 4.5 l-4 -3 l-4 3 l1 -4.5 l-3 -2.5 h4 z" fill="#FFE259"/>
+                        </svg>`;
+                case 'slayer':
+                    return `
+                        <svg viewBox="0 0 100 100" class="badge-icon" title="Гроза авторитетов">
+                            <path d="M32 30 c12 0 18 -6 18 -6 s6 6 18 6 v22 c0 12 -18 20 -18 20 s-18 -8 -18 -20 z" fill="url(#shield-grad-legend)"/>
+                            <path d="M50 34 l3 6 v18 h-6 v-18 z" fill="#FFFFFF"/>
+                            <path d="M42 42 h16 v3 h-16 z" fill="#FFFFFF"/>
+                            <path d="M49 61 h2 v4 h-2 z" fill="#FFFFFF"/>
+                        </svg>`;
+                case 'growth':
+                    return `
+                        <svg viewBox="0 0 100 100" class="badge-icon" title="Взрывной рост">
+                            <path d="M34 66 c-2 8 2 12 6 10 l12 -12 l-6 -6 z" fill="#FF512F"/>
+                            <path d="M40 60 l24 -24 c5 -5 10 -6 10 -6 s-1 5 -6 10 l-24 24 z" fill="url(#rocket-grad-legend)"/>
+                            <path d="M43 57 l-9 3 l2 8 z" fill="#11998e"/>
+                            <path d="M57 43 l3 -9 l8 2 z" fill="#11998e"/>
+                            <circle cx="56" cy="44" r="3" fill="#FFFFFF" />
+                        </svg>`;
+                case 'iron':
+                    return `
+                        <svg viewBox="0 0 100 100" class="badge-icon" title="Железный человек">
+                            <path d="M30 32 c0 0 20 -8 20 -8 s20 8 20 8 v18 c0 16 -20 26 -20 26 s-20 -10 -20 -26 z" fill="url(#iron-grad-legend)"/>
+                            <path d="M50 38 l3 8 h9 l-7 5.5 l2.5 8.5 l-7.5 -5 l-7.5 5 l2.5 -8.5 l-7 -5.5 h9 z" fill="#FF8C00"/>
+                            <path d="M34 35 c0 0 16 -6 16 -6 s16 6 16 6 v15 c0 12 -16 21 -16 21 s-16 -9 -16 -21 z" fill="none" stroke="#2c3e50" stroke-width="1.5"/>
+                        </svg>`;
+                case 'invincible':
+                    return `
+                        <svg viewBox="0 0 100 100" class="badge-icon" title="Неуязвимый">
+                            <path d="M46 50 c-8 -8 -20 -4 -20 -4 s4 10 12 10 c4 0 8 -3 8 -6 z" fill="url(#gold-grad2-legend)"/>
+                            <path d="M54 50 c8 -8 20 -4 20 -4 s-4 10 -12 10 c-4 0 -8 -3 -8 -6 z" fill="url(#gold-grad2-legend)"/>
+                            <path d="M52 30 l-10 18 h12 l-6 20 l14 -22 h-12 z" fill="#FFE259"/>
+                        </svg>`;
+                case 'grandmaster':
+                    return `
+                        <svg viewBox="0 0 100 100" class="badge-icon" title="Гроссмейстер">
+                            <polygon points="50,22 68,36 50,78 32,36" fill="url(#cyan-grad-legend)" opacity="0.9"/>
+                            <polygon points="50,22 68,36 50,42" fill="#FFFFFF" opacity="0.3"/>
+                            <polygon points="50,22 32,36 50,42" fill="#FFFFFF" opacity="0.5"/>
+                            <polygon points="32,36 50,78 50,42" fill="#000000" opacity="0.1"/>
+                            <polygon points="68,36 50,78 50,42" fill="#FFFFFF" opacity="0.15"/>
+                        </svg>`;
+                default:
+                    return '';
+            }
+        }
+
+        // RENDER HALL OF FAME LEADERBOARD
+        function renderHall() {
+            const listEl = document.getElementById('hall-list-el');
+            if (!listEl) return;
+            listEl.innerHTML = '';
+
+            const achievements = calculateAchievements();
+            const heroes = [];
+            
+            clubData.players.forEach(p => {
+                const nameLower = p.fullName.toLowerCase();
+                const badges = achievements[nameLower] || {};
+                
+                let totalBadges = 0;
+                Object.keys(badges).forEach(key => {
+                    totalBadges += badges[key];
+                });
+
+                if (totalBadges > 0) {
+                    heroes.push({
+                        player: p,
+                        badges: badges,
+                        totalBadges: totalBadges
+                    });
+                }
+            });
+
+            heroes.sort((a, b) => {
+                if (b.totalBadges !== a.totalBadges) return b.totalBadges - a.totalBadges;
+                return b.player.rating - a.player.rating;
+            });
+
+            if (heroes.length === 0) {
+                listEl.innerHTML = `
+                    <div style="text-align: center; padding: 48px; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 22px;">
+                        <div style="font-size: 40px; margin-bottom: 12px;">🏆</div>
+                        <h4 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin: 0 0 6px 0;">Зал славы ждет победителей</h4>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+                            Ни одно достижение пока не открыто. Сыграйте турниры, побеждайте сильных соперников и занимайте первые места!
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            heroes.forEach(hero => {
+                const p = hero.player;
+                const badges = hero.badges;
+
+                const card = document.createElement('div');
+                card.className = 'hall-card';
+
+                const avatar = document.createElement('div');
+                avatar.className = 'hall-avatar';
+                const cloudAvatar = clubData.avatars[p.id];
+                if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
+                    avatar.style.backgroundImage = `url("${cloudAvatar}")`;
+                } else {
+                    avatar.textContent = p.fullName.charAt(0).toUpperCase();
+                }
+
+                const info = document.createElement('div');
+                info.className = 'hall-info';
+
+                const name = document.createElement('h4');
+                name.className = 'hall-name';
+                name.textContent = p.fullName;
+
+                const stats = document.createElement('div');
+                stats.className = 'hall-stats';
+                stats.innerHTML = `★${p.rating.toFixed(1)} • 👥 Игр: ${p.wins + p.losses} • 🏆 Турниров: ${p.tournamentsPlayed}`;
+
+                const badgesContainer = document.createElement('div');
+                badgesContainer.className = 'hall-badges';
+
+                Object.keys(badges).forEach(key => {
+                    const count = badges[key];
+                    if (count > 0) {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'badge-wrapper';
+                        wrapper.innerHTML = getBadgeSvg(key);
+
+                        if (count > 1) {
+                            const badgeCount = document.createElement('span');
+                            badgeCount.className = 'badge-count';
+                            badgeCount.textContent = count;
+                            wrapper.appendChild(badgeCount);
+                        }
+                        badgesContainer.appendChild(wrapper);
+                    }
+                });
+
+                info.appendChild(name);
+                info.appendChild(stats);
+                info.appendChild(badgesContainer);
+
+                card.appendChild(avatar);
+                card.appendChild(info);
+
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', () => openPlayerModal(p));
+
+                listEl.appendChild(card);
+            });
         }
 
         // CLOSE ON CLICK OUTSIDE
