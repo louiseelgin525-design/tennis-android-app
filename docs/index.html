@@ -1442,7 +1442,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.3.0 (08.07.2026 15:56)
+                Версия веб-приложения: 1.4.0 (08.07.2026 16:10)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -4079,7 +4079,11 @@
         // DRAFT SETUP PANEL VIEW (INLINE IN ACTIVE TAB FOR ADMINS)
         function renderDraftSetupPanel(parentContainer) {
             const card = document.createElement('div');
-            card.className = 'draft-setup-card';
+            card.className = 'draft-setup-view-container';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.gap = '16px';
+            card.style.width = '100%';
             
             // Generate default name: club name + current date and time
             const now = new Date();
@@ -4088,52 +4092,90 @@
             const defaultName = `${activeClubDisplayName || "Турнир"} ${dateStr} ${timeStr}`;
 
             card.innerHTML = `
-                <div class="draft-setup-title">${SVG_ICONS.poll} Создание нового турнира</div>
-                
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Название турнира</label>
-                    <input type="text" id="draft-name-input" class="login-input" style="margin:0;" value="${defaultName}">
+                <!-- HEADER -->
+                <div style="margin-bottom:8px;">
+                    <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">Новый турнир</h2>
+                    <div style="font-size:13px; color:var(--text-secondary); margin-top:2px;">Заполните настройки и игроков</div>
                 </div>
 
-                <div class="counter-row">
-                    <span class="counter-label">👥 Лимит участников</span>
-                    <div class="counter-controls">
-                        <button class="counter-btn" onclick="adjustDraftVal('players', -1)">—</button>
-                        <span class="counter-val" id="draft-players-val">6</span>
-                        <button class="counter-btn" onclick="adjustDraftVal('players', 1)">+</button>
+                <!-- CARD 1: TOURNAMENT NAME -->
+                <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px;">
+                    <label style="font-size:15px; font-weight:700; color:var(--text-main); margin:0;">Название турнира</label>
+                    <input type="text" id="draft-name-input" class="login-input" style="margin:0; height:48px; border-radius:12px; padding: 0 14px; font-size:15px;" placeholder="Например: Вечерний турнир" value="${defaultName}">
+                </div>
+
+                <!-- CARD 2: TOURNAMENT CONTROLS -->
+                <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:16px;">
+                    <!-- Row 1: Participants Limit & Wins Segments -->
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; width:100%;">
+                        <!-- Left Column: Participants -->
+                        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                            <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">👥 Участники</span>
+                            <div class="counter-controls" style="width:100%; max-width:130px;">
+                                <button class="counter-btn" onclick="adjustDraftVal('players', -1)">—</button>
+                                <span class="counter-val" id="draft-players-val" style="flex:1;">6</span>
+                                <button class="counter-btn" onclick="adjustDraftVal('players', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Wins -->
+                        <div style="flex:1.2; display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
+                            <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">🏆 Победы</span>
+                            <div class="wins-segments" style="width:100%; height:40px; display:flex; align-items:center; padding:3px; background:#e9e9eb; border-radius:12px;">
+                                <button class="wins-segment-btn" id="wins-btn-1" onclick="selectDraftWins(1)" style="font-size:12px; padding:6px 0; text-align:center;">до 1</button>
+                                <button class="wins-segment-btn active" id="wins-btn-2" onclick="selectDraftWins(2)" style="font-size:12px; padding:6px 0; text-align:center;">до 2</button>
+                                <button class="wins-segment-btn" id="wins-btn-3" onclick="selectDraftWins(3)" style="font-size:12px; padding:6px 0; text-align:center;">до 3</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Tables Count -->
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">🏓 Количество столов</span>
+                        <div style="display:flex; align-items:center; width:100%;">
+                            <div class="counter-controls" style="width:100%; max-width:130px; flex-shrink:0;">
+                                <button class="counter-btn" onclick="adjustDraftVal('tables', -1)">—</button>
+                                <span class="counter-val" id="draft-tables-val" style="flex:1;">2</span>
+                                <button class="counter-btn" onclick="adjustDraftVal('tables', 1)">+</button>
+                            </div>
+                            <span id="draft-simultaneous-players-text" style="font-size:13px; color:var(--text-secondary); margin-left:14px; line-height:1.2;">До 4 игроков одновременно</span>
+                        </div>
+                    </div>
+
+                    <!-- Separator line -->
+                    <div style="height:1px; background-color:var(--border-color); width:100%;"></div>
+
+                    <!-- Row 3: RTTF Coefficients -->
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">📈 Рейтинг RTTF</span>
+                        <p style="font-size:13px; color:var(--text-secondary); line-height:1.4; margin:0;">
+                            Коэффициент турнира рассчитывается автоматически по среднему рейтингу участников.
+                        </p>
+                        <!-- Light blue callout -->
+                        <div style="background-color:rgba(0, 122, 255, 0.06); border-radius:12px; padding:12px; font-size:13px; color:var(--apple-blue); line-height:1.4; font-weight:500;">
+                            RTTF: k зависит от среднего рейтинга турнира, D — от разницы партий. Новички до 5
+                        </div>
                     </div>
                 </div>
 
-                <div class="counter-row">
-                    <span class="counter-label">🏓 Доступные столы</span>
-                    <div class="counter-controls">
-                        <button class="counter-btn" onclick="adjustDraftVal('tables', -1)">—</button>
-                        <span class="counter-val" id="draft-tables-val">2</span>
-                        <button class="counter-btn" onclick="adjustDraftVal('tables', 1)">+</button>
-                    </div>
-                </div>
-
-                <div class="counter-row">
-                    <span class="counter-label">🏆 Побед в матче (Партий)</span>
-                    <div class="wins-segments">
-                        <button class="wins-segment-btn" id="wins-btn-1" onclick="selectDraftWins(1)">До 1</button>
-                        <button class="wins-segment-btn active" id="wins-btn-2" onclick="selectDraftWins(2)">До 2</button>
-                        <button class="wins-segment-btn" id="wins-btn-3" onclick="selectDraftWins(3)">До 3</button>
-                    </div>
-                </div>
-
+                <!-- SELECT PLAYERS HEADER -->
                 <h4 class="section-title" style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>👥 Выберите участников из списка</span>
+                    <span style="font-size:15px; font-weight:700;">👥 Выберите участников из списка</span>
                     <span id="draft-selected-count-badge" style="background:var(--apple-blue); color:white; font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px; margin-right:4px; transition: background-color 0.2s;">Выбрано: 0</span>
                 </h4>
-                <div id="draft-selected-players-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; margin-top:4px;"></div>
-                <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0;" autocomplete="off" autocapitalize="words" oninput="renderDraftPlayersSelector()">
+
+                <div id="draft-selected-players-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; margin-top:2px;"></div>
+                
+                <div class="search-bar" style="margin-bottom:8px; position:relative;">
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); width:18px; height:18px;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0; height:44px; border-radius:10px; padding-left:40px; font-size:14px;" autocomplete="off" autocapitalize="words" oninput="renderDraftPlayersSelector()">
+                </div>
                 
                 <div id="draft-players-list-selector" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px;">
                     <!-- Rendered dynamically -->
                 </div>
 
-                <button onclick="submitCreateTournament()" class="login-btn" style="margin-top:12px; background-color: var(--apple-blue);">
+                <button onclick="submitCreateTournament()" class="login-btn" style="margin-top:16px; height:50px; border-radius:14px; background-color: var(--apple-blue); font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">
                     🏆 Создать турнир
                 </button>
             `;
@@ -4163,6 +4205,9 @@
                 
                 const tablesVal = document.getElementById('draft-tables-val');
                 if (tablesVal) tablesVal.textContent = window.draftSetup.tablesCount;
+
+                const simText = document.getElementById('draft-simultaneous-players-text');
+                if (simText) simText.textContent = `До ${window.draftSetup.tablesCount * 2} игроков одновременно`;
                 
                 selectDraftWins(window.draftSetup.winsToWin);
             }, 10);
@@ -4181,6 +4226,9 @@
                 window.draftSetup.tablesCount = Math.max(1, window.draftSetup.tablesCount + delta);
                 document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
                 db.ref(`clubs/${activeClubId}/draft/tablesCount`).set(window.draftSetup.tablesCount);
+                
+                const simText = document.getElementById('draft-simultaneous-players-text');
+                if (simText) simText.textContent = `До ${window.draftSetup.tablesCount * 2} игроков одновременно`;
             }
             renderDraftPlayersSelector();
         };

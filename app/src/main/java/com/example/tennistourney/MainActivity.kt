@@ -1072,7 +1072,7 @@ private fun saveTournamentHistory(
     FirebaseStorage.saveHistory(clubId, history)
 }
 
-private fun createRoundRobinHistoryEntry(draft: TournamentDraft): TournamentHistoryEntry {
+private fun createRoundRobinHistoryEntry(draft: TournamentDraft, clubName: String): TournamentHistoryEntry {
     val playerNames = draft.playerFields.mapIndexed { index, field ->
         normalizePlayerName(field.name).ifBlank { "Игрок ${index + 1}" }
     }
@@ -1127,9 +1127,10 @@ private fun createRoundRobinHistoryEntry(draft: TournamentDraft): TournamentHist
         ).joinToString("::")
     }
 
+    val defaultName = "${clubName.ifBlank { "Турнир" }} $dateText"
     return TournamentHistoryEntry(
         id = System.currentTimeMillis(),
-        name = draft.name.ifBlank { "Теннисный турнир" },
+        name = draft.name.ifBlank { defaultName },
         dateText = dateText,
         playersCount = playerNames.size,
         winnerName = winnerName,
@@ -1640,7 +1641,11 @@ fun TennisApp() {
             val dListener = FirebaseStorage.listenToDraftGranular(clubId) { snapshot ->
                 val firebaseName = snapshot.child("name").getValue(String::class.java).orEmpty()
                 if (draft.name != firebaseName) {
-                    draft.name = firebaseName
+                    draft.name = firebaseName.ifBlank {
+                        val now = java.util.Date()
+                        val dateText = SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(now)
+                        "${currentClubDisplayName.ifBlank { "Турнир" }} $dateText"
+                    }
                 }
                 
                 val firebasePlayersCount = snapshot.child("playersCount").getValue(Int::class.java) ?: 2
@@ -1857,7 +1862,7 @@ fun TennisApp() {
     fun saveHistoryFromCurrentTournament() {
         if (draft.historySaved) return
 
-        val entry = createRoundRobinHistoryEntry(draft)
+        val entry = createRoundRobinHistoryEntry(draft, currentClubDisplayName)
         val updatedHistory = listOf(entry) + tournamentHistory
 
         val clubId = currentClubId ?: ""
