@@ -423,6 +423,35 @@
             color: var(--text-secondary);
         }
 
+        /* SORT SELECTOR FOR PLAYERS LIST */
+        .sort-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+        .sort-btn {
+            flex: 1;
+            height: 40px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-secondary);
+            outline: none;
+        }
+        .sort-btn.active {
+            border-color: var(--apple-blue);
+            background-color: rgba(0, 122, 255, 0.08);
+            color: var(--apple-blue);
+        }
+
         /* MEDAL CONTAINER */
         .medal-badge {
             display: inline-flex;
@@ -1413,7 +1442,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.2.1 (08.07.2026 15:45)
+                Версия веб-приложения: 1.3.0 (08.07.2026 15:56)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -1443,10 +1472,26 @@
         <main class="views-container">
             <!-- TAB 1: RATINGS -->
             <section id="view-ratings" class="view">
-                <div class="search-bar">
+                <div class="players-view-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div>
+                        <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">База игроков</h2>
+                        <div id="players-subtitle" style="font-size:13px; color:var(--text-secondary); margin-top:2px;">0 игроков • рейтинг, аватарки</div>
+                    </div>
+                    <button id="add-player-header-btn" onclick="openPlayerAddModal()" style="display:none; width:40px; height:40px; border-radius:50%; background-color:var(--apple-blue); color:white; border:none; font-size:22px; font-weight:bold; cursor:pointer; align-items:center; justify-content:center; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        +
+                    </button>
+                </div>
+
+                <div class="search-bar" style="margin-bottom:12px;">
                     <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                     <input type="text" id="player-search" class="search-input" placeholder="Поиск по фамилии или имени" autocomplete="off" autocapitalize="words">
                 </div>
+
+                <div class="sort-selector">
+                    <button id="sort-by-rating-btn" class="sort-btn active" onclick="setPlayerSort('rating')">По рейтингу</button>
+                    <button id="sort-by-name-btn" class="sort-btn" onclick="setPlayerSort('alphabet')">По алфавиту</button>
+                </div>
+
                 <div class="players-list" id="players-list-el">
                     <!-- Loaded dynamically -->
                 </div>
@@ -1947,6 +1992,7 @@
         let activeClubDisplayName = "";
         let isAdmin = false;
         let selectedRole = 'viewer'; // 'viewer' or 'admin'
+        let playerSortType = 'rating'; // 'rating' or 'alphabet'
         let clubData = {
             players: [],
             history: [],
@@ -2002,6 +2048,17 @@
             document.getElementById('role-admin-btn').classList.toggle('active', role === 'admin');
             document.getElementById('admin-pin-input').style.display = role === 'admin' ? 'block' : 'none';
             debugLog("Роль переключена на: " + role);
+        };
+
+        // SET PLAYER SORT TYPE
+        window.setPlayerSort = function(type) {
+            playerSortType = type;
+            const ratingBtn = document.getElementById('sort-by-rating-btn');
+            const nameBtn = document.getElementById('sort-by-name-btn');
+            if (ratingBtn) ratingBtn.classList.toggle('active', type === 'rating');
+            if (nameBtn) nameBtn.classList.toggle('active', type === 'alphabet');
+            debugLog("Сортировка игроков переключена на: " + type);
+            renderPlayers();
         };
 
         // Attach event listeners directly to selector buttons
@@ -2339,6 +2396,15 @@
             const listEl = document.getElementById('players-list-el');
             listEl.innerHTML = '';
 
+            // Update Header items
+            const addBtn = document.getElementById('add-player-header-btn');
+            if (addBtn) addBtn.style.display = isAdmin ? 'flex' : 'none';
+
+            const subtitle = document.getElementById('players-subtitle');
+            if (subtitle) {
+                subtitle.textContent = `${clubData.players.length} игроков • рейтинг, аватарки`;
+            }
+
             const query = playerSearch.value.trim().toLowerCase();
 
             // Filter players
@@ -2346,19 +2412,11 @@
                 return p.fullName.toLowerCase().includes(query);
             });
 
-            // Sort by rating descending
-            filtered.sort((a, b) => b.rating - a.rating);
-
-            // Add Admin button if organizer mode
-            if (isAdmin) {
-                const btnContainer = document.createElement('div');
-                btnContainer.className = 'add-player-btn-container';
-                btnContainer.innerHTML = `
-                    <button class="add-player-btn" onclick="openPlayerAddModal()">
-                        ${SVG_ICONS.plus} Добавить игрока
-                    </button>
-                `;
-                listEl.appendChild(btnContainer);
+            // Sort players
+            if (playerSortType === 'alphabet') {
+                filtered.sort((a, b) => a.fullName.localeCompare(b.fullName, 'ru'));
+            } else {
+                filtered.sort((a, b) => b.rating - a.rating);
             }
 
             filtered.forEach((player, index) => {
@@ -2372,85 +2430,157 @@
 
                 const card = document.createElement('div');
                 card.className = 'player-card';
+                card.style.padding = '16px';
+                card.style.borderRadius = '20px';
+                card.style.display = 'flex';
+                card.style.alignItems = 'center';
+                card.style.justifyContent = 'space-between';
+                card.style.width = '100%';
+                card.style.boxSizing = 'border-box';
 
-                // Rank
-                const rankEl = document.createElement('span');
-                rankEl.className = 'player-rank';
-                rankEl.textContent = `${index + 1}`;
+                // Left Column: Avatar + Info
+                const leftSide = document.createElement('div');
+                leftSide.style.display = 'flex';
+                leftSide.style.alignItems = 'center';
+                leftSide.style.gap = '16px';
+                leftSide.style.flex = '1';
+                leftSide.style.minWidth = '0';
 
                 // Avatar
                 const avatarEl = document.createElement('div');
                 avatarEl.className = 'player-avatar';
+                avatarEl.style.width = '48px';
+                avatarEl.style.height = '48px';
+                avatarEl.style.borderRadius = '50%';
+                avatarEl.style.flexShrink = '0';
+                avatarEl.style.display = 'flex';
+                avatarEl.style.alignItems = 'center';
+                avatarEl.style.justifyContent = 'center';
+                avatarEl.style.fontSize = '20px';
+                avatarEl.style.fontWeight = '700';
+                avatarEl.style.marginRight = '0';
+
                 const cloudAvatar = clubData.avatars[player.id];
                 if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
                     avatarEl.style.backgroundImage = `url("${cloudAvatar}")`;
+                    avatarEl.style.backgroundSize = 'cover';
+                    avatarEl.style.backgroundPosition = 'center';
                     avatarEl.textContent = '';
                 } else {
                     avatarEl.style.backgroundImage = 'none';
-                    avatarEl.textContent = player.fullName.charAt(0).toUpperCase();
+                    avatarEl.style.backgroundColor = 'rgba(0, 122, 255, 0.08)';
+                    avatarEl.style.color = 'var(--apple-blue)';
+                    const parts = player.fullName.trim().split(/\s+/);
+                    let initial = "";
+                    if (parts.length > 0) initial = parts[0].charAt(0).toUpperCase();
+                    avatarEl.textContent = initial || "?";
                 }
 
-                // Info
-                const infoEl = document.createElement('div');
-                infoEl.className = 'player-info';
-                
+                // Info text block
+                const textBlock = document.createElement('div');
+                textBlock.style.display = 'flex';
+                textBlock.style.flexDirection = 'column';
+                textBlock.style.gap = '2px';
+                textBlock.style.flex = '1';
+                textBlock.style.minWidth = '0';
+
+                // Name
                 const nameEl = document.createElement('div');
-                nameEl.className = 'player-name';
+                nameEl.style.fontSize = '16px';
+                nameEl.style.fontWeight = '700';
+                nameEl.style.color = 'var(--text-main)';
+                nameEl.style.whiteSpace = 'nowrap';
+                nameEl.style.overflow = 'hidden';
+                nameEl.style.textOverflow = 'ellipsis';
                 nameEl.textContent = player.fullName;
-                
-                // Add medals to name
-                const medalsSpan = document.createElement('span');
-                medalsSpan.className = 'medal-badge';
-                if (player.goldMedals > 0) medalsSpan.innerHTML += `${SVG_MEDALS[1]}<sup>${player.goldMedals}</sup> `;
-                if (player.silverMedals > 0) medalsSpan.innerHTML += `${SVG_MEDALS[2]}<sup>${player.silverMedals}</sup> `;
-                if (player.bronzeMedals > 0) medalsSpan.innerHTML += `${SVG_MEDALS[3]}<sup>${player.bronzeMedals}</sup> `;
-                nameEl.appendChild(medalsSpan);
 
-                const substatsEl = document.createElement('div');
-                substatsEl.className = 'player-substats';
-                substatsEl.textContent = `Турниров: ${player.tournamentsPlayed} • Игры: ${player.wins}–${player.losses}`;
-                
-                infoEl.appendChild(nameEl);
-                infoEl.appendChild(substatsEl);
+                // Rating
+                const ratingEl = document.createElement('div');
+                ratingEl.style.fontSize = '14px';
+                ratingEl.style.fontWeight = '600';
+                ratingEl.style.color = 'var(--apple-blue)';
+                ratingEl.textContent = `Рейтинг ${player.rating.toFixed(1)}`;
 
-                // Rating Badge
-                const ratingBadge = document.createElement('div');
-                ratingBadge.className = 'player-rating-badge';
-                
-                const valEl = document.createElement('span');
-                valEl.className = 'player-rating-val';
-                valEl.textContent = player.rating.toFixed(1);
-                
-                const labelEl = document.createElement('span');
-                labelEl.className = 'player-rating-label';
-                labelEl.textContent = 'Рейтинг';
+                // Tournaments count
+                const tourneysEl = document.createElement('div');
+                tourneysEl.style.fontSize = '13px';
+                tourneysEl.style.color = 'var(--text-secondary)';
+                tourneysEl.textContent = `Турниров: ${player.tournamentsPlayed || 0}`;
 
-                ratingBadge.appendChild(valEl);
-                ratingBadge.appendChild(labelEl);
+                // Games & Medals row
+                const gamesRow = document.createElement('div');
+                gamesRow.style.display = 'flex';
+                gamesRow.style.alignItems = 'center';
+                gamesRow.style.gap = '10px';
+                gamesRow.style.marginTop = '2px';
+                gamesRow.style.fontSize = '13px';
+                gamesRow.style.color = 'var(--text-secondary)';
+
+                const gamesText = document.createElement('span');
+                gamesText.textContent = `Игры: ${(player.wins || 0)}–${(player.losses || 0)}`;
+
+                const medalsContainer = document.createElement('div');
+                medalsContainer.style.display = 'flex';
+                medalsContainer.style.alignItems = 'center';
+                medalsContainer.style.gap = '6px';
+
+                function createMedalDotMarkup(color, count) {
+                    return `
+                        <div style="display:inline-flex; align-items:center; gap:3px;">
+                            <div style="width:10px; height:10px; border-radius:50%; background-color:${color}; flex-shrink:0;"></div>
+                            <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">${count}</span>
+                        </div>
+                    `;
+                }
+
+                medalsContainer.innerHTML = `
+                    ${createMedalDotMarkup('#FFD54F', player.goldMedals || 0)}
+                    ${createMedalDotMarkup('#C0C0C0', player.silverMedals || 0)}
+                    ${createMedalDotMarkup('#CD7F32', player.bronzeMedals || 0)}
+                `;
+
+                gamesRow.appendChild(gamesText);
+                gamesRow.appendChild(medalsContainer);
+
+                textBlock.appendChild(nameEl);
+                textBlock.appendChild(ratingEl);
+                textBlock.appendChild(tourneysEl);
+                textBlock.appendChild(gamesRow);
+
+                leftSide.appendChild(avatarEl);
+                leftSide.appendChild(textBlock);
+                textBlock.style.cursor = 'pointer';
+                leftSide.addEventListener('click', () => openPlayerModal(player));
+
+                // Right Column: edit button + arrow
+                const rightSide = document.createElement('div');
+                rightSide.style.display = 'flex';
+                rightSide.style.alignItems = 'center';
+                rightSide.style.gap = '8px';
 
                 const arrowEl = document.createElement('span');
-                arrowEl.className = 'player-card-arrow';
+                arrowEl.style.fontSize = '24px';
+                arrowEl.style.color = '#C7C7CC';
                 arrowEl.textContent = '›';
+                arrowEl.style.cursor = 'pointer';
+                arrowEl.addEventListener('click', () => openPlayerModal(player));
 
-                card.appendChild(rankEl);
-                card.appendChild(avatarEl);
-                card.appendChild(infoEl);
-                card.appendChild(ratingBadge);
-                
-                // Add click triggers
-                infoEl.addEventListener('click', () => openPlayerModal(player));
-                avatarEl.addEventListener('click', () => openPlayerModal(player));
-                ratingBadge.addEventListener('click', () => openPlayerModal(player));
+                card.appendChild(leftSide);
+                card.appendChild(rightSide);
 
                 if (isAdmin) {
                     const editIcon = document.createElement('span');
                     editIcon.className = 'edit-player-icon';
+                    editIcon.style.cursor = 'pointer';
+                    editIcon.style.display = 'inline-flex';
+                    editIcon.style.alignItems = 'center';
+                    editIcon.style.padding = '4px';
                     editIcon.innerHTML = SVG_ICONS.pencil;
                     editIcon.addEventListener('click', (e) => {
                         e.stopPropagation();
                         openPlayerEditModal(player);
                     });
-                    card.appendChild(editIcon);
+                    rightSide.appendChild(editIcon);
 
                     // Touch Swipe handlers
                     let startX = 0;
@@ -2511,10 +2641,9 @@
                         card.style.transform = 'translateX(0)';
                         swipeBg.style.opacity = '0';
                     });
-                } else {
-                    card.appendChild(arrowEl);
                 }
 
+                rightSide.appendChild(arrowEl);
                 wrapper.appendChild(card);
                 listEl.appendChild(wrapper);
             });
