@@ -1530,7 +1530,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.7.0 (08.07.2026 23:20)
+                Версия веб-приложения: 1.7.1 (08.07.2026 23:25)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -2766,6 +2766,8 @@
             const listEl = document.getElementById('players-list-el');
             listEl.innerHTML = '';
 
+            const achievements = calculateAchievements();
+
             // Update Header items
             const addBtn = document.getElementById('add-player-header-btn');
             if (addBtn) addBtn.style.display = isAdmin ? 'flex' : 'none';
@@ -2911,6 +2913,44 @@
 
                 gamesRow.appendChild(gamesText);
                 gamesRow.appendChild(medalsContainer);
+
+                // Add achievements/badges to player card
+                const pAchievements = achievements[player.fullName.toLowerCase()] || {};
+                const badgesContainer = document.createElement('div');
+                badgesContainer.style.display = 'flex';
+                badgesContainer.style.alignItems = 'center';
+                badgesContainer.style.gap = '5px';
+                badgesContainer.style.marginLeft = '4px';
+
+                Object.keys(pAchievements).forEach(key => {
+                    const count = pAchievements[key];
+                    if (count > 0) {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'badge-wrapper';
+                        wrapper.innerHTML = getBadgeSvg(key);
+                        
+                        const svg = wrapper.querySelector('svg');
+                        if (svg) {
+                            svg.style.width = '20px';
+                            svg.style.height = '20px';
+                        }
+                        
+                        if (count > 1) {
+                            const badgeCount = document.createElement('span');
+                            badgeCount.className = 'badge-count';
+                            badgeCount.style.width = '11px';
+                            badgeCount.style.height = '11px';
+                            badgeCount.style.fontSize = '7px';
+                            badgeCount.style.top = '-2px';
+                            badgeCount.style.right = '-2px';
+                            badgeCount.style.borderWidth = '1px';
+                            badgeCount.textContent = count;
+                            wrapper.appendChild(badgeCount);
+                        }
+                        badgesContainer.appendChild(wrapper);
+                    }
+                });
+                gamesRow.appendChild(badgesContainer);
 
                 textBlock.appendChild(nameEl);
                 textBlock.appendChild(ratingEl);
