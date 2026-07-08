@@ -1413,7 +1413,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.1.9 (08.07.2026 10:43)
+                Версия веб-приложения: 1.2.0 (08.07.2026 11:17)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -4922,6 +4922,24 @@
             const structuredMatches = smRows.join(";;");
 
             // 4. Create History Entry
+            const standingsText = result.standings.map((item, idx) => {
+                let medal = "";
+                if (idx === 0) medal = "🥇 ";
+                else if (idx === 1) medal = "🥈 ";
+                else if (idx === 2) medal = "🥉 ";
+                return `${idx + 1}. ${medal}${playerNames[item.index]} — ${item.points} оч.`;
+            }).join("\n");
+
+            const ratingText = result.standings.map((item) => {
+                const name = playerNames[item.index];
+                const p = clubData.players.find(pl => pl.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
+                const delta = result.deltas[name.toLowerCase()] || 0.0;
+                const oldRating = p.rating;
+                const newRating = oldRating + delta;
+                const deltaStr = (delta >= 0 ? '+' : '') + delta.toFixed(2);
+                return `${name}: ${oldRating.toFixed(1)} → ${newRating.toFixed(1)} (${deltaStr})`;
+            }).join("\n");
+
             const winnerName = playerNames[result.standings[0].index];
             const historyEntry = {
                 id: Date.now(),
@@ -4929,11 +4947,13 @@
                 dateText: new Date().toLocaleDateString('ru-RU') + " " + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
                 playersCount: playerNames.length,
                 winnerName: winnerName,
+                standingsText: standingsText,
+                ratingText: ratingText,
                 structuredRatings: structuredRatings,
                 structuredMatches: structuredMatches
             };
 
-            const updatedHistory = [...clubData.history, historyEntry];
+            const updatedHistory = [historyEntry, ...clubData.history];
 
             // 5. Save all to Firebase and clear draft
             db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers))
@@ -4996,7 +5016,7 @@
                 listEl.appendChild(card);
             });
 
-            if (reversed.length === 0) {
+            if (sorted.length === 0) {
                 listEl.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">История турниров пуста</div>';
             }
         }
