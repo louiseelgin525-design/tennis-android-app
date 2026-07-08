@@ -1442,7 +1442,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.6.1 (08.07.2026 17:53)
+                Версия веб-приложения: 1.6.2 (08.07.2026 18:00)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -2158,6 +2158,8 @@
             safeStorage.removeItem('tennis_admin_pin');
             activeClubId = null;
             isAdmin = false;
+            const analyticsBtn = document.getElementById('analytics-header-btn');
+            if (analyticsBtn) analyticsBtn.style.display = 'none';
             
             // Switch views
             appContainer.style.display = 'none';
@@ -2316,6 +2318,9 @@
                         if (roleEl) {
                             roleEl.innerHTML = isAdmin ? SVG_ICONS.crown + ' Режим организатора (iOS)' : SVG_ICONS.eye + ' Режим просмотра (iOS)';
                         }
+                        
+                        const analyticsBtn = document.getElementById('analytics-header-btn');
+                        if (analyticsBtn) analyticsBtn.style.display = isAdmin ? 'block' : 'none';
                         
                         // Load and listen to data
                         initDatabaseListeners(clubId);
