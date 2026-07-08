@@ -1442,7 +1442,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.4.0 (08.07.2026 16:10)
+                Версия веб-приложения: 1.5.0 (08.07.2026 16:15)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -1506,7 +1506,23 @@
 
             <!-- TAB 3: TOURNAMENT HISTORY -->
             <section id="view-history" class="view">
-                <div class="history-list" id="history-list-el">
+                <div class="history-view-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div>
+                        <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">История турниров</h2>
+                        <div id="history-subtitle-el" style="font-size:13px; color:var(--text-secondary); margin-top:2px;">0 завершённых турниров</div>
+                    </div>
+                </div>
+
+                <div class="search-bar" style="margin-bottom:12px;">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" id="history-search-input" class="search-input" placeholder="Поиск по турниру" autocomplete="off" autocapitalize="words" oninput="renderHistory()">
+                </div>
+                
+                <div style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height:1.2;">
+                    Свайпните турнир влево, чтобы удалить его из истории.
+                </div>
+
+                <div class="history-list" id="history-list-el" style="display:flex; flex-direction:column; gap:12px;">
                     <!-- Loaded dynamically -->
                 </div>
             </section>
@@ -1850,19 +1866,32 @@
 
     <!-- MODAL: HISTORY TOURNAMENT DETAIL -->
     <div id="history-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 480px;">
-            <button class="modal-close-btn" onclick="closeHistoryModal()"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-            <h3 class="modal-title" id="modal-history-title">Вечерний турнир</h3>
-            <span class="modal-subtitle" id="modal-history-subtitle">01.07.2026</span>
-            
-            <h4 class="section-title">🏆 Итоговые места</h4>
-            <div class="matches-scroll-list" id="modal-history-standings" style="margin-bottom: 20px; max-height: 180px;">
-                <!-- Loaded dynamically -->
+        <div class="modal-card" style="max-width: 480px; width:100%; border-radius: 24px; padding: 20px; background-color: var(--bg-main); box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: none;">
+            <!-- HEADER -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; width:100%;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <!-- Back button styled like Android circle -->
+                    <button class="modal-back-btn" onclick="closeHistoryModal()" style="width:36px; height:36px; border-radius:50%; border:none; background:#ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-main);">
+                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </button>
+                    <div>
+                        <h3 class="modal-title" id="modal-history-title" style="font-size:20px; font-weight:800; color:var(--text-main); margin:0;">Вечерний турнир</h3>
+                        <span class="modal-subtitle" id="modal-history-subtitle" style="font-size:12px; color:var(--text-secondary); margin-top:2px; display:block;">01.07.2026</span>
+                    </div>
+                </div>
+                <button onclick="closeHistoryModal()" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:22px; font-weight:bold; display:flex; align-items:center; padding:4px;">
+                    ✕
+                </button>
             </div>
-
-            <h4 class="section-title">🏓 Сыгранные матчи</h4>
-            <div class="matches-scroll-list" id="modal-history-matches" style="max-height: 220px;">
-                <!-- Loaded dynamically -->
+            
+            <!-- STANDINGS CARD -->
+            <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:20px; padding:16px; display:flex; flex-direction:column; gap:12px; width:100%; box-sizing:border-box;">
+                <div style="font-size:11px; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:2px; text-align:left;">Итоговая таблица и матчи</div>
+                <div style="font-size:13px; color:var(--apple-blue); font-weight:500; margin-top:-6px; margin-bottom:4px; text-align:left;">Нажмите на игрока, чтобы увидеть результаты его матчей</div>
+                
+                <div id="modal-history-standings" style="display:flex; flex-direction:column; gap:4px; max-height: 480px; overflow-y:auto; padding-right:4px;">
+                    <!-- Loaded dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -5157,45 +5186,211 @@
             const listEl = document.getElementById('history-list-el');
             listEl.innerHTML = '';
 
-            // Sort by id descending to show newest first
-            const sorted = [...clubData.history].sort((a, b) => b.id - a.id);
+            // Update subtitle count in header/page
+            const subtitleEl = document.getElementById('history-subtitle-el');
+            if (subtitleEl) {
+                subtitleEl.textContent = `${clubData.history.length} завершённых турниров`;
+            }
 
-            sorted.forEach(entry => {
+            const query = (document.getElementById('history-search-input')?.value || '').trim().toLowerCase();
+
+            // Filter history
+            const filtered = clubData.history.filter(entry => {
+                return entry.name.toLowerCase().includes(query) || (entry.winnerName || '').toLowerCase().includes(query);
+            });
+
+            // Sort by id descending to show newest first
+            filtered.sort((a, b) => b.id - a.id);
+
+            filtered.forEach(entry => {
                 const card = document.createElement('div');
                 card.className = 'history-card';
-                card.addEventListener('click', () => openHistoryModal(entry));
+                card.style.background = 'var(--bg-card)';
+                card.style.border = '1px solid var(--border-color)';
+                card.style.borderRadius = '20px';
+                card.style.padding = '16px';
+                card.style.display = 'flex';
+                card.style.alignItems = 'center';
+                card.style.gap = '16px';
+                card.style.cursor = 'pointer';
+                card.style.width = '100%';
+                card.style.boxSizing = 'border-box';
+                card.style.position = 'relative';
 
-                const header = document.createElement('div');
-                header.className = 'history-card-header';
-                
-                const titleCol = document.createElement('div');
-                titleCol.innerHTML = `
-                    <div class="history-card-title">${entry.name}</div>
-                    <div class="history-card-date">${entry.dateText}</div>
+                // Trophy Cup Icon
+                const trophyContainer = document.createElement('div');
+                trophyContainer.style.width = '44px';
+                trophyContainer.style.height = '44px';
+                trophyContainer.style.borderRadius = '50%';
+                trophyContainer.style.backgroundColor = 'rgba(255, 204, 0, 0.1)';
+                trophyContainer.style.display = 'flex';
+                trophyContainer.style.alignItems = 'center';
+                trophyContainer.style.justifyContent = 'center';
+                trophyContainer.style.flexShrink = '0';
+                trophyContainer.style.fontSize = '24px';
+                trophyContainer.textContent = '🏆';
+
+                // Middle: Text details
+                const infoBlock = document.createElement('div');
+                infoBlock.style.display = 'flex';
+                infoBlock.style.flexDirection = 'column';
+                infoBlock.style.gap = '4px';
+                infoBlock.style.flex = '1';
+                infoBlock.style.minWidth = '0';
+
+                const nameEl = document.createElement('div');
+                nameEl.style.fontSize = '16px';
+                nameEl.style.fontWeight = '700';
+                nameEl.style.color = 'var(--text-main)';
+                nameEl.style.whiteSpace = 'nowrap';
+                nameEl.style.overflow = 'hidden';
+                nameEl.style.textOverflow = 'ellipsis';
+                nameEl.textContent = entry.name;
+
+                const detailsRow = document.createElement('div');
+                detailsRow.style.fontSize = '13px';
+                detailsRow.style.color = 'var(--text-secondary)';
+                detailsRow.style.display = 'flex';
+                detailsRow.style.alignItems = 'center';
+                detailsRow.style.flexWrap = 'wrap';
+                detailsRow.style.gap = '6px';
+                detailsRow.innerHTML = `
+                    <span>👥 ${entry.playersCount} участников</span>
+                    <span>•</span>
+                    <span>📅 ${entry.dateText}</span>
                 `;
 
-                const playersCount = document.createElement('span');
-                playersCount.className = 'history-card-winner-badge';
-                playersCount.innerHTML = `${SVG_ICONS.users} ${entry.playersCount}`;
+                const winnerEl = document.createElement('div');
+                winnerEl.style.fontSize = '14px';
+                winnerEl.style.fontWeight = '600';
+                winnerEl.style.color = 'var(--apple-blue)';
+                winnerEl.textContent = `Победитель: ${entry.winnerName || 'Неизвестно'}`;
 
-                header.appendChild(titleCol);
-                header.appendChild(playersCount);
+                infoBlock.appendChild(nameEl);
+                infoBlock.appendChild(detailsRow);
+                infoBlock.appendChild(winnerEl);
 
-                const winnerRow = document.createElement('div');
-                winnerRow.className = 'history-card-winner-row';
-                winnerRow.innerHTML = `
-                    <span>${SVG_MEDALS[1]} Победитель:</span>
-                    <span class="history-card-winner">${entry.winnerName}</span>
-                `;
+                // Right: Chevron arrow
+                const arrowEl = document.createElement('span');
+                arrowEl.style.fontSize = '24px';
+                arrowEl.style.color = '#C7C7CC';
+                arrowEl.textContent = '›';
 
-                card.appendChild(header);
-                card.appendChild(winnerRow);
+                if (isAdmin) {
+                    const swipeBg = document.createElement('div');
+                    swipeBg.className = 'history-card-swipe-bg';
+                    swipeBg.style.position = 'absolute';
+                    swipeBg.style.right = '0';
+                    swipeBg.style.top = '0';
+                    swipeBg.style.bottom = '0';
+                    swipeBg.style.width = '100%';
+                    swipeBg.style.backgroundColor = 'var(--apple-red)';
+                    swipeBg.style.color = '#ffffff';
+                    swipeBg.style.display = 'flex';
+                    swipeBg.style.alignItems = 'center';
+                    swipeBg.style.justifyContent = 'flex-end';
+                    swipeBg.style.paddingRight = '20px';
+                    swipeBg.style.borderRadius = '20px';
+                    swipeBg.style.zIndex = '1';
+                    swipeBg.style.opacity = '0';
+                    swipeBg.style.transition = 'opacity 0.15s';
+                    swipeBg.innerHTML = `<span style="font-weight:700;">Удалить</span>`;
+                    card.appendChild(swipeBg);
+
+                    // Touch Swipe handlers
+                    let startX = 0;
+                    let startY = 0;
+                    let isSwiping = false;
+                    let swipeX = 0;
+
+                    const innerCard = document.createElement('div');
+                    innerCard.style.display = 'flex';
+                    innerCard.style.alignItems = 'center';
+                    innerCard.style.gap = '16px';
+                    innerCard.style.width = '100%';
+                    innerCard.style.height = '100%';
+                    innerCard.style.position = 'relative';
+                    innerCard.style.zIndex = '2';
+                    innerCard.style.backgroundColor = 'var(--bg-card)';
+                    innerCard.style.borderRadius = '20px';
+                    innerCard.style.boxSizing = 'border-box';
+                    innerCard.addEventListener('click', () => openHistoryModal(entry));
+                    
+                    innerCard.appendChild(trophyContainer);
+                    innerCard.appendChild(infoBlock);
+                    innerCard.appendChild(arrowEl);
+                    card.appendChild(innerCard);
+
+                    innerCard.addEventListener('touchstart', (e) => {
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                        isSwiping = false;
+                        swipeX = 0;
+                        innerCard.style.transition = 'none';
+                        swipeBg.style.transition = 'none';
+                    }, { passive: true });
+
+                    innerCard.addEventListener('touchmove', (e) => {
+                        const currentX = e.touches[0].clientX;
+                        const currentY = e.touches[0].clientY;
+                        const diffX = currentX - startX;
+                        const diffY = currentY - startY;
+
+                        if (!isSwiping) {
+                            if (Math.abs(diffX) > Math.abs(diffY) && diffX < -10) {
+                                isSwiping = true;
+                            }
+                        }
+
+                        if (isSwiping) {
+                            if (e.cancelable) e.preventDefault();
+                            swipeX = Math.min(0, diffX);
+                            innerCard.style.transform = `translateX(${swipeX}px)`;
+                            swipeBg.style.opacity = Math.min(1, Math.abs(swipeX) / 80);
+                        }
+                    }, { passive: false });
+
+                    innerCard.addEventListener('touchend', () => {
+                        innerCard.style.transition = 'transform 0.2s ease-out';
+                        swipeBg.style.transition = 'opacity 0.2s ease-out';
+
+                        if (swipeX < -80) {
+                            if (confirm(`Вы уверены, что хотите удалить турнир "${entry.name}" из истории?`)) {
+                                deleteHistoryEntry(entry.id);
+                            }
+                        }
+                        
+                        innerCard.style.transform = 'translateX(0)';
+                        swipeBg.style.opacity = '0';
+                    });
+                } else {
+                    card.appendChild(trophyContainer);
+                    card.appendChild(infoBlock);
+                    card.appendChild(arrowEl);
+                    card.addEventListener('click', () => openHistoryModal(entry));
+                }
+
                 listEl.appendChild(card);
             });
 
-            if (sorted.length === 0) {
-                listEl.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">История турниров пуста</div>';
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">Турниры не найдены</div>';
             }
+        }
+
+        // DELETE HISTORY ENTRY
+        function deleteHistoryEntry(id) {
+            showLoader(true);
+            const updatedHistory = clubData.history.filter(e => e.id !== id);
+            db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory))
+                .then(() => {
+                    showLoader(false);
+                    showToast("Турнир успешно удален из истории");
+                })
+                .catch(err => {
+                    showLoader(false);
+                    showToast("Ошибка при удалении: " + err.message);
+                });
         }
 
         // MODAL: OPEN TOURNAMENT DETAILS FROM HISTORY
@@ -5211,6 +5406,12 @@
             // Standings list
             const standingsEl = document.getElementById('modal-history-standings');
             standingsEl.innerHTML = '';
+
+            // Update title and subtitle of modal
+            const titleEl = document.getElementById('modal-history-title');
+            if (titleEl) titleEl.textContent = entry.name;
+            const subEl = document.getElementById('modal-history-subtitle');
+            if (subEl) subEl.textContent = `${entry.dateText} • ${entry.playersCount} участников`;
             
             // Pre-calculate wins/losses per player from structuredMatches
             const statsMap = {}; // { playerName: { wins: 0, losses: 0, delta: 0 } }
@@ -5250,22 +5451,21 @@
                     if (!statsMap[name]) statsMap[name] = { wins: 0, losses: 0, delta: 0 };
                     statsMap[name].delta = delta;
 
-                    const row = document.createElement('div');
-                    row.className = 'modal-match-item';
-                    row.style.cursor = 'pointer';
-                    row.style.padding = '8px 12px';
-                    row.style.borderRadius = '10px';
-                    row.style.transition = 'background 0.2s, border-color 0.2s';
-                    row.style.marginBottom = '4px';
-                    
-                    if (selectedPlayerName === name) {
-                        row.style.background = 'rgba(0, 122, 255, 0.08)';
-                        row.style.border = '1px solid rgba(0, 122, 255, 0.2)';
-                    } else {
-                        row.style.border = '1px solid transparent';
-                        row.style.background = 'transparent';
-                    }
+                    const itemContainer = document.createElement('div');
+                    itemContainer.style.display = 'flex';
+                    itemContainer.style.flexDirection = 'column';
+                    itemContainer.style.width = '100%';
 
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.alignItems = 'center';
+                    row.style.padding = '12px 14px';
+                    row.style.borderRadius = '14px';
+                    row.style.cursor = 'pointer';
+                    row.style.transition = 'background-color 0.2s';
+                    row.style.backgroundColor = selectedPlayerName === name ? 'rgba(0, 122, 255, 0.06)' : 'transparent';
+                    
                     row.addEventListener('click', () => {
                         if (selectedPlayerName === name) {
                             renderHistoryModalContent(entry, null);
@@ -5273,126 +5473,116 @@
                             renderHistoryModalContent(entry, name);
                         }
                     });
-                    
-                    let medal = `${idx + 1}.`;
-                    if (idx === 0) medal = SVG_MEDALS[1];
-                    else if (idx === 1) medal = SVG_MEDALS[2];
-                    else if (idx === 2) medal = SVG_MEDALS[3];
 
-                    const stats = statsMap[name];
-                    row.innerHTML = `
-                        <div style="display:flex; flex-direction:column; gap:2px; text-align:left;">
-                            <div style="font-weight: 700; color: var(--text-primary);">${medal} <span style="margin-left: 6px;">${name}</span></div>
-                            <div style="font-size:11px; color:var(--text-secondary); margin-left: 24px;">Игр: ${stats.wins + stats.losses} (В-П: ${stats.wins}-${stats.losses})</div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <div style="color: var(--apple-blue); font-weight: 800;">${rating}</div>
-                            ${delta !== 0 ? '<div style="font-size:11px; font-weight:700; color:' + (delta > 0 ? 'var(--apple-green)' : 'var(--apple-red)') + '">' + (delta > 0 ? '+' : '') + delta.toFixed(1) + '</div>' : ''}
-                        </div>
+                    let medal = `${idx + 1}`;
+                    let medalColor = 'var(--text-main)';
+                    if (idx === 0) { medal = '🥇'; }
+                    else if (idx === 1) { medal = '🥈'; }
+                    else if (idx === 2) { medal = '🥉'; }
+
+                    const leftCol = document.createElement('div');
+                    leftCol.style.display = 'flex';
+                    leftCol.style.alignItems = 'center';
+                    leftCol.style.gap = '10px';
+                    leftCol.innerHTML = `
+                        <span style="font-size: 15px; font-weight: 700; color: ${medalColor}; width: 20px; text-align: center; display: inline-block;">${medal}</span>
+                        <span style="font-weight: 700; color: var(--text-main); font-size: 15px;">${name}</span>
                     `;
-                    standingsEl.appendChild(row);
-                }
-            });
 
-            // Matches List
-            const matchesEl = document.getElementById('modal-history-matches');
-            matchesEl.innerHTML = '';
-            
-            let filteredMatchesCount = 0;
-            let playerWins = 0;
-            let playerLosses = 0;
-            let totalRatingChange = 0;
+                    const rightCol = document.createElement('div');
+                    rightCol.style.display = 'flex';
+                    rightCol.style.alignItems = 'center';
+                    rightCol.style.gap = '8px';
+                    
+                    const deltaSign = delta > 0 ? '+' : '';
+                    const deltaColor = delta > 0 ? 'var(--apple-green)' : (delta < 0 ? 'var(--apple-red)' : 'var(--text-secondary)');
+                    const deltaText = delta !== 0 ? `${deltaSign}${delta.toFixed(1)}` : '0.0';
+                    
+                    rightCol.innerHTML = `
+                        <span style="font-size: 14px; font-weight: 700; color: ${deltaColor};">${deltaText}</span>
+                    `;
 
-            matchesList.forEach(matchStr => {
-                const parts = matchStr.split("::");
-                if (parts.length >= 3) {
-                    const p1 = decodeName(parts[0]);
-                    const p2 = decodeName(parts[1]);
-                    const score = parts[2];
-                    const p1Delta = parseFloat(parts[3] || "0");
-                    const p2Delta = parseFloat(parts[4] || "0");
+                    row.appendChild(leftCol);
+                    row.appendChild(rightCol);
+                    itemContainer.appendChild(row);
 
-                    // Filter if selectedPlayerName is set
-                    if (selectedPlayerName && p1 !== selectedPlayerName && p2 !== selectedPlayerName) {
-                        return;
-                    }
-                    filteredMatchesCount++;
+                    if (selectedPlayerName === name) {
+                        const matchesContainer = document.createElement('div');
+                        matchesContainer.style.display = 'flex';
+                        matchesContainer.style.flexDirection = 'column';
+                        matchesContainer.style.gap = '8px';
+                        matchesContainer.style.padding = '10px 14px';
+                        matchesContainer.style.margin = '4px 0 8px 30px';
+                        matchesContainer.style.borderRadius = '12px';
+                        matchesContainer.style.backgroundColor = '#f2f2f7';
+                        matchesContainer.style.boxSizing = 'border-box';
 
-                    const row = document.createElement('div');
-                    row.className = 'modal-match-item';
-                    row.style.padding = '8px 12px';
-                    row.style.borderBottom = '1px solid var(--border-color)';
+                        let matchesFound = 0;
+                        matchesList.forEach(matchStr => {
+                            const mParts = matchStr.split("::");
+                            if (mParts.length >= 3) {
+                                const mP1 = decodeName(mParts[0]);
+                                const mP2 = decodeName(mParts[1]);
+                                const mScore = mParts[2];
+                                const mP1Delta = parseFloat(mParts[3] || "0");
+                                const mP2Delta = parseFloat(mParts[4] || "0");
 
-                    if (selectedPlayerName) {
-                        // Single player view
-                        const isP1 = p1 === selectedPlayerName;
-                        const opponent = isP1 ? p2 : p1;
-                        const oppParts = playersList.find(p => decodeName(p.split("::")[0]) === opponent);
-                        const oppRatingStr = oppParts ? ` ★${parseFloat(oppParts.split("::")[2]).toFixed(0)}` : '';
-                        
-                        let displayScore = score;
-                        let won = false;
-                        if (score && score.includes(":")) {
-                            const scoreParts = score.split(":");
-                            const s1 = parseInt(scoreParts[0]) || 0;
-                            const s2 = parseInt(scoreParts[1]) || 0;
-                            if (isP1) {
-                                displayScore = `${s1} : ${s2}`;
-                                won = s1 > s2;
-                            } else {
-                                displayScore = `${s2} : ${s1}`;
-                                won = s2 > s1;
+                                if (mP1 === name || mP2 === name) {
+                                    matchesFound++;
+                                    const isP1 = mP1 === name;
+                                    const opponent = isP1 ? mP2 : mP1;
+                                    const oppParts = playersList.find(p => decodeName(p.split("::")[0]) === opponent);
+                                    const oppRatingStr = oppParts ? ` ★${parseFloat(oppParts.split("::")[2]).toFixed(0)}` : '';
+
+                                    let displayScore = mScore;
+                                    let won = false;
+                                    if (mScore && mScore.includes(":")) {
+                                        const scoreParts = mScore.split(":");
+                                        const s1 = parseInt(scoreParts[0]) || 0;
+                                        const s2 = parseInt(scoreParts[1]) || 0;
+                                        if (isP1) {
+                                            displayScore = `${s1}:${s2}`;
+                                            won = s1 > s2;
+                                        } else {
+                                            displayScore = `${s2}:${s1}`;
+                                            won = s2 > s1;
+                                        }
+                                    }
+
+                                    const myDelta = isP1 ? mP1Delta : mP2Delta;
+                                    const matchDeltaSign = myDelta > 0 ? '+' : '';
+                                    const matchDeltaColor = myDelta > 0 ? 'var(--apple-green)' : (myDelta < 0 ? 'var(--apple-red)' : 'var(--text-secondary)');
+                                    const matchDeltaText = myDelta !== 0 ? `${matchDeltaSign}${myDelta.toFixed(1)}` : '0.0';
+
+                                    const matchRow = document.createElement('div');
+                                    matchRow.style.display = 'flex';
+                                    matchRow.style.justifyContent = 'space-between';
+                                    matchRow.style.alignItems = 'center';
+                                    matchRow.style.fontSize = '13px';
+                                    matchRow.style.color = 'var(--text-main)';
+
+                                    matchRow.innerHTML = `
+                                        <div style="flex: 1.8; text-align: left; color: var(--text-main); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            ${opponent}<span style="color: var(--text-secondary); font-size: 11px;">${oppRatingStr}</span>
+                                        </div>
+                                        <div style="flex: 0.8; text-align: center; font-weight: 700; color: var(--text-secondary);">${displayScore}</div>
+                                        <div style="flex: 0.8; text-align: right; font-weight: 700; color: ${matchDeltaColor};">${matchDeltaText}</div>
+                                    `;
+                                    matchesContainer.appendChild(matchRow);
+                                }
                             }
-                            if (won) playerWins++; else playerLosses++;
+                        });
+
+                        if (matchesFound === 0) {
+                            matchesContainer.innerHTML = `<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Нет сыгранных матчей</div>`;
                         }
-                        
-                        const myDelta = isP1 ? p1Delta : p2Delta;
-                        totalRatingChange += myDelta;
 
-                        const deltaSign = myDelta > 0 ? '+' : '';
-                        const deltaColor = myDelta > 0 ? 'var(--apple-green)' : (myDelta < 0 ? 'var(--apple-red)' : 'var(--text-secondary)');
-                        const deltaHtml = myDelta !== 0 ? `<span style="font-weight: 800; color: ${deltaColor};">${deltaSign}${myDelta.toFixed(1)}</span>` : '<span style="color: var(--text-secondary);">-</span>';
-
-                        row.innerHTML = `
-                            <div style="flex: 2; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-primary);">${opponent}<span style="color: var(--text-secondary); font-size: 11px; font-weight: normal;">${oppRatingStr}</span></div>
-                            <div style="flex: 1; font-weight: 800; color: ${won ? 'var(--apple-green)' : 'var(--text-secondary)'}; text-align: center; font-size: 13px;">${displayScore}</div>
-                            <div style="flex: 1; text-align: right; font-size: 13px;">${deltaHtml}</div>
-                        `;
-                    } else {
-                        // Show all matches view
-                        row.innerHTML = `
-                            <div style="flex:1; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-primary);">${p1}</div>
-                            <div style="font-weight: 800; color: var(--apple-blue); margin: 0 16px; font-size: 13px; text-align: center;">${score}</div>
-                            <div style="flex:1; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-primary);">${p2}</div>
-                        `;
+                        itemContainer.appendChild(matchesContainer);
                     }
-                    matchesEl.appendChild(row);
+
+                    standingsEl.appendChild(itemContainer);
                 }
             });
-
-            if (filteredMatchesCount === 0) {
-                matchesEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 12px 0;">Данные матчей отсутствуют</div>';
-            } else if (selectedPlayerName) {
-                // Add summary footer row for filtered player view
-                const footer = document.createElement('div');
-                footer.className = 'modal-match-item';
-                footer.style.borderTop = '2px solid var(--border-color)';
-                footer.style.marginTop = '8px';
-                footer.style.padding = '12px 12px 4px 12px';
-                footer.style.fontWeight = '800';
-                
-                const stats = statsMap[selectedPlayerName] || { wins: playerWins, losses: playerLosses, delta: totalRatingChange };
-                const finalDelta = stats.delta;
-                const deltaSign = finalDelta > 0 ? '+' : '';
-                const deltaColor = finalDelta > 0 ? 'var(--apple-green)' : (finalDelta < 0 ? 'var(--apple-red)' : 'var(--text-secondary)');
-                
-                footer.innerHTML = `
-                    <div style="flex: 2; text-align: left; color: var(--text-secondary); font-size: 12px;">Итого:</div>
-                    <div style="flex: 1; text-align: center; color: var(--text-primary); font-size: 14px;">${stats.wins} - ${stats.losses}</div>
-                    <div style="flex: 1; text-align: right; color: ${deltaColor}; font-size: 14px;">${deltaSign}${finalDelta.toFixed(1)}</div>
-                `;
-                matchesEl.appendChild(footer);
-            }
         }
 
         function closeHistoryModal() {
