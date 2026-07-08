@@ -1442,7 +1442,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.6.2 (08.07.2026 18:00)
+                Версия веб-приложения: 1.6.3 (08.07.2026 18:05)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -1450,9 +1450,7 @@
                 🏢 Создать новый клуб
             </button>
         </div>
-        <div id="debug-log-panel" style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:12px; font-family:monospace; font-size:10px; color:#a3e635; max-height:140px; overflow-y:auto; width:100%; text-align:left; display:block; box-sizing:border-box;">
-            <div>[System] Лог инициализации...</div>
-        </div>
+
     </div>
 
     <!-- 2. MAIN APP CONTAINER -->
@@ -2043,15 +2041,6 @@
 
         // DEBUG LOG TO PANEL ON SCREEN
         function debugLog(msg) {
-            const panel = document.getElementById('debug-log-panel');
-            if (panel) {
-                const item = document.createElement('div');
-                item.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-                item.style.padding = "2px 0";
-                item.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-                panel.appendChild(item);
-                panel.scrollTop = panel.scrollHeight;
-            }
             console.log(msg);
         }
 
