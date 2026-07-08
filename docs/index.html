@@ -351,7 +351,7 @@
             position: absolute;
             top: -4px;
             right: -4px;
-            background-color: var(--apple-red);
+            background-color: #0A84FF;
             color: white;
             font-size: 9px;
             font-weight: 800;
@@ -363,6 +363,268 @@
             justify-content: center;
             border: 1.5px solid white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+        /* CLUB RECORDS STYLES */
+        #view-hall {
+            background-color: #F3F6FA;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .potw-card {
+            background-color: #0B1F3A;
+            border-radius: 24px;
+            padding: 20px;
+            color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(11, 31, 58, 0.15);
+        }
+
+        .potw-header {
+            font-size: 11px;
+            font-weight: 800;
+            color: #F5B833;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-align: left;
+        }
+
+        .potw-body {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+
+        .potw-player-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .potw-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            background-color: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 800;
+            color: #FFFFFF;
+            border: 2px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+
+        .potw-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: #FFFFFF;
+            text-align: left;
+        }
+
+        .potw-change {
+            font-size: 26px;
+            font-weight: 900;
+            color: #34C759;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .potw-decor-star {
+            width: 72px;
+            height: 72px;
+            opacity: 0.85;
+            color: #0A84FF;
+            flex-shrink: 0;
+        }
+
+        .potw-footer-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .potw-tag {
+            background-color: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .records-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .record-tile {
+            background-color: #FFFFFF;
+            border: 1px solid rgba(229, 229, 234, 0.7);
+            border-radius: 20px;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+            min-width: 0;
+        }
+
+        .record-tile-icon {
+            font-size: 22px;
+            margin-bottom: 2px;
+        }
+
+        .record-tile-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .record-tile-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .record-tile-value {
+            font-size: 13px;
+            font-weight: 800;
+            margin-top: 2px;
+        }
+
+        /* iOS Bottom Sheet style */
+        .bottom-sheet-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .bottom-sheet {
+            background-color: #FFFFFF;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 24px 24px 0 0;
+            padding: 16px 24px calc(24px + var(--safe-area-bottom));
+            box-sizing: border-box;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .bottom-sheet.open {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-handle {
+            width: 36px;
+            height: 5px;
+            background-color: #E5E5EA;
+            border-radius: 2.5px;
+            align-self: center;
+            margin-bottom: 4px;
+            flex-shrink: 0;
+        }
+
+        .bottom-sheet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .bottom-sheet-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .bottom-sheet-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .bottom-sheet-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .bottom-sheet-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .bottom-sheet-item-icon {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+
+        .bottom-sheet-item-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .bottom-sheet-item-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .bottom-sheet-item-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
         }
 
         /* RATING VIEW */
@@ -1530,7 +1792,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.7.1 (08.07.2026 23:25)
+                Версия веб-приложения: 1.8.0 (09.07.2026 00:15)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -1618,148 +1880,6 @@
                 </div>
             </section>
 
-            <!-- TAB 4: HALL OF FAME -->
-            <section id="view-hall" class="view" style="display:none;">
-                <div class="hall-view-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <div>
-                        <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">Зал славы</h2>
-                        <div id="hall-subtitle" style="font-size:13px; color:var(--text-secondary); margin-top:2px;">Достижения и рекорды игроков</div>
-                    </div>
-                </div>
-
-                <!-- Accordion Legend of Achievements -->
-                <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:20px; padding:16px; margin-bottom:20px; box-sizing:border-box;">
-                    <div onclick="toggleHallLegend()" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-                        <span style="font-size:13px; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase;">📜 Легенда наград и ачивок</span>
-                        <span id="hall-legend-arrow" style="font-size:14px; font-weight:bold; color:var(--text-secondary); transition: transform 0.2s;">▼</span>
-                    </div>
-                    <div id="hall-legend-content" style="display:none; flex-direction:column; gap:12px; margin-top:14px; border-top:1px solid var(--border-color); padding-top:12px;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
-                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                                    <defs>
-                                        <linearGradient id="gold-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#FFE259" />
-                                            <stop offset="100%" stop-color="#FFA751" />
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M35 38 h30 v12 c0 8 -6 15 -15 15 s-15 -7 -15 -15 z" fill="url(#gold-grad-legend)"/>
-                                    <path d="M35 42 c-5 0 -8 4 -8 8 s3 8 8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
-                                    <path d="M65 42 c5 0 8 4 8 8 s-3 8 -8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
-                                    <path d="M46 65 h8 v10 h-8 z" fill="url(#gold-grad-legend)"/>
-                                    <path d="M30 75 h40 v6 h-40 z" fill="url(#gold-grad-legend)" rx="2"/>
-                                    <path d="M50 15 l2 4 h4 l-3 2.5 l1 4.5 l-4 -3 l-4 3 l1 -4.5 l-3 -2.5 h4 z" fill="#FFE259"/>
-                                </svg>
-                            </div>
-                            <div style="font-size:12px; text-align:left;">
-                                <strong style="color:var(--text-main); font-size:13px; display:block;">Серийный чемпион</strong>
-                                <span style="color:var(--text-secondary);">3 золота подряд (1-е место в 3 завершённых турнирах клуба подряд)</span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
-                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                                    <defs>
-                                        <linearGradient id="shield-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#00F2FE" />
-                                            <stop offset="100%" stop-color="#4FACFE" />
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M32 30 c12 0 18 -6 18 -6 s6 6 18 6 v22 c0 12 -18 20 -18 20 s-18 -8 -18 -20 z" fill="url(#shield-grad-legend)"/>
-                                    <path d="M50 34 l3 6 v18 h-6 v-18 z" fill="#FFFFFF"/>
-                                    <path d="M42 42 h16 v3 h-16 z" fill="#FFFFFF"/>
-                                    <path d="M49 61 h2 v4 h-2 z" fill="#FFFFFF"/>
-                                </svg>
-                            </div>
-                            <div style="font-size:12px; text-align:left;">
-                                <strong style="color:var(--text-main); font-size:13px; display:block;">Гроза авторитетов</strong>
-                                <span style="color:var(--text-secondary);">Победа в матче над игроком, чей текущий рейтинг выше на 100+ очков</span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
-                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                                    <defs>
-                                        <linearGradient id="rocket-grad-legend" x1="0%" y1="100%" x2="100%" y2="0%">
-                                            <stop offset="0%" stop-color="#11998e" />
-                                            <stop offset="100%" stop-color="#38ef7d" />
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M34 66 c-2 8 2 12 6 10 l12 -12 l-6 -6 z" fill="#FF512F"/>
-                                    <path d="M40 60 l24 -24 c5 -5 10 -6 10 -6 s-1 5 -6 10 l-24 24 z" fill="url(#rocket-grad-legend)"/>
-                                    <path d="M43 57 l-9 3 l2 8 z" fill="#11998e"/>
-                                    <path d="M57 43 l3 -9 l8 2 z" fill="#11998e"/>
-                                    <circle cx="56" cy="44" r="3" fill="#FFFFFF" />
-                                </svg>
-                            </div>
-                            <div style="font-size:12px; text-align:left;">
-                                <strong style="color:var(--text-main); font-size:13px; display:block;">Взрывной рост</strong>
-                                <span style="color:var(--text-secondary);">Увеличение рейтинга на 50+ очков за последние 30 дней</span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
-                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                                    <defs>
-                                        <linearGradient id="iron-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#8e9eab" />
-                                            <stop offset="100%" stop-color="#eef2f3" />
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M30 32 c0 0 20 -8 20 -8 s20 8 20 8 v18 c0 16 -20 26 -20 26 s-20 -10 -20 -26 z" fill="url(#iron-grad-legend)"/>
-                                    <path d="M50 38 l3 8 h9 l-7 5.5 l2.5 8.5 l-7.5 -5 l-7.5 5 l2.5 -8.5 l-7 -5.5 h9 z" fill="#FF8C00"/>
-                                    <path d="M34 35 c0 0 16 -6 16 -6 s16 6 16 6 v15 c0 12 -16 21 -16 21 s-16 -9 -16 -21 z" fill="none" stroke="#2c3e50" stroke-width="1.5"/>
-                                </svg>
-                            </div>
-                            <div style="font-size:12px; text-align:left;">
-                                <strong style="color:var(--text-main); font-size:13px; display:block;">Железный человек</strong>
-                                <span style="color:var(--text-secondary);">Сыграно 50 и более турниров за всё время существования клуба</span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
-                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                                    <defs>
-                                        <linearGradient id="gold-grad2-legend" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#F3904F" />
-                                            <stop offset="100%" stop-color="#3B4371" />
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M46 50 c-8 -8 -20 -4 -20 -4 s4 10 12 10 c4 0 8 -3 8 -6 z" fill="url(#gold-grad2-legend)"/>
-                                    <path d="M54 50 c8 -8 20 -4 20 -4 s-4 10 -12 10 c-4 0 -8 -3 -8 -6 z" fill="url(#gold-grad2-legend)"/>
-                                    <path d="M52 30 l-10 18 h12 l-6 20 l14 -22 h-12 z" fill="#FFE259"/>
-                                </svg>
-                            </div>
-                            <div style="font-size:12px; text-align:left;">
-                                <strong style="color:var(--text-main); font-size:13px; display:block;">Неуязвимый</strong>
-                                <span style="color:var(--text-secondary);">Завершение турнира со 100% результатом (без поражений во всех матчах турнира)</span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="badge-icon" style="width:38px; height:38px; flex-shrink:0;">
-                                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                                    <defs>
-                                        <linearGradient id="cyan-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#0575E6" />
-                                            <stop offset="100%" stop-color="#00F260" />
-                                        </linearGradient>
-                                    </defs>
-                                    <polygon points="50,22 68,36 50,78 32,36" fill="url(#cyan-grad-legend)" opacity="0.9"/>
-                                    <polygon points="50,22 68,36 50,42" fill="#FFFFFF" opacity="0.3"/>
-                                    <polygon points="50,22 32,36 50,42" fill="#FFFFFF" opacity="0.5"/>
-                                    <polygon points="32,36 50,78 50,42" fill="#000000" opacity="0.1"/>
-                                    <polygon points="68,36 50,78 50,42" fill="#FFFFFF" opacity="0.15"/>
-                                </svg>
-                            </div>
-                            <div style="font-size:12px; text-align:left;">
-                                <strong style="color:var(--text-main); font-size:13px; display:block;">Гроссмейстер</strong>
-                                <span style="color:var(--text-secondary);">Достижение текущего рейтинга 350.0 и выше</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1805,7 +1925,7 @@
                     <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
                     <path d="M3 20h18" />
                 </svg>
-                Зал славы
+                Рекорды
             </button>
         </nav>
     </div>
@@ -2217,6 +2337,139 @@
                     <h4 style="font-size:13px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin:0 0 4px 0; padding-left:4px;">📝 Лента активности</h4>
                     <div id="analytics-recent-feed" style="display:flex; flex-direction:column; gap:6px;">
                         <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM SHEET: BADGE LEGEND -->
+    <div id="badge-legend-sheet" class="bottom-sheet-overlay" onclick="closeBadgeLegendSheet(event)">
+        <!-- GLOBAL ACHIEVEMENTS GRADIENTS DEFS -->
+        <svg style="display:none; width:0; height:0;">
+            <defs>
+                <linearGradient id="gold-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#FFE259" />
+                    <stop offset="100%" stop-color="#FFA751" />
+                </linearGradient>
+                <linearGradient id="shield-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00F2FE" />
+                    <stop offset="100%" stop-color="#4FACFE" />
+                </linearGradient>
+                <linearGradient id="rocket-grad-legend" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#11998e" />
+                    <stop offset="100%" stop-color="#38ef7d" />
+                </linearGradient>
+                <linearGradient id="iron-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#8e9eab" />
+                    <stop offset="100%" stop-color="#eef2f3" />
+                </linearGradient>
+                <linearGradient id="gold-grad2-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#F3904F" />
+                    <stop offset="100%" stop-color="#3B4371" />
+                </linearGradient>
+                <linearGradient id="cyan-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#0575E6" />
+                    <stop offset="100%" stop-color="#00F260" />
+                </linearGradient>
+            </defs>
+        </svg>
+        <div class="bottom-sheet" onclick="event.stopPropagation()">
+            <div class="bottom-sheet-handle"></div>
+            <div class="bottom-sheet-header">
+                <h3 class="bottom-sheet-title">Что значат награды?</h3>
+                <button class="bottom-sheet-close" onclick="closeBadgeLegendSheet(event)">✕</button>
+            </div>
+            <div class="bottom-sheet-list">
+                <div class="bottom-sheet-item">
+                    <div class="bottom-sheet-item-icon">
+                        <svg viewBox="0 0 100 100" class="badge-icon">
+                            <path d="M35 38 h30 v12 c0 8 -6 15 -15 15 s-15 -7 -15 -15 z" fill="url(#gold-grad-legend)"/>
+                            <path d="M35 42 c-5 0 -8 4 -8 8 s3 8 8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
+                            <path d="M65 42 c5 0 8 4 8 8 s-3 8 -8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
+                            <path d="M46 65 h8 v10 h-8 z" fill="url(#gold-grad-legend)"/>
+                            <path d="M30 75 h40 v6 h-40 z" fill="url(#gold-grad-legend)" rx="2"/>
+                            <path d="M50 15 l2 4 h4 l-3 2.5 l1 4.5 l-4 -3 l-4 3 l1 -4.5 l-3 -2.5 h4 z" fill="#FFE259"/>
+                        </svg>
+                    </div>
+                    <div class="bottom-sheet-item-content">
+                        <span class="bottom-sheet-item-title">Серийный чемпион (🏆)</span>
+                        <span class="bottom-sheet-item-desc">Выиграл 3 турнира клуба подряд (первые места в последовательных completed турнирах).</span>
+                    </div>
+                </div>
+
+                <div class="bottom-sheet-item">
+                    <div class="bottom-sheet-item-icon">
+                        <svg viewBox="0 0 100 100" class="badge-icon">
+                            <path d="M32 30 c12 0 18 -6 18 -6 s6 6 18 6 v22 c0 12 -18 20 -18 20 s-18 -8 -18 -20 z" fill="url(#shield-grad-legend)"/>
+                            <path d="M50 34 l3 6 v18 h-6 v-18 z" fill="#FFFFFF"/>
+                            <path d="M42 42 h16 v3 h-16 z" fill="#FFFFFF"/>
+                            <path d="M49 61 h2 v4 h-2 z" fill="#FFFFFF"/>
+                        </svg>
+                    </div>
+                    <div class="bottom-sheet-item-content">
+                        <span class="bottom-sheet-item-title">Гроза авторитетов (⚔️)</span>
+                        <span class="bottom-sheet-item-desc">Одержал победу в матче над игроком, чей стартовый рейтинг был на 100+ очков выше.</span>
+                    </div>
+                </div>
+
+                <div class="bottom-sheet-item">
+                    <div class="bottom-sheet-item-icon">
+                        <svg viewBox="0 0 100 100" class="badge-icon">
+                            <path d="M34 66 c-2 8 2 12 6 10 l12 -12 l-6 -6 z" fill="#FF512F"/>
+                            <path d="M40 60 l24 -24 c5 -5 10 -6 10 -6 s-1 5 -6 10 l-24 24 z" fill="url(#rocket-grad-legend)"/>
+                            <path d="M43 57 l-9 3 l2 8 z" fill="#11998e"/>
+                            <path d="M57 43 l3 -9 l8 2 z" fill="#11998e"/>
+                            <circle cx="56" cy="44" r="3" fill="#FFFFFF" />
+                        </svg>
+                    </div>
+                    <div class="bottom-sheet-item-content">
+                        <span class="bottom-sheet-item-title">Взрывной рост (🚀 / 📈)</span>
+                        <span class="bottom-sheet-item-desc">Набрал 50 и более очков рейтинга за последние 30 календарных дней.</span>
+                    </div>
+                </div>
+
+                <div class="bottom-sheet-item">
+                    <div class="bottom-sheet-item-icon">
+                        <svg viewBox="0 0 100 100" class="badge-icon">
+                            <path d="M30 32 c0 0 20 -8 20 -8 s20 8 20 8 v18 c0 16 -20 26 -20 26 s-20 -10 -20 -26 z" fill="url(#iron-grad-legend)"/>
+                            <path d="M50 38 l3 8 h9 l-7 5.5 l2.5 8.5 l-7.5 -5 l-7.5 5 l2.5 -8.5 l-7 -5.5 h9 z" fill="#FF8C00"/>
+                            <path d="M34 35 c0 0 16 -6 16 -6 s16 6 16 6 v15 c0 12 -16 21 -16 21 s-16 -9 -16 -21 z" fill="none" stroke="#2c3e50" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="bottom-sheet-item-content">
+                        <span class="bottom-sheet-item-title">Железный человек (🛡️)</span>
+                        <span class="bottom-sheet-item-desc">Сыграл 50 или более турниров за всё время участия в клубе (100+ для x2).</span>
+                    </div>
+                </div>
+
+                <div class="bottom-sheet-item">
+                    <div class="bottom-sheet-item-icon">
+                        <svg viewBox="0 0 100 100" class="badge-icon">
+                            <path d="M46 50 c-8 -8 -20 -4 -20 -4 s4 10 12 10 c4 0 8 -3 8 -6 z" fill="url(#gold-grad2-legend)"/>
+                            <path d="M54 50 c8 -8 20 -4 20 -4 s-4 10 -12 10 c-4 0 -8 -3 -8 -6 z" fill="url(#gold-grad2-legend)"/>
+                            <path d="M52 30 l-10 18 h12 l-6 20 l14 -22 h-12 z" fill="#FFE259"/>
+                        </svg>
+                    </div>
+                    <div class="bottom-sheet-item-content">
+                        <span class="bottom-sheet-item-title">Неуязвимый (⚡)</span>
+                        <span class="bottom-sheet-item-desc">Прошел весь турнир со 100% результатом (минимум 2 сыгранных матча без поражений).</span>
+                    </div>
+                </div>
+
+                <div class="bottom-sheet-item">
+                    <div class="bottom-sheet-item-icon">
+                        <svg viewBox="0 0 100 100" class="badge-icon">
+                            <polygon points="50,22 68,36 50,78 32,36" fill="url(#cyan-grad-legend)" opacity="0.9"/>
+                            <polygon points="50,22 68,36 50,42" fill="#FFFFFF" opacity="0.3"/>
+                            <polygon points="50,22 32,36 50,42" fill="#FFFFFF" opacity="0.5"/>
+                            <polygon points="32,36 50,78 50,42" fill="#000000" opacity="0.1"/>
+                            <polygon points="68,36 50,78 50,42" fill="#FFFFFF" opacity="0.15"/>
+                        </svg>
+                    </div>
+                    <div class="bottom-sheet-item-content">
+                        <span class="bottom-sheet-item-title">Гроссмейстер (💎)</span>
+                        <span class="bottom-sheet-item-desc">Достиг текущего рейтинга 350.0 очков и более.</span>
                     </div>
                 </div>
             </div>
@@ -6400,14 +6653,402 @@
         }
 
         // RENDER HALL OF FAME LEADERBOARD
+        let hallShowAll = false;
+        window.toggleHallShowAll = function() {
+            hallShowAll = !hallShowAll;
+            const toggleBtn = document.getElementById('hall-toggle-all');
+            if (toggleBtn) {
+                toggleBtn.textContent = hallShowAll ? 'Скрыть' : 'Смотреть всех';
+            }
+            renderHall();
+        };
+
+        window.openPlayerModalByName = function(fullName) {
+            const player = clubData.players.find(p => p.fullName.toLowerCase() === fullName.toLowerCase());
+            if (player) openPlayerModal(player);
+        };
+
+        function calculatePlayerOfTheWeek() {
+            let sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            let growthMap = {};
+            let tourneyCount = {};
+
+            // 1. Try 7 days
+            let recentEvents = clubData.history.filter(e => e.id >= sevenDaysAgo);
+            if (recentEvents.length === 0) {
+                // Fallback to 30 days
+                let thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+                recentEvents = clubData.history.filter(e => e.id >= thirtyDaysAgo);
+            }
+            if (recentEvents.length === 0 && clubData.history.length > 0) {
+                // Fallback to the most recent single tournament
+                const sortedByDate = [...clubData.history].sort((a, b) => b.id - a.id);
+                recentEvents = [sortedByDate[0]];
+            }
+
+            if (recentEvents.length === 0) {
+                return null; // No history at all
+            }
+
+            // Calculate stats on the selected events
+            recentEvents.forEach(entry => {
+                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                ratings.forEach(rStr => {
+                    const p = rStr.split("::");
+                    if (p.length >= 4) {
+                        const name = decodeName(p[0]).toLowerCase();
+                        const delta = parseFloat(p[3] || "0");
+                        growthMap[name] = (growthMap[name] || 0) + delta;
+                        tourneyCount[name] = (tourneyCount[name] || 0) + 1;
+                    }
+                });
+            });
+
+            // Find the best player
+            let bestName = "";
+            let maxGain = -999;
+            Object.keys(growthMap).forEach(name => {
+                if (growthMap[name] > maxGain) {
+                    maxGain = growthMap[name];
+                    bestName = name;
+                }
+            });
+
+            // If the highest gain is <= 0, we can just find the player with the highest rating delta in the last active tournament
+            if (!bestName || maxGain <= 0) {
+                // Fallback to highest positive rating change in history
+                let highestDelta = 0;
+                let highestName = "";
+                clubData.history.forEach(entry => {
+                    const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                    ratings.forEach(rStr => {
+                        const p = rStr.split("::");
+                        if (p.length >= 4) {
+                            const name = decodeName(p[0]).toLowerCase();
+                            const delta = parseFloat(p[3] || "0");
+                            if (delta > highestDelta) {
+                                highestDelta = delta;
+                                highestName = name;
+                            }
+                        }
+                    });
+                });
+                if (highestName) {
+                    bestName = highestName;
+                    maxGain = highestDelta;
+                    tourneyCount[bestName] = 1;
+                }
+            }
+
+            if (!bestName) return null;
+
+            // Resolve back to the actual player object in clubData.players
+            const playerObj = clubData.players.find(p => p.fullName.toLowerCase() === bestName);
+            if (!playerObj) return null;
+
+            // Now let's calculate match win streak (overall consecutive match wins from chronological match history)
+            let currentStreak = 0;
+            const sortedHistory = [...clubData.history].sort((a, b) => a.id - b.id);
+            
+            // Loop through history to build streak
+            sortedHistory.forEach(entry => {
+                const matches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
+                matches.forEach(matchStr => {
+                    const p = matchStr.split("::");
+                    if (p.length >= 3) {
+                        const p1 = decodeName(p[0]).toLowerCase();
+                        const p2 = decodeName(p[1]).toLowerCase();
+                        const score = p[2];
+
+                        const scoreParts = score.split(":");
+                        let p1Won = false;
+                        if (score === 'W') p1Won = true;
+                        else if (score === 'L') p1Won = false;
+                        else if (scoreParts.length === 2) {
+                            p1Won = parseInt(scoreParts[0]) > parseInt(scoreParts[1]);
+                        }
+
+                        if (p1 === bestName) {
+                            if (p1Won) {
+                                currentStreak++;
+                            } else {
+                                currentStreak = 0;
+                            }
+                        } else if (p2 === bestName) {
+                            if (!p1Won) {
+                                currentStreak++;
+                            } else {
+                                currentStreak = 0;
+                            }
+                        }
+                    }
+                });
+            });
+
+            return {
+                player: playerObj,
+                gain: maxGain,
+                tournaments: tourneyCount[bestName] || 0,
+                streak: currentStreak
+            };
+        }
+
+        function calculateTopRecords() {
+            const records = {
+                titled: { player: null, value: "" },
+                growth: { player: null, value: "" },
+                streak: { player: null, value: "" },
+                stable: { player: null, value: "" }
+            };
+
+            if (clubData.players.length === 0) return records;
+
+            // 1. Titled (Most gold medals)
+            let maxGold = -1;
+            let bestTitled = null;
+            clubData.players.forEach(p => {
+                if (p.goldMedals > maxGold) {
+                    maxGold = p.goldMedals;
+                    bestTitled = p;
+                } else if (p.goldMedals === maxGold && bestTitled && p.rating > bestTitled.rating) {
+                    bestTitled = p;
+                }
+            });
+            if (bestTitled && maxGold > 0) {
+                records.titled = { player: bestTitled, value: `${maxGold} золотых` };
+            }
+
+            // 2. Growth (Highest rating change in last 30 days)
+            const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+            const growthMap = {};
+            clubData.history.forEach(entry => {
+                if (entry.id >= thirtyDaysAgo) {
+                    const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                    ratings.forEach(rStr => {
+                        const p = rStr.split("::");
+                        if (p.length >= 4) {
+                            const name = decodeName(p[0]).toLowerCase();
+                            const delta = parseFloat(p[3] || "0");
+                            growthMap[name] = (growthMap[name] || 0) + delta;
+                        }
+                    });
+                }
+            });
+            let maxGrowth = 0;
+            let bestGrowthName = "";
+            Object.keys(growthMap).forEach(name => {
+                if (growthMap[name] > maxGrowth) {
+                    maxGrowth = growthMap[name];
+                    bestGrowthName = name;
+                }
+            });
+            if (bestGrowthName && maxGrowth > 0) {
+                const pObj = clubData.players.find(p => p.fullName.toLowerCase() === bestGrowthName);
+                if (pObj) {
+                    records.growth = { player: pObj, value: `+${maxGrowth.toFixed(1)} за месяц` };
+                }
+            }
+
+            // 3. Best Win Streak (Longest consecutive match win streak in chronological history)
+            const playerStreaks = {}; // { nameLower: { current: 0, max: 0 } }
+            clubData.players.forEach(p => {
+                playerStreaks[p.fullName.toLowerCase()] = { current: 0, max: 0 };
+            });
+
+            const sortedHistory = [...clubData.history].sort((a, b) => a.id - b.id);
+            sortedHistory.forEach(entry => {
+                const matches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
+                matches.forEach(matchStr => {
+                    const p = matchStr.split("::");
+                    if (p.length >= 3) {
+                        const p1 = decodeName(p[0]).toLowerCase();
+                        const p2 = decodeName(p[1]).toLowerCase();
+                        const score = p[2];
+
+                        const scoreParts = score.split(":");
+                        let p1Won = false;
+                        if (score === 'W') p1Won = true;
+                        else if (score === 'L') p1Won = false;
+                        else if (scoreParts.length === 2) {
+                            p1Won = parseInt(scoreParts[0]) > parseInt(scoreParts[1]);
+                        }
+
+                        // Update streak for p1
+                        if (playerStreaks[p1]) {
+                            if (p1Won) {
+                                playerStreaks[p1].current++;
+                                playerStreaks[p1].max = Math.max(playerStreaks[p1].max, playerStreaks[p1].current);
+                            } else {
+                                playerStreaks[p1].current = 0;
+                            }
+                        }
+                        // Update streak for p2
+                        if (playerStreaks[p2]) {
+                            if (!p1Won) {
+                                playerStreaks[p2].current++;
+                                playerStreaks[p2].max = Math.max(playerStreaks[p2].max, playerStreaks[p2].current);
+                            } else {
+                                playerStreaks[p2].current = 0;
+                            }
+                        }
+                    }
+                });
+            });
+
+            let maxStreak = 0;
+            let bestStreakName = "";
+            Object.keys(playerStreaks).forEach(name => {
+                if (playerStreaks[name].max > maxStreak) {
+                    maxStreak = playerStreaks[name].max;
+                    bestStreakName = name;
+                }
+            });
+            if (bestStreakName && maxStreak > 0) {
+                const pObj = clubData.players.find(p => p.fullName.toLowerCase() === bestStreakName);
+                if (pObj) {
+                    records.streak = { player: pObj, value: `${maxStreak} побед` };
+                }
+            }
+
+            // 4. Stable (Highest win rate, min 5 matches)
+            let bestStable = null;
+            let maxWinRate = -1;
+            clubData.players.forEach(p => {
+                const totalMatches = p.wins + p.losses;
+                if (totalMatches >= 5) {
+                    const rate = p.wins / totalMatches;
+                    if (rate > maxWinRate) {
+                        maxWinRate = rate;
+                        bestStable = p;
+                    } else if (rate === maxWinRate && bestStable && p.rating > bestStable.rating) {
+                        bestStable = p;
+                    }
+                }
+            });
+            if (bestStable && maxWinRate > 0) {
+                records.stable = { player: bestStable, value: `${Math.round(maxWinRate * 100)}% побед` };
+            }
+
+            return records;
+        }
+
+        function renderPotw(potw) {
+            const container = document.getElementById('hall-potw-container');
+            if (!container) return;
+
+            if (!potw) {
+                container.innerHTML = `
+                    <div class="potw-card" style="align-items: center; justify-content: center; text-align: center; padding: 32px 20px;">
+                        <div style="font-size: 32px;">🔥</div>
+                        <h4 style="font-size:16px; font-weight:700; margin-top:8px;">Игрок недели определится после первых игр</h4>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.7); margin-top:4px;">Сыграйте хотя бы один матч в клубе!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const p = potw.player;
+            const cloudAvatar = clubData.avatars[p.id];
+            let avatarHtml = '';
+            if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
+                avatarHtml = `<div class="potw-avatar" style="background-image: url('${cloudAvatar}'); background-size: cover; background-position: center;"></div>`;
+            } else {
+                const initial = p.fullName.trim().charAt(0).toUpperCase() || "?";
+                avatarHtml = `<div class="potw-avatar">${initial}</div>`;
+            }
+
+            const streakText = potw.streak > 0 ? `🏆 ${potw.streak} побед подряд` : `🏆 Старт сезона`;
+            const tourneysPlayed = potw.tournaments > 0 ? `📅 ${potw.tournaments} турнира сыграно` : `📅 Нет игр на этой неделе`;
+
+            container.innerHTML = `
+                <div class="potw-card" onclick="openPlayerModalByName('${p.fullName}')" style="cursor: pointer;">
+                    <div class="potw-header">
+                        <span>⭐</span> Игрок недели
+                    </div>
+                    <div class="potw-body">
+                        <div class="potw-player-info">
+                            ${avatarHtml}
+                            <div>
+                                <div class="potw-name">${p.fullName}</div>
+                                <div class="potw-change">
+                                    +${potw.gain.toFixed(1)} ↗️
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <svg viewBox="0 0 100 100" class="potw-decor-star">
+                            <defs>
+                                <linearGradient id="blue-grad-trophy" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#0A84FF" />
+                                    <stop offset="100%" stop-color="#0055B3" />
+                                </linearGradient>
+                                <filter id="glow-trophy" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="5" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                            </defs>
+                            <path d="M50 15 l6 16 h17 l-13 11 l5 17 l-15 -11 l-15 11 l5 -17 l-13 -11 h17 z" fill="url(#blue-grad-trophy)" filter="url(#glow-trophy)" />
+                            <path d="M50 62 v15 h-12 v4 h24 v-4 h-12" stroke="#0A84FF" stroke-width="3" fill="none" stroke-linecap="round" />
+                            <path d="M30 81 h40 v4 h-40 z" fill="#0A84FF" />
+                        </svg>
+                    </div>
+                    <div class="potw-footer-badges">
+                        <div class="potw-tag">${streakText}</div>
+                        <div class="potw-tag">${tourneysPlayed}</div>
+                        <div class="potw-tag">⭐ Лучший прогресс</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRecordsGrid(records) {
+            const container = document.getElementById('hall-grid-container');
+            if (!container) return;
+
+            const makeTile = (title, icon, player, valueText, color) => {
+                if (!player) {
+                    return `
+                        <div class="record-tile">
+                            <span class="record-tile-icon">${icon}</span>
+                            <span class="record-tile-title">${title}</span>
+                            <span class="record-tile-name" style="color:var(--text-secondary); font-size:12px;">Определяется...</span>
+                            <span class="record-tile-value" style="color:var(--text-secondary); font-size:11px;">Нет данных</span>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="record-tile" onclick="openPlayerModalByName('${player.fullName}')" style="cursor: pointer;">
+                        <span class="record-tile-icon">${icon}</span>
+                        <span class="record-tile-title">${title}</span>
+                        <span class="record-tile-name">${player.fullName}</span>
+                        <span class="record-tile-value" style="color:${color};">${valueText}</span>
+                    </div>
+                `;
+            };
+
+            container.innerHTML = `
+                ${makeTile('Самый титулованный', '🏆', records.titled.player, records.titled.value || '0 золотых', '#F5B833')}
+                ${makeTile('Самый быстрый рост', '📈', records.growth.player, records.growth.value || '+0.0 за месяц', '#34C759')}
+                ${makeTile('Лучшая серия', '🔥', records.streak.player, records.streak.value || '0 побед', '#FF512F')}
+                ${makeTile('Самый стабильный', '🛡️', records.stable.player, records.stable.value || '0% побед', '#0A84FF')}
+            `;
+        }
+
         function renderHall() {
             const listEl = document.getElementById('hall-list-el');
             if (!listEl) return;
             listEl.innerHTML = '';
 
             const achievements = calculateAchievements();
-            const heroes = [];
             
+            // Calculate PotW and Top Records
+            const potw = calculatePlayerOfTheWeek();
+            const records = calculateTopRecords();
+
+            renderPotw(potw);
+            renderRecordsGrid(records);
+
+            const heroes = [];
             clubData.players.forEach(p => {
                 const nameLower = p.fullName.toLowerCase();
                 const badges = achievements[nameLower] || {};
@@ -6419,13 +7060,14 @@
 
                 if (totalBadges > 0) {
                     heroes.push({
-                        player: p,
-                        badges: badges,
-                        totalBadges: totalBadges
+                         player: p,
+                         badges: badges,
+                         totalBadges: totalBadges
                     });
                 }
             });
 
+            // Sort by total badges, then by rating
             heroes.sort((a, b) => {
                 if (b.totalBadges !== a.totalBadges) return b.totalBadges - a.totalBadges;
                 return b.player.rating - a.player.rating;
@@ -6433,46 +7075,99 @@
 
             if (heroes.length === 0) {
                 listEl.innerHTML = `
-                    <div style="text-align: center; padding: 48px; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 22px;">
-                        <div style="font-size: 40px; margin-bottom: 12px;">🏆</div>
-                        <h4 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin: 0 0 6px 0;">Зал славы ждет победителей</h4>
-                        <p style="font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.4;">
-                            Ни одно достижение пока не открыто. Сыграйте турниры, побеждайте сильных соперников и занимайте первые места!
+                    <div style="text-align: center; padding: 32px 16px; background-color: #FFFFFF; border: 1px solid rgba(229,229,234,0.7); border-radius: 20px; width: 100%; box-sizing: border-box;">
+                        <div style="font-size: 32px; margin-bottom: 8px;">🏆</div>
+                        <h4 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin: 0 0 4px 0;">Награды ждут героев</h4>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+                            Сыграйте турниры, побеждайте сильных соперников, чтобы попасть в рекорды клуба!
                         </p>
                     </div>
                 `;
                 return;
             }
 
-            heroes.forEach(hero => {
+            // Determine display list limit
+            const limit = hallShowAll ? heroes.length : 5;
+            const toRender = heroes.slice(0, limit);
+
+            // Update toggle link visibility and text
+            const toggleAllBtn = document.getElementById('hall-toggle-all');
+            if (toggleAllBtn) {
+                toggleAllBtn.style.display = heroes.length > 5 ? 'block' : 'none';
+                toggleAllBtn.textContent = hallShowAll ? 'Скрыть' : 'Смотреть всех';
+            }
+
+            toRender.forEach(hero => {
                 const p = hero.player;
                 const badges = hero.badges;
 
                 const card = document.createElement('div');
                 card.className = 'hall-card';
+                card.style.backgroundColor = '#FFFFFF';
+                card.style.border = '1px solid rgba(229, 229, 234, 0.7)';
+                card.style.borderRadius = '20px';
+                card.style.padding = '12px 16px';
+                card.style.display = 'flex';
+                card.style.alignItems = 'center';
+                card.style.justifyContent = 'space-between';
+                card.style.boxSizing = 'border-box';
+                card.style.width = '100%';
+
+                // Left: avatar & stats
+                const left = document.createElement('div');
+                left.style.display = 'flex';
+                left.style.alignItems = 'center';
+                left.style.gap = '12px';
+                left.style.flex = '1';
+                left.style.minWidth = '0';
 
                 const avatar = document.createElement('div');
                 avatar.className = 'hall-avatar';
+                avatar.style.width = '42px';
+                avatar.style.height = '42px';
+                avatar.style.fontSize = '16px';
+                avatar.style.boxShadow = 'none';
+
                 const cloudAvatar = clubData.avatars[p.id];
                 if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
                     avatar.style.backgroundImage = `url("${cloudAvatar}")`;
                 } else {
                     avatar.textContent = p.fullName.charAt(0).toUpperCase();
+                    avatar.style.backgroundColor = 'rgba(10, 132, 255, 0.08)';
+                    avatar.style.color = 'var(--apple-blue)';
                 }
 
                 const info = document.createElement('div');
-                info.className = 'hall-info';
+                info.style.display = 'flex';
+                info.style.flexDirection = 'column';
+                info.style.textAlign = 'left';
+                info.style.minWidth = '0';
 
-                const name = document.createElement('h4');
-                name.className = 'hall-name';
+                const name = document.createElement('div');
+                name.style.fontSize = '14px';
+                name.style.fontWeight = '700';
+                name.style.color = 'var(--text-main)';
+                name.style.whiteSpace = 'nowrap';
+                name.style.overflow = 'hidden';
+                name.style.textOverflow = 'ellipsis';
                 name.textContent = p.fullName;
 
                 const stats = document.createElement('div');
-                stats.className = 'hall-stats';
-                stats.innerHTML = `★${p.rating.toFixed(1)} • 👥 Игр: ${p.wins + p.losses} • 🏆 Турниров: ${p.tournamentsPlayed}`;
+                stats.style.fontSize = '11px';
+                stats.style.color = 'var(--text-secondary)';
+                stats.style.marginTop = '2px';
+                stats.textContent = `★${p.rating.toFixed(1)}  ·  ${p.wins + p.losses} игр  ·  ${p.tournamentsPlayed} турниров`;
 
-                const badgesContainer = document.createElement('div');
-                badgesContainer.className = 'hall-badges';
+                info.appendChild(name);
+                info.appendChild(stats);
+                left.appendChild(avatar);
+                left.appendChild(info);
+
+                // Right: badges row
+                const right = document.createElement('div');
+                right.style.display = 'flex';
+                right.style.alignItems = 'center';
+                right.style.gap = '6px';
 
                 Object.keys(badges).forEach(key => {
                     const count = badges[key];
@@ -6481,22 +7176,39 @@
                         wrapper.className = 'badge-wrapper';
                         wrapper.innerHTML = getBadgeSvg(key);
 
+                        const svg = wrapper.querySelector('svg');
+                        if (svg) {
+                            svg.style.width = '24px';
+                            svg.style.height = '24px';
+                        }
+
                         if (count > 1) {
                             const badgeCount = document.createElement('span');
                             badgeCount.className = 'badge-count';
+                            badgeCount.style.width = '12px';
+                            badgeCount.style.height = '12px';
+                            badgeCount.style.fontSize = '8px';
+                            badgeCount.style.top = '-3px';
+                            badgeCount.style.right = '-3px';
+                            badgeCount.style.borderWidth = '1px';
                             badgeCount.textContent = count;
                             wrapper.appendChild(badgeCount);
                         }
-                        badgesContainer.appendChild(wrapper);
+                        right.appendChild(wrapper);
                     }
                 });
 
-                info.appendChild(name);
-                info.appendChild(stats);
-                info.appendChild(badgesContainer);
+                // Right arrow pointer
+                const arrow = document.createElement('span');
+                arrow.style.color = 'var(--text-secondary)';
+                arrow.style.fontSize = '16px';
+                arrow.style.fontWeight = 'bold';
+                arrow.style.marginLeft = '8px';
+                arrow.textContent = '›';
+                right.appendChild(arrow);
 
-                card.appendChild(avatar);
-                card.appendChild(info);
+                card.appendChild(left);
+                card.appendChild(right);
 
                 card.style.cursor = 'pointer';
                 card.addEventListener('click', () => openPlayerModal(p));
@@ -6504,6 +7216,28 @@
                 listEl.appendChild(card);
             });
         }
+
+        // BOTTOM SHEET OPEN / CLOSE
+        window.openBadgeLegendSheet = function() {
+            const overlay = document.getElementById('badge-legend-sheet');
+            if (!overlay) return;
+            const sheet = overlay.querySelector('.bottom-sheet');
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                sheet.classList.add('open');
+            }, 10);
+        };
+
+        window.closeBadgeLegendSheet = function(event) {
+            if (event) event.stopPropagation();
+            const overlay = document.getElementById('badge-legend-sheet');
+            if (!overlay) return;
+            const sheet = overlay.querySelector('.bottom-sheet');
+            sheet.classList.remove('open');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+        };
 
         // CLOSE ON CLICK OUTSIDE
         window.addEventListener('click', (e) => {
@@ -6515,6 +7249,7 @@
             const adminPlayoffScoreModal = document.getElementById('admin-playoff-score-modal');
             const tournamentFinishModal = document.getElementById('tournament-finish-modal');
             const analyticsModal = document.getElementById('analytics-modal');
+            const badgeSheet = document.getElementById('badge-legend-sheet');
 
             if (e.target === playerModal) closePlayerModal();
             if (e.target === historyModal) closeHistoryModal();
@@ -6524,6 +7259,7 @@
             if (e.target === adminPlayoffScoreModal) closeAdminPlayoffScoreModal();
             if (e.target === tournamentFinishModal) closeTournamentFinishModal();
             if (e.target === analyticsModal) closeAnalyticsModal();
+            if (e.target === badgeSheet) closeBadgeLegendSheet();
         });
         </script>
 </body>
