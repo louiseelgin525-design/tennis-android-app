@@ -1792,7 +1792,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.8.0 (09.07.2026 00:15)
+                Версия веб-приложения: 1.8.1 (09.07.2026 00:20)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -1880,13 +1880,52 @@
                 </div>
             </section>
 
+            <!-- TAB 4: CLUB RECORDS (РЕКОРДЫ) -->
+            <section id="view-hall" class="view" style="display:none; padding:16px; background-color:#F3F6FA; display:flex; flex-direction:column; gap:20px;">
+                <!-- HEADER -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+                    <div>
+                        <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">Рекорды клуба</h2>
+                        <div style="font-size:13px; color:var(--text-secondary); margin-top:2px;">Лучшие достижения игроков</div>
+                        <div style="font-size:11px; color:var(--text-secondary); opacity:0.75; display:flex; align-items:center; gap:4px; margin-top:6px;">
+                            <span>🕒</span> Обновляется после каждого турнира
                         </div>
+                    </div>
+                    <button onclick="openBadgeLegendSheet()" style="background:rgba(10, 132, 255, 0.08); border:none; color:var(--apple-blue); font-size:13px; font-weight:700; padding:6px 12px; border-radius:12px; cursor:pointer; flex-shrink:0;">Все награды</button>
+                </div>
+
+                <!-- MAIN CARD: PLAYER OF THE WEEK -->
+                <div id="hall-potw-container">
+                    <!-- Dynamic rendering: PotW Card -->
+                </div>
+
+                <!-- 2X2 GRID OF RECORDS -->
+                <div id="hall-grid-container" class="records-grid">
+                    <!-- Dynamic rendering: 4 tiles -->
+                </div>
+
+                <!-- LEADERS SECTION -->
+                <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                        <h3 style="font-size:17px; font-weight:800; color:var(--text-main); margin:0;">Игроки с наградами</h3>
+                        <span id="hall-toggle-all" onclick="toggleHallShowAll()" style="font-size:13px; font-weight:700; color:var(--apple-blue); cursor:pointer;">Смотреть всех</span>
+                    </div>
+
+                    <div id="hall-list-el" style="display:flex; flex-direction:column; gap:8px; width:100%;">
+                        <!-- Loaded dynamically -->
                     </div>
                 </div>
 
-                <!-- Grid of Players Cards (Leaderboard) -->
-                <div id="hall-list-el" style="display:flex; flex-direction:column; gap:12px; margin-bottom: 24px;">
-                    <!-- Loaded dynamically -->
+                <!-- WHAT MEAN BADGES ROW BUTTON -->
+                <div onclick="openBadgeLegendSheet()" style="background:#FFFFFF; border:1px solid rgba(229, 229, 234, 0.8); border-radius:20px; padding:16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin-top:4px; width:100%; box-sizing:border-box;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:20px;">❓</span>
+                        <div style="text-align:left;">
+                            <div style="font-size:14px; font-weight:700; color:var(--text-main);">Что значат награды?</div>
+                            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Узнайте, за что присуждаются ачивки клуба</div>
+                        </div>
+                    </div>
+                    <span style="font-size:16px; color:var(--text-secondary); font-weight:bold;">›</span>
                 </div>
             </section>
         </main>
