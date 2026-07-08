@@ -1442,7 +1442,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.5.1 (08.07.2026 16:20)
+                Версия веб-приложения: 1.5.2 (08.07.2026 16:22)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -5530,7 +5530,8 @@
                                     matchesFound++;
                                     const isP1 = mP1 === name;
                                     const opponent = isP1 ? mP2 : mP1;
-                                    const oppRatingStr = '';
+                                    const oppParts = playersList.find(p => decodeName(p.split("::")[0]) === opponent);
+                                    const oppRating = oppParts ? parseFloat(oppParts.split("::")[2]).toFixed(0) : '';
 
                                     let displayScore = mScore;
                                     let won = false;
@@ -5560,8 +5561,11 @@
                                     matchRow.style.color = 'var(--text-main)';
 
                                     matchRow.innerHTML = `
-                                        <div style="flex: 1.8; text-align: left; color: var(--text-main); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                            ${opponent}
+                                        <div style="flex: 1.8; display: flex; align-items: center; gap: 4px; min-width: 0; text-align: left;">
+                                            <span style="color: var(--text-main); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
+                                                ${opponent}
+                                            </span>
+                                            ${oppRating ? `<span style="color: var(--text-secondary); font-size: 11px; flex-shrink: 0;">★${oppRating}</span>` : ''}
                                         </div>
                                         <div style="flex: 0.8; text-align: center; font-weight: 700; color: var(--text-secondary);">${displayScore}</div>
                                         <div style="flex: 0.8; text-align: right; font-weight: 700; color: ${matchDeltaColor};">${matchDeltaText}</div>
