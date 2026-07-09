@@ -2851,7 +2851,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.9.4 (09.07.2026 13:40)
+                Версия веб-приложения: 1.9.5 (09.07.2026 13:45)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -6189,20 +6189,15 @@ function getPlayerLastDelta(player) {
                     
                     const name1 = playerNamesWithFallback[p1Idx] || "";
                     const name2 = playerNamesWithFallback[p2Idx] || "";
-                    
-                    const p1Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name1));
-                    const p2Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name2));
-                    const p1Coach = p1Profile && p1Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
-                    const p2Coach = p2Profile && p2Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
 
                     const card = document.createElement('div');
                     card.className = 'active-table-card';
                     card.innerHTML = `
                         <div class="active-table-number">${index + 1}</div>
                         <div class="active-table-match">
-                            <span>${name1}${p1Coach}</span>
+                            <span>${name1}</span>
                             <span class="active-table-vs">vs</span>
-                            <span>${name2}${p2Coach}</span>
+                            <span>${name2}</span>
                         </div>
                         <span class="active-table-badge">Идёт игра</span>
                     `;
@@ -6301,17 +6296,15 @@ function getPlayerLastDelta(player) {
                 const p2Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name2));
                 const r1 = p1Profile ? `★${p1Profile.rating.toFixed(0)}` : '★100';
                 const r2 = p2Profile ? `★${p2Profile.rating.toFixed(0)}` : '★100';
-                const p1Coach = p1Profile && p1Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 9px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
-                const p2Coach = p2Profile && p2Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 9px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
 
                 const card = document.createElement('div');
                 card.className = 'active-table-card';
                 card.innerHTML = `
                     <div class="active-table-number" style="background-color:rgba(142, 142, 147, 0.15); color:var(--text-secondary);">${idx + 1}</div>
                     <div class="active-table-match" style="font-size: 13px; display:flex; align-items:center; justify-content:space-between; padding-right:12px;">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700;">${name1}${p1Coach} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r1}</span></span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700;">${name1} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r1}</span></span>
                         <span class="active-table-vs">—</span>
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700; text-align:right;">${name2}${p2Coach} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r2}</span></span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700; text-align:right;">${name2} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r2}</span></span>
                     </div>
                 `;
                 queueContainer.appendChild(card);
@@ -6378,9 +6371,8 @@ function getPlayerLastDelta(player) {
                     
                     const pProfile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(playerNames[f]));
                     const ratingStr = pProfile ? ` <span style="font-size:11px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
-                    const coachBadge = pProfile && pProfile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
 
-                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${coachBadge}${ratingStr}</td>`;
+                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${ratingStr}</td>`;
                     
                     for (let s = 0; s < playerNames.length; s++) {
                         if (f === s) {
@@ -7003,10 +6995,8 @@ function getPlayerLastDelta(player) {
 
             const p1Profile = p1Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p1Name)) : null;
             const p2Profile = p2Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p2Name)) : null;
-            const p1Coach = p1Profile && p1Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
-            const p2Coach = p2Profile && p2Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
-            const p1Display = p1Profile ? `${p1Name}${p1Coach} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p1Profile.rating.toFixed(0)}</span>` : p1Name;
-            const p2Display = p2Profile ? `${p2Name}${p2Coach} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p2Profile.rating.toFixed(0)}</span>` : p2Name;
+            const p1Display = p1Profile ? `${p1Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p1Profile.rating.toFixed(0)}</span>` : p1Name;
+            const p2Display = p2Profile ? `${p2Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p2Profile.rating.toFixed(0)}</span>` : p2Name;
 
             box.innerHTML = `
                 <div class="playoff-row${row1Winner ? ' winner' : ''}">
