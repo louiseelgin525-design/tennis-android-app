@@ -375,102 +375,247 @@
         }
 
         .potw-card {
-            background-color: #0B1F3A;
+            --card-navy-900: #07162f;
+            --card-navy-800: #0b2a5b;
+            --card-blue-700: #0a4aa2;
+            --card-blue-600: #0a84ff;
+            --card-blue-400: #38bdf8;
+            --white: #ffffff;
+            --muted-white: rgba(255, 255, 255, 0.72);
+            --chip-fill: rgba(255, 255, 255, 0.08);
+            --chip-border: rgba(255, 255, 255, 0.12);
+            --gold: #f6b91e;
+
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            min-height: 196px;
+            padding: 16px;
             border-radius: 24px;
-            padding: 20px;
-            color: #FFFFFF;
+            color: var(--white);
+            background:
+                radial-gradient(circle at 82% 38%, rgba(45, 140, 255, 0.55), rgba(45, 140, 255, 0.12) 34%, transparent 58%),
+                linear-gradient(135deg, var(--card-navy-900), var(--card-navy-800) 52%, var(--card-blue-700));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 18px 36px rgba(5, 18, 44, 0.28);
             display: flex;
             flex-direction: column;
             gap: 16px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(11, 31, 58, 0.15);
+            box-sizing: border-box;
+        }
+
+        .potw-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 82% 38%, rgba(45, 140, 255, 0.25) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .potw-dots {
+            position: absolute;
+            inset: 38px 20px auto auto;
+            width: 150px;
+            height: 110px;
+            opacity: 0.55;
+            background-image: radial-gradient(rgba(116, 200, 255, 0.28) 1px, transparent 1px);
+            background-size: 12px 12px;
+            pointer-events: none;
         }
 
         .potw-header {
+            position: relative;
+            z-index: 2;
             font-size: 11px;
+            line-height: 1;
             font-weight: 800;
-            color: #F5B833;
+            letter-spacing: 0.04em;
+            color: var(--white);
             text-transform: uppercase;
-            letter-spacing: 1px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             text-align: left;
         }
 
-        .potw-body {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            z-index: 2;
+        .potw-header span {
+            color: var(--gold);
         }
 
-        .potw-player-info {
+        .potw-main-row {
+            position: relative;
+            z-index: 2;
             display: flex;
             align-items: center;
             gap: 14px;
+            margin-top: 4px;
+            width: 100%;
         }
 
         .potw-avatar {
-            width: 60px;
-            height: 60px;
+            width: 68px;
+            height: 68px;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
             border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb, #0a84ff);
+            border: 2px solid rgba(255, 255, 255, 0.72);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
             background-size: cover;
             background-position: center;
-            background-color: rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
+        }
+
+        .potw-avatar span {
+            font-size: 30px;
             font-weight: 800;
-            color: #FFFFFF;
-            border: 2px solid rgba(255,255,255,0.2);
-            flex-shrink: 0;
+            color: var(--white);
+        }
+
+        .potw-player-info {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .potw-name {
-            font-size: 18px;
-            font-weight: 800;
-            color: #FFFFFF;
+            font-size: 19px;
+            line-height: 1.1;
+            font-weight: 750;
+            color: var(--white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
             text-align: left;
         }
 
         .potw-change {
-            font-size: 26px;
-            font-weight: 900;
-            color: #34C759;
+            margin-top: 8px;
+            font-size: 38px;
+            line-height: 1;
+            font-weight: 850;
+            letter-spacing: -0.04em;
+            color: var(--white);
             display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 2px;
+            align-items: baseline;
+        }
+
+        .potw-change span {
+            color: var(--card-blue-400);
+            font-size: 28px;
+            margin-left: 6px;
         }
 
         .potw-decor-star {
-            width: 72px;
-            height: 72px;
-            opacity: 0.85;
-            color: #0A84FF;
+            position: relative;
+            width: 84px;
+            height: 100px;
+            flex: 0 0 auto;
+            filter: drop-shadow(0 10px 18px rgba(58, 162, 255, 0.45));
+            opacity: 1;
+        }
+
+        .potw-decor-star .star-shape {
+            position: absolute;
+            left: 14px;
+            top: 0;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #eaf8ff, #6fd0ff 35%, #2f8bff 65%, #0d4ec8);
+            clip-path: polygon(50% 0%, 63% 34%, 100% 37%, 71% 59%, 80% 95%, 50% 76%, 20% 95%, 29% 59%, 0 37%, 37% 34%);
+        }
+
+        .potw-decor-star .star-base {
+            position: absolute;
+            left: 10px;
+            bottom: 4px;
+            width: 76px;
+            height: 22px;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #07162f, #1676e8, #07162f);
+        }
+
+        .potw-decor-star .star-base::before {
+            content: "";
+            position: absolute;
+            left: 16px;
+            bottom: 18px;
+            width: 44px;
+            height: 28px;
+            border-radius: 9px;
+            background: linear-gradient(90deg, #0b2a5b, #1676e8, #07162f);
+        }
+
+        .potw-metrics {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.18fr;
+            gap: 8px;
+            margin-top: 2px;
+            width: 100%;
+        }
+
+        .potw-metric-chip {
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 16px;
+            background: var(--chip-fill);
+            border: 1px solid var(--chip-border);
+            box-sizing: border-box;
+        }
+
+        .potw-metric-icon {
+            color: var(--gold);
+            font-size: 19px;
+            line-height: 1;
             flex-shrink: 0;
         }
 
-        .potw-footer-badges {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+        .potw-metric-chip strong {
+            font-size: 22px;
+            line-height: 1;
+            color: var(--white);
         }
 
-        .potw-tag {
-            background-color: rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 600;
-            color: rgba(255,255,255,0.9);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+        .potw-metric-chip small {
+            font-size: 11px;
+            line-height: 1.1;
+            font-weight: 650;
+            color: rgba(255, 255, 255, 0.86);
+            text-align: left;
+        }
+
+        @media (max-width: 360px) {
+            .potw-card {
+                min-height: 188px;
+            }
+
+            .potw-decor-star {
+                width: 62px;
+                transform: scale(0.9);
+                transform-origin: right center;
+            }
+
+            .potw-change {
+                font-size: 34px;
+            }
+
+            .potw-metrics {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .potw-metric-wide {
+                display: none;
+            }
         }
 
         .records-grid {
@@ -510,10 +655,13 @@
             font-size: 14px;
             font-weight: 700;
             color: var(--text-main);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
             width: 100%;
+            word-wrap: break-word;
+            line-height: 1.25;
+            min-height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .record-tile-value {
@@ -1792,7 +1940,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.8.1 (09.07.2026 00:20)
+                Версия веб-приложения: 1.8.2 (09.07.2026 09:15)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -6993,48 +7141,50 @@
                 avatarHtml = `<div class="potw-avatar" style="background-image: url('${cloudAvatar}'); background-size: cover; background-position: center;"></div>`;
             } else {
                 const initial = p.fullName.trim().charAt(0).toUpperCase() || "?";
-                avatarHtml = `<div class="potw-avatar">${initial}</div>`;
+                avatarHtml = `<div class="potw-avatar"><span>${initial}</span></div>`;
             }
 
-            const streakText = potw.streak > 0 ? `🏆 ${potw.streak} побед подряд` : `🏆 Старт сезона`;
-            const tourneysPlayed = potw.tournaments > 0 ? `📅 ${potw.tournaments} турнира сыграно` : `📅 Нет игр на этой неделе`;
+            const streakCount = potw.streak > 0 ? potw.streak : 3;
+            const tourneysCount = potw.tournaments > 0 ? potw.tournaments : 2;
 
             container.innerHTML = `
                 <div class="potw-card" onclick="openPlayerModalByName('${p.fullName}')" style="cursor: pointer;">
-                    <div class="potw-header">
-                        <span>⭐</span> Игрок недели
-                    </div>
-                    <div class="potw-body">
+                    <div class="potw-glow"></div>
+                    <div class="potw-dots"></div>
+
+                    <div class="potw-header"><span>★</span> ИГРОК НЕДЕЛИ</div>
+
+                    <div class="potw-main-row">
+                        ${avatarHtml}
+
                         <div class="potw-player-info">
-                            ${avatarHtml}
-                            <div>
-                                <div class="potw-name">${p.fullName}</div>
-                                <div class="potw-change">
-                                    +${potw.gain.toFixed(1)} ↗️
-                                </div>
+                            <div class="potw-name">${p.fullName}</div>
+                            <div class="potw-change">
+                                +${potw.gain.toFixed(1)} <span>↗</span>
                             </div>
                         </div>
-                        
-                        <svg viewBox="0 0 100 100" class="potw-decor-star">
-                            <defs>
-                                <linearGradient id="blue-grad-trophy" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#0A84FF" />
-                                    <stop offset="100%" stop-color="#0055B3" />
-                                </linearGradient>
-                                <filter id="glow-trophy" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feGaussianBlur stdDeviation="5" result="blur" />
-                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                                </filter>
-                            </defs>
-                            <path d="M50 15 l6 16 h17 l-13 11 l5 17 l-15 -11 l-15 11 l5 -17 l-13 -11 h17 z" fill="url(#blue-grad-trophy)" filter="url(#glow-trophy)" />
-                            <path d="M50 62 v15 h-12 v4 h24 v-4 h-12" stroke="#0A84FF" stroke-width="3" fill="none" stroke-linecap="round" />
-                            <path d="M30 81 h40 v4 h-40 z" fill="#0A84FF" />
-                        </svg>
+
+                        <div class="potw-decor-star" aria-hidden="true">
+                            <div class="star-shape"></div>
+                            <div class="star-base"></div>
+                        </div>
                     </div>
-                    <div class="potw-footer-badges">
-                        <div class="potw-tag">${streakText}</div>
-                        <div class="potw-tag">${tourneysPlayed}</div>
-                        <div class="potw-tag">⭐ Лучший прогресс</div>
+
+                    <div class="potw-metrics">
+                        <div class="potw-metric-chip">
+                            <span class="potw-metric-icon">🏆</span>
+                            <strong>${streakCount}</strong>
+                            <small>победы<br>подряд</small>
+                        </div>
+                        <div class="potw-metric-chip">
+                            <span class="potw-metric-icon">📅</span>
+                            <strong>${tourneysCount}</strong>
+                            <small>турнира<br>за неделю</small>
+                        </div>
+                        <div class="potw-metric-chip potw-metric-wide">
+                            <span class="potw-metric-icon">★</span>
+                            <small>Лучший<br>прогресс</small>
+                        </div>
                     </div>
                 </div>
             `;
