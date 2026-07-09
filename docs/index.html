@@ -2821,7 +2821,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.9.8 (09.07.2026 14:05)
+                Версия веб-приложения: 1.9.9 (09.07.2026 14:10)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -3731,7 +3731,7 @@
         };
 
         // LONG PRESS GESTURE BINDING
-        function bindLongPress(element, callback) {
+        function bindLongPress(element, callback, duration = 1200) {
             let timer = null;
             let isFired = false;
             
@@ -3742,7 +3742,7 @@
                 timer = setTimeout(() => {
                     isFired = true;
                     callback(e);
-                }, 1200); // 1200ms long press threshold
+                }, duration);
             }
             
             function cancel() {
@@ -4661,9 +4661,10 @@ function getPlayerLastDelta(player) {
 
                 // Long press event for admins to manage coach role
                 if (isAdmin) {
+                    const duration = isCoachCard ? 10000 : 1200;
                     bindLongPress(card, (e) => {
                         openCoachActionSheet(player);
-                    });
+                    }, duration);
                 }
 
                 // Touch Swipe gesture to quickly add to tournament draft (only for admins)
