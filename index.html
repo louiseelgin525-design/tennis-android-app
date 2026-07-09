@@ -3060,7 +3060,7 @@
             </button>
             <!-- Auto-synchronized across root, docs, and web -->
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 2.0.6 (09.07.2026 16:55)
+                Версия веб-приложения: 2.0.7 (09.07.2026 17:00)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -5318,7 +5318,29 @@ function getPlayerLastDelta(player) {
         function updateChartData() {
             const modal = document.getElementById('player-modal');
             const playerHistory = modal.playerHistory || [];
-            if (playerHistory.length === 0) return;
+
+            if (playerHistory.length === 0) {
+                const canvas = document.getElementById('rating-chart');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    const dpr = window.devicePixelRatio || 1;
+                    const width = canvas.clientWidth;
+                    const height = canvas.clientHeight;
+                    canvas.width = width * dpr;
+                    canvas.height = height * dpr;
+                    ctx.scale(dpr, dpr);
+                    ctx.clearRect(0, 0, width, height);
+                    
+                    ctx.fillStyle = 'var(--text-secondary)';
+                    ctx.font = '500 12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Нет сыгранных матчей', width / 2, height / 2);
+                }
+                const maxLabelEl = document.getElementById('chart-max-rating');
+                if (maxLabelEl) maxLabelEl.textContent = '';
+                return;
+            }
 
             const timeline = [];
             
@@ -5900,9 +5922,7 @@ function getPlayerLastDelta(player) {
             modal.playerHistory = playerHistory;
 
             // Render Chart Range Trigger
-            if (playerHistory.length > 0) {
-                setTimeout(updateChartData, 50);
-            }
+            setTimeout(updateChartData, 50);
 
             // Rank & Status line
             const sortedPlayers = [...clubData.players]
@@ -6031,7 +6051,7 @@ function getPlayerLastDelta(player) {
             playerHistory.forEach(h => {
                 if (h.newRating > bestRating) bestRating = h.newRating;
             });
-            let startingRating = 200.0;
+            let startingRating = player.rating;
             if (chronologicalHistory.length > 0) {
                 startingRating = chronologicalHistory[0].oldRating;
             }
