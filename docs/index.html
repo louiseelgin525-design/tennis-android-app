@@ -1141,6 +1141,32 @@
             line-height: 1.25;
         }
 
+        /* COACH SPECIFIC PREMIUM STYLES */
+        .player-card.coach-card {
+            background-color: #F8FBFF !important;
+            border: 1px solid #BBD7FF !important;
+            box-shadow: 0 4px 12px rgba(10, 132, 255, 0.04) !important;
+        }
+
+        .coach-separator {
+            border: none;
+            border-top: 1.5px dashed #CBD5E1;
+            margin: 16px 0;
+            width: 100%;
+        }
+
+        .coach-badge {
+            background-color: #E8F2FF;
+            color: #0A84FF;
+            border-radius: 8px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 8px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
         #add-player-header-btn {
             width: 40px !important;
             height: 40px !important;
@@ -2825,7 +2851,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.9.3 (09.07.2026 13:20)
+                Версия веб-приложения: 1.9.4 (09.07.2026 13:40)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -3663,6 +3689,24 @@
         </div>
     </div>
 
+    <!-- COACH ACTION BOTTOM SHEET -->
+    <div id="coach-action-sheet" class="bottom-sheet-overlay" onclick="closeCoachActionSheet(event)" style="display: none; align-items: flex-end; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 9999;">
+        <div class="bottom-sheet" onclick="event.stopPropagation()" style="background: #FFFFFF; border-top-left-radius: 24px; border-top-right-radius: 24px; width: 100%; max-width: 430px; box-sizing: border-box; padding: 20px; transition: transform 0.3s ease-out; transform: translateY(100%);">
+            <div class="bottom-sheet-handle" style="width: 36px; height: 5px; background: #E2E8F0; border-radius: 3px; margin: 0 auto 16px auto;"></div>
+            <div class="bottom-sheet-header" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+                <h3 class="bottom-sheet-title" id="coach-sheet-title" style="font-size: 20px; font-weight: 800; color: #0D182A; margin: 0;">Сделать тренером?</h3>
+                <p id="coach-sheet-desc" style="font-size: 14px; color: #64748B; margin: 0; line-height: 1.4; font-weight: 500; white-space: pre-line;"></p>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="closeCoachActionSheet(event)" style="flex: 1; height: 48px; border-radius: 14px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #64748B; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+                    Отмена
+                </button>
+                <button id="coach-sheet-confirm-btn" style="flex: 1; height: 48px; border-radius: 14px; border: none; background: #0A84FF; color: #FFFFFF; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+                    Подтвердить
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // SVG ICONS & MEDALS DICTIONARIES
@@ -3695,6 +3739,143 @@
             2: `<svg class="svg-medal" viewBox="0 0 36 44" width="22" height="26" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M12 2 L6 20 L18 20 Z" fill="#1565c0"/><path d="M24 2 L18 20 L30 20 Z" fill="#0d47a1"/><circle cx="18" cy="27" r="13" fill="#e0e0e0" stroke="#b0bec5" stroke-width="1.5"/><circle cx="18" cy="27" r="10" fill="none" stroke="#b0bec5" stroke-width="1" stroke-dasharray="2,2"/><text x="18" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" text-anchor="middle" fill="#546e7a">2</text></svg>`,
             3: `<svg class="svg-medal" viewBox="0 0 36 44" width="22" height="26" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M12 2 L6 20 L18 20 Z" fill="#d84315"/><path d="M24 2 L18 20 L30 20 Z" fill="#bf360c"/><circle cx="18" cy="27" r="13" fill="#d7ccc8" stroke="#a1887f" stroke-width="1.5"/><circle cx="18" cy="27" r="10" fill="none" stroke="#a1887f" stroke-width="1" stroke-dasharray="2,2"/><text x="18" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" text-anchor="middle" fill="#6d4c41">3</text></svg>`
         };
+
+        // LONG PRESS GESTURE BINDING
+        function bindLongPress(element, callback) {
+            let timer = null;
+            let isFired = false;
+            
+            function start(e) {
+                // Only trigger for primary click / touch
+                if (e.type === 'mousedown' && e.button !== 0) return;
+                isFired = false;
+                timer = setTimeout(() => {
+                    isFired = true;
+                    callback(e);
+                }, 600); // 600ms long press threshold
+            }
+            
+            function cancel() {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
+            }
+            
+            element.addEventListener('mousedown', start);
+            element.addEventListener('touchstart', start, { passive: true });
+            
+            element.addEventListener('mouseup', cancel);
+            element.addEventListener('touchend', cancel);
+            element.addEventListener('touchcancel', cancel);
+            element.addEventListener('mouseleave', cancel);
+            
+            // Prevent default click if long press was triggered
+            element.addEventListener('click', (e) => {
+                if (isFired) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+        }
+
+        // COACH BOTTOM SHEET HANDLERS
+        window.openCoachActionSheet = function(player) {
+            if (!isAdmin) return;
+            const overlay = document.getElementById('coach-action-sheet');
+            if (!overlay) return;
+            const sheet = overlay.querySelector('.bottom-sheet');
+            
+            const titleEl = document.getElementById('coach-sheet-title');
+            const descEl = document.getElementById('coach-sheet-desc');
+            const confirmBtn = document.getElementById('coach-sheet-confirm-btn');
+            
+            if (player.role === 'coach') {
+                titleEl.textContent = 'Вернуть в игроки?';
+                descEl.textContent = `${player.fullName} снова появится в общем списке игроков и будет занимать место по своему рейтингу.`;
+                confirmBtn.onclick = () => {
+                    updatePlayerRole(player.id, 'player');
+                    closeCoachActionSheet();
+                };
+            } else {
+                const currentCoach = clubData.players.find(p => p.role === 'coach');
+                if (currentCoach) {
+                    titleEl.textContent = 'Заменить тренера?';
+                    descEl.textContent = `Сейчас тренер клуба: ${currentCoach.fullName}.\n\nНовый тренер: ${player.fullName}.\n\n${currentCoach.fullName} вернётся в общий список игроков, а ${player.fullName} станет тренером клуба.`;
+                    confirmBtn.onclick = () => {
+                        updatePlayerRoleTwo(currentCoach.id, 'player', player.id, 'coach');
+                        closeCoachActionSheet();
+                    };
+                } else {
+                    titleEl.textContent = 'Сделать тренером?';
+                    descEl.textContent = `${player.fullName} будет отображаться отдельной карточкой над списком игроков.\n\nОн сможет участвовать в турнирах и играть матчи на рейтинг, но не будет получать номер в общем списке игроков.`;
+                    confirmBtn.onclick = () => {
+                        updatePlayerRole(player.id, 'coach');
+                        closeCoachActionSheet();
+                    };
+                }
+            }
+            
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                sheet.style.transform = 'translateY(0)';
+            }, 10);
+        };
+        
+        window.closeCoachActionSheet = function(event) {
+            if (event && event.target !== document.getElementById('coach-action-sheet')) return;
+            const overlay = document.getElementById('coach-action-sheet');
+            if (!overlay) return;
+            const sheet = overlay.querySelector('.bottom-sheet');
+            sheet.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+        };
+
+        function updatePlayerRole(playerId, newRole) {
+            const updatedPlayers = clubData.players.map(p => {
+                if (p.id === playerId) {
+                    return { ...p, role: newRole };
+                }
+                return p;
+            });
+            showLoader(true);
+            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers))
+                .then(() => {
+                    showLoader(false);
+                    showToast("Роль игрока обновлена");
+                    logAnalyticsEvent('change_role', newRole);
+                })
+                .catch(err => {
+                    showLoader(false);
+                    showToast("Ошибка обновления: " + err.message);
+                });
+        }
+
+        function updatePlayerRoleTwo(oldCoachId, oldRole, newCoachId, newRole) {
+            const updatedPlayers = clubData.players.map(p => {
+                if (p.id === oldCoachId) {
+                    return { ...p, role: oldRole };
+                }
+                if (p.id === newCoachId) {
+                    return { ...p, role: newRole };
+                }
+                return p;
+            });
+            showLoader(true);
+            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers))
+                .then(() => {
+                    showLoader(false);
+                    showToast("Роль тренера обновлена");
+                    logAnalyticsEvent('change_role', newRole);
+                })
+                .catch(err => {
+                    showLoader(false);
+                    showToast("Ошибка обновления: " + err.message);
+                });
+        }
+
 
         // DEBUG LOG TO PANEL ON SCREEN
         function debugLog(msg) {
@@ -4250,129 +4431,213 @@ function getPlayerLastDelta(player) {
 
             const subtitle = document.getElementById('players-subtitle');
             if (subtitle) {
-                subtitle.textContent = `${clubData.players.length} игроков · рейтинг, аватарки`;
+                const totalPlayers = clubData.players.length;
+                subtitle.textContent = `${totalPlayers} игроков · рейтинг, аватарки`;
             }
 
             const query = playerSearch.value.trim().toLowerCase();
 
-            // Filter players
-            const filtered = clubData.players.filter(p => {
-                return p.fullName.toLowerCase().includes(query);
+            // Create rating sorted array to calculate ranks (excluding coaches)
+            const ratingSorted = [...clubData.players]
+                .filter(p => p.role !== 'coach')
+                .sort((a, b) => b.rating - a.rating);
+
+            // Filter players based on search query
+            const filtered = clubData.players.filter(player => {
+                return player.fullName.toLowerCase().includes(query);
             });
 
-            // Sort players
+            // Separate coaches and regular players
+            const coachPlayers = filtered.filter(p => p.role === 'coach');
+            const regularPlayers = filtered.filter(p => p.role !== 'coach');
+
+            // Sort logic
             if (playerSortType === 'alphabet') {
-                filtered.sort((a, b) => a.fullName.localeCompare(b.fullName, 'ru'));
+                coachPlayers.sort((a, b) => a.fullName.localeCompare(b.fullName, 'ru'));
+                regularPlayers.sort((a, b) => a.fullName.localeCompare(b.fullName, 'ru'));
             } else {
-                filtered.sort((a, b) => b.rating - a.rating);
+                coachPlayers.sort((a, b) => b.rating - a.rating);
+                regularPlayers.sort((a, b) => b.rating - a.rating);
             }
 
-            // Create rating sorted array to calculate ranks
-            const ratingSorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
-
-            filtered.forEach((player) => {
-                const rank = ratingSorted.findIndex(p => p.id === player.id) + 1;
-                const totalGames = player.wins + player.losses;
-
-                const wrapper = document.createElement('div');
-                wrapper.className = 'player-card-wrapper';
-
-                const swipeBg = document.createElement('div');
-                wrapper.appendChild(swipeBg);
-
+            // A helper to construct a player card HTML element
+            function buildPlayerCard(player, isCoachCard) {
                 const card = document.createElement('div');
-                card.className = 'player-card';
+                card.className = isCoachCard ? 'player-card coach-card' : 'player-card';
+                card.style.cursor = 'pointer';
 
-                // Main card content flex container
-                const cardMain = document.createElement('div');
-                cardMain.className = 'player-card-main';
+                // Click event to open profile
+                card.addEventListener('click', (e) => {
+                    openPlayerModal(player);
+                });
 
-                // Left side: Rank + Avatar + NameBlock
-                const leftSide = document.createElement('div');
-                leftSide.className = 'player-card-left';
+                // Long press event for admins to manage coach role
+                if (isAdmin) {
+                    bindLongPress(card, (e) => {
+                        openCoachActionSheet(player);
+                    });
+                }
 
-                // Rank badge
-                const rankBadge = document.createElement('div');
-                rankBadge.className = 'player-card-rank-badge';
-                if (rank === 1) {
-                    rankBadge.textContent = '1';
-                    rankBadge.classList.add('top-1');
-                } else if (rank === 2) {
-                    rankBadge.textContent = '2';
-                    rankBadge.classList.add('top-2');
-                } else if (rank === 3) {
-                    rankBadge.textContent = '3';
-                    rankBadge.classList.add('top-3');
+                // Left rank badge / Ribbon
+                const leftContainer = document.createElement('div');
+                leftContainer.className = 'player-card-left';
+
+                if (isCoachCard) {
+                    // Spacing placeholder for coach avatar alignment
+                    const coachRankSpacer = document.createElement('div');
+                    coachRankSpacer.style.width = '32px';
+                    leftContainer.appendChild(coachRankSpacer);
                 } else {
-                    rankBadge.textContent = `#${rank}`;
-                    rankBadge.classList.add('normal-rank');
+                    const rank = ratingSorted.findIndex(p => p.id === player.id) + 1;
+                    const rankBadge = document.createElement('div');
+                    if (rank === 1) {
+                        rankBadge.className = 'player-card-rank-badge rank-1';
+                        rankBadge.textContent = '🥇';
+                    } else if (rank === 2) {
+                        rankBadge.className = 'player-card-rank-badge rank-2';
+                        rankBadge.textContent = '🥈';
+                    } else if (rank === 3) {
+                        rankBadge.className = 'player-card-rank-badge rank-3';
+                        rankBadge.textContent = '🥉';
+                    } else {
+                        rankBadge.className = 'player-card-rank-badge';
+                        rankBadge.textContent = `#${rank}`;
+                    }
+                    leftContainer.appendChild(rankBadge);
                 }
 
                 // Avatar
                 const avatarEl = document.createElement('div');
-                avatarEl.className = 'player-card-avatar';
-
                 const cloudAvatar = clubData.avatars[player.id];
                 if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
+                    avatarEl.className = 'player-card-avatar';
                     avatarEl.style.backgroundImage = `url("${cloudAvatar}")`;
-                    avatarEl.textContent = '';
                 } else {
-                    avatarEl.classList.add('no-photo');
-                    const parts = player.fullName.trim().split(/\s+/);
-                    let initial = "";
-                    if (parts.length > 0) initial = parts[0].charAt(0).toUpperCase();
-                    avatarEl.textContent = initial || "?";
+                    avatarEl.className = 'player-card-avatar no-photo';
+                    avatarEl.textContent = player.fullName.charAt(0).toUpperCase();
                 }
+                leftContainer.appendChild(avatarEl);
+                card.appendChild(leftContainer);
 
-                // Info text block
-                const textBlock = document.createElement('div');
-                textBlock.className = 'player-card-info-text';
+                // Middle Info text
+                const infoContainer = document.createElement('div');
+                infoContainer.className = 'player-card-info-text';
 
-                // Name formatting (hide middle/patronymics, allow 2 lines wrap)
+                const nameEl = document.createElement('div');
+                nameEl.className = 'player-card-name';
+                
+                // Shorten name to hide patronymics/middle names
                 const nameParts = player.fullName.trim().split(/\s+/);
                 let displayName = player.fullName;
                 if (nameParts.length >= 2) {
                     displayName = `${nameParts[0]} ${nameParts[1]}`;
                 }
-
-                const nameEl = document.createElement('div');
-                nameEl.className = 'player-card-name';
                 nameEl.textContent = displayName;
 
-                // Subtext block
+                if (isCoachCard) {
+                    const coachBadge = document.createElement('span');
+                    coachBadge.className = 'coach-badge';
+                    coachBadge.textContent = 'Тренер';
+                    nameEl.appendChild(coachBadge);
+                }
+                infoContainer.appendChild(nameEl);
+
                 const subtextEl = document.createElement('div');
                 subtextEl.className = 'player-card-subtext';
-                subtextEl.innerHTML = `#${rank} в клубе<br>${totalGames} игр · ${player.tournamentsPlayed || 0} турниров`;
+                const totalGames = player.wins + player.losses;
+                
+                if (isCoachCard) {
+                    subtextEl.innerHTML = `${totalGames} игр · ${player.tournamentsPlayed || 0} турниров<br><span style="color:#8A8F9C; font-size:12px; font-weight:550; margin-top:2px; display:inline-block;">Может играть на рейтинг · Вне нумерации</span>`;
+                } else {
+                    const rankIndex = ratingSorted.findIndex(p => p.id === player.id) + 1;
+                    subtextEl.textContent = `#${rankIndex} в клубе · ${totalGames} игр · ${player.tournamentsPlayed || 0} турниров`;
+                }
+                infoContainer.appendChild(subtextEl);
 
-                textBlock.appendChild(nameEl);
-                textBlock.appendChild(subtextEl);
+                // Add Medals chips row if there are medals
+                const medalsRow = document.createElement('div');
+                medalsRow.style.display = 'flex';
+                medalsRow.style.flexWrap = 'wrap';
+                medalsRow.style.gap = '6px';
+                medalsRow.style.marginTop = '6px';
 
-                leftSide.appendChild(rankBadge);
-                leftSide.appendChild(avatarEl);
-                leftSide.appendChild(textBlock);
+                let hasMedals = false;
+                if (player.goldMedals > 0) {
+                    hasMedals = true;
+                    const chip = document.createElement('span');
+                    chip.className = 'player-achievement-chip gold';
+                    chip.textContent = `🥇 ${player.goldMedals}`;
+                    medalsRow.appendChild(chip);
+                }
+                if (player.silverMedals > 0) {
+                    hasMedals = true;
+                    const chip = document.createElement('span');
+                    chip.className = 'player-achievement-chip silver';
+                    chip.textContent = `🥈 ${player.silverMedals}`;
+                    medalsRow.appendChild(chip);
+                }
+                if (player.bronzeMedals > 0) {
+                    hasMedals = true;
+                    const chip = document.createElement('span');
+                    chip.className = 'player-achievement-chip bronze';
+                    chip.textContent = `🥉 ${player.bronzeMedals}`;
+                    medalsRow.appendChild(chip);
+                }
 
-                // Right Column: Rating block + chevron
-                const rightSide = document.createElement('div');
-                rightSide.className = 'player-card-right';
+                // Add Special Achievements
+                const pAchievements = achievements[player.fullName.toLowerCase()] || {};
+                const specialTypes = [
+                    { key: 'champion', icon: '🏆', colorClass: 'champion' },
+                    { key: 'slayer', icon: '⚔️', colorClass: 'slayer' },
+                    { key: 'growth', icon: '🚀', colorClass: 'growth' },
+                    { key: 'iron', icon: '🛡️', colorClass: 'iron' },
+                    { key: 'invincible', icon: '⚡', colorClass: 'invincible' },
+                    { key: 'grandmaster', icon: '💎', colorClass: 'grandmaster' }
+                ];
+                specialTypes.forEach(t => {
+                    const count = pAchievements[t.key] || 0;
+                    if (count > 0) {
+                        hasMedals = true;
+                        const chip = document.createElement('span');
+                        chip.className = `player-achievement-chip ${t.colorClass}`;
+                        chip.textContent = `${t.icon} ${count}`;
+                        medalsRow.appendChild(chip);
+                    }
+                });
+
+                if (hasMedals) {
+                    infoContainer.appendChild(medalsRow);
+                }
+
+                card.appendChild(infoContainer);
+
+                // Right Rating section
+                const rightContainer = document.createElement('div');
+                rightContainer.className = 'player-card-right';
 
                 const ratingCol = document.createElement('div');
                 ratingCol.className = 'player-card-rating-col';
 
-                // Yellow Star icon
+                const ratingValueRow = document.createElement('div');
+                ratingValueRow.style.display = 'flex';
+                ratingValueRow.style.alignItems = 'center';
+                ratingValueRow.style.gap = '4px';
+
                 const starEl = document.createElement('span');
                 starEl.className = 'player-card-star';
                 starEl.textContent = '⭐';
-                ratingCol.appendChild(starEl);
+                ratingValueRow.appendChild(starEl);
 
-                // Rating Value
-                const ratingVal = document.createElement('div');
-                ratingVal.className = 'player-card-rating-val';
-                ratingVal.textContent = player.rating.toFixed(1);
-                ratingCol.appendChild(ratingVal);
+                const rValEl = document.createElement('span');
+                rValEl.className = 'player-card-rating-val';
+                rValEl.textContent = player.rating.toFixed(1);
+                ratingValueRow.appendChild(rValEl);
 
-                // Last Delta
+                ratingCol.appendChild(ratingValueRow);
+
+                // Delta change from last tournament
                 const lastDelta = getPlayerLastDelta(player);
-                const deltaEl = document.createElement('div');
+                const deltaEl = document.createElement('span');
                 if (lastDelta > 0) {
                     deltaEl.className = 'player-card-delta positive';
                     deltaEl.textContent = `+${lastDelta.toFixed(1)}`;
@@ -4380,148 +4645,73 @@ function getPlayerLastDelta(player) {
                     deltaEl.className = 'player-card-delta negative';
                     deltaEl.textContent = lastDelta.toFixed(1);
                 } else {
-                    deltaEl.className = 'player-card-delta neutral';
+                    deltaEl.className = 'player-card-delta zero';
                     deltaEl.textContent = '0.0';
                 }
                 ratingCol.appendChild(deltaEl);
+                rightContainer.appendChild(ratingCol);
 
-                rightSide.appendChild(ratingCol);
-
-                // Chevron icon (Right arrow ›)
+                // Gray Chevron ›
                 const chevronEl = document.createElement('span');
                 chevronEl.className = 'player-card-chevron';
                 chevronEl.textContent = '›';
-                rightSide.appendChild(chevronEl);
+                rightContainer.appendChild(chevronEl);
 
-                cardMain.appendChild(leftSide);
-                cardMain.appendChild(rightSide);
-                card.appendChild(cardMain);
+                card.appendChild(rightContainer);
+                return card;
+            }
 
-                // Achievements/Chips Row (at the bottom)
-                const badgesRow = document.createElement('div');
-                badgesRow.className = 'player-card-badges-row';
+            // 1. Render Coach Section if matches query
+            if (coachPlayers.length > 0) {
+                const coachHeader = document.createElement('div');
+                coachHeader.style.fontSize = '15px';
+                coachHeader.style.fontWeight = '800';
+                coachHeader.style.color = '#8A8F9C';
+                coachHeader.style.marginTop = '16px';
+                coachHeader.style.marginBottom = '8px';
+                coachHeader.style.textTransform = 'uppercase';
+                coachHeader.style.letterSpacing = '0.5px';
+                coachHeader.textContent = 'Тренер клуба';
+                listEl.appendChild(coachHeader);
 
-                // Gold medals
-                if (player.goldMedals > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'player-card-medal-badge gold';
-                    badge.innerHTML = `🥇 <span>${player.goldMedals}</span>`;
-                    badgesRow.appendChild(badge);
-                }
-                // Silver medals
-                if (player.silverMedals > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'player-card-medal-badge silver';
-                    badge.innerHTML = `🥈 <span>${player.silverMedals}</span>`;
-                    badgesRow.appendChild(badge);
-                }
-                // Bronze medals
-                if (player.bronzeMedals > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'player-card-medal-badge bronze';
-                    badge.innerHTML = `🥉 <span>${player.bronzeMedals}</span>`;
-                    badgesRow.appendChild(badge);
-                }
-
-                // Special achievements
-                const pAchievements = achievements[player.fullName.toLowerCase()] || {};
-                const specialBadgeTypes = [
-                    { key: 'champion', icon: '🏆', css: 'other-badge' },
-                    { key: 'slayer', icon: '⚔️', css: 'other-badge' },
-                    { key: 'growth', icon: '🚀', css: 'rocket' },
-                    { key: 'iron', icon: '🛡️', css: 'shield' },
-                    { key: 'invincible', icon: '⚡', css: 'lightning' },
-                    { key: 'grandmaster', icon: '💎', css: 'other-badge' }
-                ];
-
-                specialBadgeTypes.forEach(t => {
-                    const count = pAchievements[t.key] || 0;
-                    if (count > 0) {
-                        const badge = document.createElement('span');
-                        badge.className = `player-card-medal-badge ${t.css}`;
-                        badge.innerHTML = `${t.icon} <span>${count}</span>`;
-                        badgesRow.appendChild(badge);
-                    }
+                coachPlayers.forEach(p => {
+                    const card = buildPlayerCard(p, true);
+                    listEl.appendChild(card);
                 });
 
-                if (badgesRow.childNodes.length > 0) {
-                    card.appendChild(badgesRow);
+                // Dashed separator line
+                const separator = document.createElement('hr');
+                separator.className = 'coach-separator';
+                listEl.appendChild(separator);
+            }
+
+            // 2. Render Players Section if matches query
+            if (regularPlayers.length > 0) {
+                if (coachPlayers.length > 0) {
+                    const playerHeader = document.createElement('div');
+                    playerHeader.style.fontSize = '15px';
+                    playerHeader.style.fontWeight = '800';
+                    playerHeader.style.color = '#8A8F9C';
+                    playerHeader.style.marginTop = '16px';
+                    playerHeader.style.marginBottom = '8px';
+                    playerHeader.style.textTransform = 'uppercase';
+                    playerHeader.style.letterSpacing = '0.5px';
+                    playerHeader.textContent = 'Рейтинг игроков';
+                    listEl.appendChild(playerHeader);
                 }
 
-                // Handle click on card to open player detail profile modal
-                card.addEventListener('click', () => openPlayerModal(player));
+                regularPlayers.forEach(p => {
+                    const card = buildPlayerCard(p, false);
+                    listEl.appendChild(card);
+                });
+            }
 
-                // Touch Swipe gesture to quickly add to tournament draft (only for admins)
-                if (isAdmin) {
-                    swipeBg.className = 'player-card-swipe-bg';
-                    swipeBg.innerHTML = `${SVG_ICONS.plus} <span style="margin-left: 8px; font-weight:700;">Добавить в турнир</span>`;
-
-                    let startX = 0;
-                    let startY = 0;
-                    let isSwiping = false;
-                    let swipeX = 0;
-
-                    card.addEventListener('touchstart', (e) => {
-                        startX = e.touches[0].clientX;
-                        startY = e.touches[0].clientY;
-                        isSwiping = false;
-                        swipeX = 0;
-                        card.style.transition = 'none';
-                        swipeBg.style.transition = 'none';
-                    }, { passive: true });
-
-                    card.addEventListener('touchmove', (e) => {
-                        const currentX = e.touches[0].clientX;
-                        const currentY = e.touches[0].clientY;
-                        const diffX = currentX - startX;
-                        const diffY = currentY - startY;
-
-                        if (!isSwiping) {
-                            if (Math.abs(diffX) > Math.abs(diffY) && diffX > 10) {
-                                isSwiping = true;
-                            }
-                        }
-
-                        if (isSwiping) {
-                            if (e.cancelable) e.preventDefault();
-                            swipeX = Math.max(0, diffX);
-                            card.style.transform = `translateX(${swipeX}px)`;
-                            swipeBg.style.opacity = Math.min(1, swipeX / 80);
-                        }
-                    }, { passive: false });
-
-                    card.addEventListener('touchend', () => {
-                        card.style.transition = 'transform 0.2s ease-out';
-                        swipeBg.style.transition = 'opacity 0.2s ease-out';
-
-                        if (swipeX > 80) {
-                            const draft = clubData.draft;
-                            if (!draft || draft.isListGenerated) {
-                                showToast("Сначала начните создание турнира во вкладке 'Турнир'!");
-                            } else {
-                                if (selectedPlayerIdsForDraft.has(player.id)) {
-                                    showToast(`Игрок ${player.fullName} уже добавлен!`);
-                                } else {
-                                    selectedPlayerIdsForDraft.add(player.id);
-                                    showToast(`Игрок ${player.fullName} добавлен в турнир!`);
-                                    if (typeof renderDraftPlayersSelector === 'function') {
-                                        renderDraftPlayersSelector();
-                                    }
-                                }
-                            }
-                        }
-                        
-                        card.style.transform = 'translateX(0)';
-                        swipeBg.style.opacity = '0';
-                    });
-                }
-
-                wrapper.appendChild(card);
-                listEl.appendChild(wrapper);
-            });
+            if (filtered.length === 0) {
+                listEl.innerHTML += '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">Игроки не найдены</div>';
+            }
         }
 
-                // PLAYER BASE WRITE OPERATIONS (Admin Modals)
+        // PLAYER BASE WRITE OPERATIONS (Admin Modals)
         let selectedAddAvatarBase64 = "";
         let selectedEditAvatarBase64 = "";
 
@@ -5999,15 +6189,20 @@ function getPlayerLastDelta(player) {
                     
                     const name1 = playerNamesWithFallback[p1Idx] || "";
                     const name2 = playerNamesWithFallback[p2Idx] || "";
+                    
+                    const p1Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name1));
+                    const p2Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name2));
+                    const p1Coach = p1Profile && p1Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
+                    const p2Coach = p2Profile && p2Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
 
                     const card = document.createElement('div');
                     card.className = 'active-table-card';
                     card.innerHTML = `
                         <div class="active-table-number">${index + 1}</div>
                         <div class="active-table-match">
-                            <span>${name1}</span>
+                            <span>${name1}${p1Coach}</span>
                             <span class="active-table-vs">vs</span>
-                            <span>${name2}</span>
+                            <span>${name2}${p2Coach}</span>
                         </div>
                         <span class="active-table-badge">Идёт игра</span>
                     `;
@@ -6106,15 +6301,17 @@ function getPlayerLastDelta(player) {
                 const p2Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name2));
                 const r1 = p1Profile ? `★${p1Profile.rating.toFixed(0)}` : '★100';
                 const r2 = p2Profile ? `★${p2Profile.rating.toFixed(0)}` : '★100';
+                const p1Coach = p1Profile && p1Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 9px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
+                const p2Coach = p2Profile && p2Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 9px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
 
                 const card = document.createElement('div');
                 card.className = 'active-table-card';
                 card.innerHTML = `
                     <div class="active-table-number" style="background-color:rgba(142, 142, 147, 0.15); color:var(--text-secondary);">${idx + 1}</div>
                     <div class="active-table-match" style="font-size: 13px; display:flex; align-items:center; justify-content:space-between; padding-right:12px;">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700;">${name1} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r1}</span></span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700;">${name1}${p1Coach} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r1}</span></span>
                         <span class="active-table-vs">—</span>
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700; text-align:right;">${name2} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r2}</span></span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700; text-align:right;">${name2}${p2Coach} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r2}</span></span>
                     </div>
                 `;
                 queueContainer.appendChild(card);
@@ -6181,8 +6378,9 @@ function getPlayerLastDelta(player) {
                     
                     const pProfile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(playerNames[f]));
                     const ratingStr = pProfile ? ` <span style="font-size:11px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
+                    const coachBadge = pProfile && pProfile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
 
-                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${ratingStr}</td>`;
+                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${coachBadge}${ratingStr}</td>`;
                     
                     for (let s = 0; s < playerNames.length; s++) {
                         if (f === s) {
@@ -6532,9 +6730,11 @@ function getPlayerLastDelta(player) {
             const query = (document.getElementById('draft-player-search').value || '').trim().toLowerCase();
             const sorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
 
-            sorted.forEach(p => {
-                if (query && !p.fullName.toLowerCase().includes(query)) return;
-                
+            // Separate coaches and regular players
+            const coachList = sorted.filter(p => p.role === 'coach' && (!query || p.fullName.toLowerCase().includes(query)));
+            const playerList = sorted.filter(p => p.role !== 'coach' && (!query || p.fullName.toLowerCase().includes(query)));
+
+            function renderDraftItem(p, isCoach) {
                 const item = document.createElement('div');
                 const isSelected = selectedPlayerIdsForDraft.has(p.id);
                 item.className = `draft-player-item ${isSelected ? 'selected' : ''}`;
@@ -6542,7 +6742,7 @@ function getPlayerLastDelta(player) {
                 item.innerHTML = `
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="font-size:12px; color:var(--text-secondary); font-weight:700;">★${p.rating.toFixed(0)}</span>
-                        <span style="font-size:14px; font-weight:700;">${p.fullName}</span>
+                        <span style="font-size:14px; font-weight:700;">${p.fullName} ${isCoach ? '<span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; margin-left: 6px;">Тренер</span>' : ''}</span>
                     </div>
                     <div class="draft-player-checkbox">${SVG_ICONS.check}</div>
                 `;
@@ -6556,9 +6756,44 @@ function getPlayerLastDelta(player) {
                     syncDraftSelectedPlayersToFirebase();
                     renderDraftPlayersSelector();
                 });
+                return item;
+            }
 
-                listSelector.appendChild(item);
-            });
+            // 1. Render Coach Section
+            if (coachList.length > 0) {
+                const title = document.createElement('div');
+                title.style.fontSize = '12px';
+                title.style.fontWeight = '800';
+                title.style.color = '#8A8F9C';
+                title.style.margin = '10px 4px 6px 4px';
+                title.style.textTransform = 'uppercase';
+                title.style.letterSpacing = '0.5px';
+                title.textContent = 'Тренер клуба';
+                listSelector.appendChild(title);
+
+                coachList.forEach(p => {
+                    listSelector.appendChild(renderDraftItem(p, true));
+                });
+            }
+
+            // 2. Render Regular Players Section
+            if (playerList.length > 0) {
+                if (coachList.length > 0) {
+                    const title = document.createElement('div');
+                    title.style.fontSize = '12px';
+                    title.style.fontWeight = '800';
+                    title.style.color = '#8A8F9C';
+                    title.style.margin = '16px 4px 6px 4px';
+                    title.style.textTransform = 'uppercase';
+                    title.style.letterSpacing = '0.5px';
+                    title.textContent = 'Игроки';
+                    listSelector.appendChild(title);
+                }
+
+                playerList.forEach(p => {
+                    listSelector.appendChild(renderDraftItem(p, false));
+                });
+            }
 
             if (listSelector.children.length === 0) {
                 listSelector.innerHTML = '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:12px;">Игроки не найдены</div>';
@@ -6768,8 +7003,10 @@ function getPlayerLastDelta(player) {
 
             const p1Profile = p1Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p1Name)) : null;
             const p2Profile = p2Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p2Name)) : null;
-            const p1Display = p1Profile ? `${p1Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p1Profile.rating.toFixed(0)}</span>` : p1Name;
-            const p2Display = p2Profile ? `${p2Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p2Profile.rating.toFixed(0)}</span>` : p2Name;
+            const p1Coach = p1Profile && p1Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
+            const p2Coach = p2Profile && p2Profile.role === 'coach' ? ' <span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: inline-block;">Тренер</span>' : '';
+            const p1Display = p1Profile ? `${p1Name}${p1Coach} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p1Profile.rating.toFixed(0)}</span>` : p1Name;
+            const p2Display = p2Profile ? `${p2Name}${p2Coach} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p2Profile.rating.toFixed(0)}</span>` : p2Name;
 
             box.innerHTML = `
                 <div class="playoff-row${row1Winner ? ' winner' : ''}">
@@ -8595,2156 +8832,6 @@ function getPlayerLastDelta(player) {
                 ${makeTile('Лучшая серия', '🔥', records.streak.player, records.streak.value || '0 побед', '#FF512F')}
                 ${makeTile('Самый стабильный', '🛡️', records.stable.player, records.stable.value || '0% побед', '#0A84FF')}
             `;
-        }
-
-        function updateActiveTournament() {
-            const container = document.getElementById('active-tournament-container');
-            if (!container) return;
-            container.innerHTML = '';
-
-            const draft = clubData.draft;
-
-            // Empty state check
-            if (!draft || (!draft.isListGenerated && !draft.name)) {
-                if (isAdmin) {
-                    renderDraftSetupPanel(container);
-                } else {
-                    container.innerHTML = `
-                        <div class="active-tournament-empty">
-                            ${SVG_ICONS.hourglass}
-                            <h3>Нет активного турнира</h3>
-                            <p>Как только организатор начнет новый турнир в клубе, сетка и текущие результаты появятся здесь в реальном времени.</p>
-                        </div>
-                    `;
-                }
-                return;
-            }
-
-            // Decode player fields (1-to-1 mapping to preserve indexing for active games)
-            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
-            const playerNames = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
-            const withdrawnPlayers = new Set(draft.withdrawnPlayers || []);
-
-            // If setup phase (draft is not active but name is present)
-            if (!draft.isListGenerated) {
-                if (isAdmin) {
-                    if (!document.getElementById('draft-name-input')) {
-                        const fields = JSON.parse(draft.playerFieldsJson || "[]");
-                        selectedPlayerIdsForDraft.clear();
-                        fields.forEach(f => {
-                            const decoded = decodeName(f.name).trim().toLowerCase();
-                            const found = clubData.players.find(p => p.fullName.trim().toLowerCase() === decoded);
-                            if (found) {
-                                selectedPlayerIdsForDraft.add(found.id);
-                            }
-                        });
-                        renderDraftSetupPanel(container);
-                    } else {
-                        updateDraftSetupPanelInputs();
-                    }
-                } else {
-                    const registeredNames = playerFields.map(f => decodeName(f.name).trim()).filter(n => n !== "");
-
-                    const header = document.createElement('div');
-                    header.className = 'active-header-card';
-                    header.innerHTML = `
-                        <div class="active-header-badge" style="background-color: rgba(255, 204, 0, 0.15); color: var(--apple-gold);">${SVG_ICONS.clock}</div>
-                        <div class="active-header-info">
-                            <div class="active-header-title">${draft.name || "Новый турнир"}</div>
-                            <div class="active-header-desc">Регистрация участников • Добавлено: ${registeredNames.length} • Победы: до ${draft.winsToWin || 2}</div>
-                        </div>
-                    `;
-                    container.appendChild(header);
-
-                    const activeHeader = document.createElement('h4');
-                    activeHeader.className = 'section-title';
-                    activeHeader.textContent = '👥 Зарегистрированные игроки';
-                    container.appendChild(activeHeader);
-
-                    const listContainer = document.createElement('div');
-                    listContainer.style.backgroundColor = 'var(--bg-card)';
-                    listContainer.style.border = '1px solid var(--border-color)';
-                    listContainer.style.borderRadius = '16px';
-                    listContainer.style.padding = '16px';
-                    listContainer.style.display = 'flex';
-                    listContainer.style.flexDirection = 'column';
-                    listContainer.style.gap = '10px';
-
-                    registeredNames.forEach((name, index) => {
-                        const pProfile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name));
-                        const ratingStr = pProfile ? ` <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
-                        
-                        const row = document.createElement('div');
-                        row.style.display = 'flex';
-                        row.style.alignItems = 'center';
-                        row.style.fontSize = '14px';
-                        row.style.fontWeight = '600';
-                        row.innerHTML = `<span style="color: var(--apple-blue); width: 24px; font-weight:800;">${index + 1}</span> <span>${name}${ratingStr}</span>`;
-                        listContainer.appendChild(row);
-                    });
-
-                    if (registeredNames.length === 0) {
-                        listContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px;">Ожидание добавления игроков организатором...</div>';
-                    }
-
-                    container.appendChild(listContainer);
-                }
-                return;
-            }
-
-            // Header info (Active Tournament)
-            const header = document.createElement('div');
-            header.className = 'active-header-card';
-            header.innerHTML = `
-                <div class="active-header-badge">${SVG_ICONS.broadcast}</div>
-                <div class="active-header-info">
-                    <div class="active-header-title">${draft.name || "Турнир в процессе"}</div>
-                    <div class="active-header-desc">Участников: ${playerNames.length} • Победы: до ${draft.winsToWin}</div>
-                </div>
-            `;
-            container.appendChild(header);
-
-            // Display names list with fallback for active game table resolution
-            const playerNamesWithFallback = playerFields.map((f, i) => decodeName(f.name).trim() || `Игрок ${i+1}`);
-
-            // 1. Render Active Tables & Queue columns wrapper
-            const infoColumns = document.createElement('div');
-            infoColumns.className = 'active-info-columns';
-            infoColumns.style.marginBottom = '24px';
-
-            // Column A: Active Matches
-            const colActive = document.createElement('div');
-            colActive.style.display = 'flex';
-            colActive.style.flexDirection = 'column';
-
-            const activeHeader = document.createElement('h4');
-            activeHeader.className = 'section-title';
-            activeHeader.textContent = '🏓 Кто играет сейчас';
-            colActive.appendChild(activeHeader);
-
-            const activeListContainer = document.createElement('div');
-            activeListContainer.className = 'active-tables-container';
-            activeListContainer.style.marginBottom = '0'; // reset for column layout
-
-            let hasActiveMatches = false;
-            const activeMatches = draft.activeRoundRobinMatches || [];
-            activeMatches.forEach((matchStr, index) => {
-                if (matchStr && matchStr.includes("_")) {
-                    const parts = matchStr.split("_");
-                    const p1Idx = parseInt(parts[0]);
-                    const p2Idx = parseInt(parts[1]);
-                    
-                    const name1 = playerNamesWithFallback[p1Idx] || "";
-                    const name2 = playerNamesWithFallback[p2Idx] || "";
-
-                    const card = document.createElement('div');
-                    card.className = 'active-table-card';
-                    card.innerHTML = `
-                        <div class="active-table-number">${index + 1}</div>
-                        <div class="active-table-match">
-                            <span>${name1}</span>
-                            <span class="active-table-vs">vs</span>
-                            <span>${name2}</span>
-                        </div>
-                        <span class="active-table-badge">Идёт игра</span>
-                    `;
-
-                    if (isAdmin) {
-                        card.style.cursor = 'pointer';
-                        card.addEventListener('click', () => {
-                            openAdminScoreDialog(p1Idx, p2Idx, matchStr, index);
-                        });
-                    }
-
-                    activeListContainer.appendChild(card);
-                    hasActiveMatches = true;
-                }
-            });
-
-            if (!hasActiveMatches) {
-                activeListContainer.innerHTML = `
-                    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; color: var(--text-secondary); width: 100%; font-size: 13px;">
-                        Ожидаются свободные столы...
-                    </div>
-                `;
-            }
-            colActive.appendChild(activeListContainer);
-            infoColumns.appendChild(colActive);
-
-            // Column B: Queue Matches
-            const colQueue = document.createElement('div');
-            colQueue.style.display = 'flex';
-            colQueue.style.flexDirection = 'column';
-
-            const queueHeader = document.createElement('h4');
-            queueHeader.className = 'section-title';
-            queueHeader.textContent = '🕒 Очередь к столам';
-            colQueue.appendChild(queueHeader);
-
-            // Compute Queue (match queue logic)
-            const assigned = new Set();
-            activeMatches.forEach(matchStr => {
-                if (matchStr && matchStr.includes("_")) {
-                    const parts = matchStr.split("_");
-                    const p1 = parseInt(parts[0]);
-                    const p2 = parseInt(parts[1]);
-                    const key = p1 < p2 ? `${p1}_${p2}` : `${p2}_${p1}`;
-                    assigned.add(key);
-                }
-            });
-
-            const scoresMap = draft.matchScores || {};
-            const withdrawn = new Set(draft.withdrawnPlayers || []);
-            const lastFinished = new Set(draft.lastFinishedPlayers || []);
-
-            const matchesPlayed = new Array(playerNames.length).fill(0);
-            for (let f = 0; f < playerNames.length; f++) {
-                for (let s = f + 1; s < playerNames.length; s++) {
-                    const key = `${f}_${s}`;
-                    if (scoresMap[key]) {
-                        matchesPlayed[f]++;
-                        matchesPlayed[s]++;
-                    }
-                }
-            }
-
-            const queueList = [];
-            for (let f = 0; f < playerNames.length; f++) {
-                for (let s = f + 1; s < playerNames.length; s++) {
-                    if (withdrawn.has(f) || withdrawn.has(s)) continue;
-                    const key = `${f}_${s}`;
-                    if (!scoresMap[key] && !assigned.has(key)) {
-                        queueList.push({ f, s });
-                    }
-                }
-            }
-
-            queueList.sort((a, b) => {
-                const aPenaltyP1 = lastFinished.has(a.f) ? 20 : 0;
-                const aPenaltyP2 = lastFinished.has(a.s) ? 20 : 0;
-                const aWeight = (matchesPlayed[a.f] + matchesPlayed[a.s] + aPenaltyP1 + aPenaltyP2) * 1000 - Math.abs(a.f - a.s);
-
-                const bPenaltyP1 = lastFinished.has(b.f) ? 20 : 0;
-                const bPenaltyP2 = lastFinished.has(b.s) ? 20 : 0;
-                const bWeight = (matchesPlayed[b.f] + matchesPlayed[b.s] + bPenaltyP1 + bPenaltyP2) * 1000 - Math.abs(b.f - b.s);
-
-                return aWeight - bWeight;
-            });
-
-            const queueContainer = document.createElement('div');
-            queueContainer.className = 'active-tables-container'; // reuse styles for card flow
-            queueContainer.style.marginBottom = '0'; // reset for column layout
-
-            const queueToShow = queueList.slice(0, 2);
-            queueToShow.forEach((match, idx) => {
-                const name1 = playerNamesWithFallback[match.f];
-                const name2 = playerNamesWithFallback[match.s];
-                const p1Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name1));
-                const p2Profile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(name2));
-                const r1 = p1Profile ? `★${p1Profile.rating.toFixed(0)}` : '★100';
-                const r2 = p2Profile ? `★${p2Profile.rating.toFixed(0)}` : '★100';
-
-                const card = document.createElement('div');
-                card.className = 'active-table-card';
-                card.innerHTML = `
-                    <div class="active-table-number" style="background-color:rgba(142, 142, 147, 0.15); color:var(--text-secondary);">${idx + 1}</div>
-                    <div class="active-table-match" style="font-size: 13px; display:flex; align-items:center; justify-content:space-between; padding-right:12px;">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700;">${name1} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r1}</span></span>
-                        <span class="active-table-vs">—</span>
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85px; font-weight:700; text-align:right;">${name2} <span style="font-size:10px; color:var(--apple-blue); font-weight:normal;">${r2}</span></span>
-                    </div>
-                `;
-                queueContainer.appendChild(card);
-            });
-
-            if (queueList.length === 0) {
-                queueContainer.innerHTML = `
-                    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; color: var(--text-secondary); width: 100%; font-size: 13px;">
-                        Очередь пуста
-                    </div>
-                `;
-            } else if (queueList.length > 2) {
-                const moreLabel = document.createElement('div');
-                moreLabel.style.fontSize = '11px';
-                moreLabel.style.color = 'var(--text-secondary)';
-                moreLabel.style.textAlign = 'right';
-                moreLabel.style.paddingRight = '8px';
-                moreLabel.style.marginTop = '4px';
-                moreLabel.textContent = `и еще ${queueList.length - 2} в ожидании...`;
-                queueContainer.appendChild(moreLabel);
-            }
-
-            colQueue.appendChild(queueContainer);
-            infoColumns.appendChild(colQueue);
-
-            container.appendChild(infoColumns);
-
-            // 2. Render Results
-            const resultsHeader = document.createElement('h4');
-            resultsHeader.className = 'section-title';
-            resultsHeader.textContent = '📊 Таблицы результатов';
-            container.appendChild(resultsHeader);
-
-            if (playerNames.length <= 10) {
-                // Round Robin table
-                const wrapper = document.createElement('div');
-                wrapper.className = 'table-scroll-wrapper';
-                
-                const table = document.createElement('table');
-                table.className = 'rr-grid';
-
-                // Header
-                const trHead = document.createElement('tr');
-                trHead.innerHTML = `<th>№</th><th class="player-col-header">Участник</th>`;
-                for (let i = 0; i < playerNames.length; i++) {
-                    trHead.innerHTML += `<th>${i+1}</th>`;
-                }
-                trHead.innerHTML += `<th>О</th><th>М</th>`;
-                table.appendChild(trHead);
-
-                // Standings calculation
-                const scoresMap = draft.matchScores || {};
-                const standings = calculateRoundRobinStandings(playerNames.length, scoresMap);
-                const placesByPlayer = standings.reduce((map, stat, idx) => {
-                    map[stat.index] = idx + 1;
-                    return map;
-                }, {});
-
-                for (let f = 0; f < playerNames.length; f++) {
-                    const tr = document.createElement('tr');
-                    
-                    const isWithdrawn = withdrawnPlayers.has(f);
-                    const strikeStyle = isWithdrawn ? 'text-decoration: line-through; opacity: 0.5;' : '';
-                    
-                    const pProfile = clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(playerNames[f]));
-                    const ratingStr = pProfile ? ` <span style="font-size:11px; color:var(--text-secondary); font-weight:normal;">★${pProfile.rating.toFixed(0)}</span>` : '';
-
-                    let rowHTML = `<td>${f+1}</td><td class="player-col-header" style="${strikeStyle}">${playerNames[f]}${ratingStr}</td>`;
-                    
-                    for (let s = 0; s < playerNames.length; s++) {
-                        if (f === s) {
-                            rowHTML += `<td class="diagonal-cell"></td>`;
-                        } else {
-                            const scoreKey = f < s ? `${f}_${s}` : `${s}_${f}`;
-                            const rawScore = scoresMap[scoreKey];
-                            
-                            let displayScore = "-";
-                            let cellClass = "";
-
-                            if (rawScore) {
-                                if (rawScore === 'W') {
-                                    displayScore = f < s ? 'W' : 'L';
-                                    cellClass = f < s ? 'win' : 'lost';
-                                } else if (rawScore === 'L') {
-                                    displayScore = f < s ? 'L' : 'W';
-                                    cellClass = f < s ? 'lost' : 'win';
-                                } else if (rawScore.includes(":")) {
-                                    const parts = rawScore.split(":");
-                                    const s1 = parseInt(parts[0]);
-                                    const s2 = parseInt(parts[1]);
-                                    if (f < s) {
-                                        displayScore = `${s1}:${s2}`;
-                                        cellClass = s1 > s2 ? 'win' : 'lost';
-                                    } else {
-                                        displayScore = `${s2}:${s1}`;
-                                        cellClass = s2 > s1 ? 'win' : 'lost';
-                                    }
-                                }
-                            } else {
-                                const activeMatches = draft.activeRoundRobinMatches || [];
-                                const tableIdx = activeMatches.indexOf(scoreKey);
-                                const isActive = tableIdx >= 0;
-                                if (isActive) {
-                                    displayScore = `С${tableIdx + 1}`;
-                                    cellClass = "active";
-                                }
-                            }
-
-                            rowHTML += `<td class="score-cell ${cellClass}" data-f="${f}" data-s="${s}" data-key="${scoreKey}">${displayScore}</td>`;
-                        }
-                    }
-
-                    const points = standings.find(x => x.index === f).points;
-                    const place = placesByPlayer[f] || "-";
-
-                    rowHTML += `<td style="font-weight: 800; color: var(--apple-blue);">${points}</td><td>${place}</td>`;
-                    tr.innerHTML = rowHTML;
-                    
-                    // Attach click handler to grid cells if admin
-                    if (isAdmin) {
-                        tr.querySelectorAll('.score-cell').forEach(cell => {
-                            cell.style.cursor = 'pointer';
-                            cell.addEventListener('click', () => {
-                                const fIdx = parseInt(cell.getAttribute('data-f'));
-                                const sIdx = parseInt(cell.getAttribute('data-s'));
-                                const key = cell.getAttribute('data-key');
-                                openAdminScoreDialog(fIdx, sIdx, key);
-                            });
-                        });
-                    }
-
-                    table.appendChild(tr);
-                }
-                wrapper.appendChild(table);
-                container.appendChild(wrapper);
-
-                // Check if tournament is finished (all matches scored)
-                if (isAdmin) {
-                    const finishBtn = document.createElement('button');
-                    finishBtn.className = 'finish-tourney-btn';
-                    finishBtn.innerHTML = `${SVG_ICONS.flag} Завершить турнир и рассчитать дельты`;
-                    finishBtn.addEventListener('click', openTournamentFinishModal);
-                    container.appendChild(finishBtn);
-                }
-
-            } else {
-                // Playoff brackets
-                const wrapper = document.createElement('div');
-                wrapper.className = 'playoff-bracket-wrapper';
-                
-                const playoffScores = draft.playoffScores || {};
-
-                const quarterColumn = document.createElement('div');
-                quarterColumn.className = 'playoff-column';
-                for (let i = 1; i <= 4; i++) {
-                    quarterColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
-                }
-                wrapper.appendChild(quarterColumn);
-
-                const semiColumn = document.createElement('div');
-                semiColumn.className = 'playoff-column';
-                for (let i = 5; i <= 6; i++) {
-                    semiColumn.appendChild(createPlayoffMatchBox(i, playoffScores, playerNames));
-                }
-                wrapper.appendChild(semiColumn);
-
-                const finalColumn = document.createElement('div');
-                finalColumn.className = 'playoff-column';
-                finalColumn.appendChild(createPlayoffMatchBox(7, playoffScores, playerNames, true));
-                wrapper.appendChild(finalColumn);
-
-                container.appendChild(wrapper);
-
-                if (isAdmin) {
-                    const finishBtn = document.createElement('button');
-                    finishBtn.className = 'finish-tourney-btn';
-                    finishBtn.innerHTML = `${SVG_ICONS.squareCheck} Завершить плей-офф и обновить рейтинги`;
-                    finishBtn.addEventListener('click', openTournamentFinishModal);
-                    container.appendChild(finishBtn);
-                }
-            }
-        }
-
-        // DRAFT SETUP PANEL VIEW (INLINE IN ACTIVE TAB FOR ADMINS)
-        function renderDraftSetupPanel(parentContainer) {
-            const card = document.createElement('div');
-            card.className = 'draft-setup-view-container';
-            card.style.display = 'flex';
-            card.style.flexDirection = 'column';
-            card.style.gap = '16px';
-            card.style.width = '100%';
-            
-            // Generate default name: club name + current date and time
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            const defaultName = `${activeClubDisplayName || "Турнир"} ${dateStr} ${timeStr}`;
-
-            card.innerHTML = `
-                <!-- HEADER -->
-                <div style="margin-bottom:8px;">
-                    <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">Новый турнир</h2>
-                    <div style="font-size:13px; color:var(--text-secondary); margin-top:2px;">Заполните настройки и игроков</div>
-                </div>
-
-                <!-- CARD 1: TOURNAMENT NAME -->
-                <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px;">
-                    <label style="font-size:15px; font-weight:700; color:var(--text-main); margin:0;">Название турнира</label>
-                    <input type="text" id="draft-name-input" class="login-input" style="margin:0; height:48px; border-radius:12px; padding: 0 14px; font-size:15px;" placeholder="Например: Вечерний турнир" value="${defaultName}">
-                </div>
-
-                <!-- CARD 2: TOURNAMENT CONTROLS -->
-                <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:16px;">
-                    <!-- Row 1: Participants Limit & Wins Segments -->
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; width:100%;">
-                        <!-- Left Column: Participants -->
-                        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-                            <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">👥 Участники</span>
-                            <div class="counter-controls" style="width:100%; max-width:130px;">
-                                <button class="counter-btn" onclick="adjustDraftVal('players', -1)">—</button>
-                                <span class="counter-val" id="draft-players-val" style="flex:1;">6</span>
-                                <button class="counter-btn" onclick="adjustDraftVal('players', 1)">+</button>
-                            </div>
-                        </div>
-
-                        <!-- Right Column: Wins -->
-                        <div style="flex:1.2; display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
-                            <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">🏆 Победы</span>
-                            <div class="wins-segments" style="width:100%; height:40px; display:flex; align-items:center; padding:3px; background:#e9e9eb; border-radius:12px;">
-                                <button class="wins-segment-btn" id="wins-btn-1" onclick="selectDraftWins(1)" style="font-size:12px; padding:6px 0; text-align:center;">до 1</button>
-                                <button class="wins-segment-btn active" id="wins-btn-2" onclick="selectDraftWins(2)" style="font-size:12px; padding:6px 0; text-align:center;">до 2</button>
-                                <button class="wins-segment-btn" id="wins-btn-3" onclick="selectDraftWins(3)" style="font-size:12px; padding:6px 0; text-align:center;">до 3</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Row 2: Tables Count -->
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                        <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">🏓 Количество столов</span>
-                        <div style="display:flex; align-items:center; width:100%;">
-                            <div class="counter-controls" style="width:100%; max-width:130px; flex-shrink:0;">
-                                <button class="counter-btn" onclick="adjustDraftVal('tables', -1)">—</button>
-                                <span class="counter-val" id="draft-tables-val" style="flex:1;">2</span>
-                                <button class="counter-btn" onclick="adjustDraftVal('tables', 1)">+</button>
-                            </div>
-                            <span id="draft-simultaneous-players-text" style="font-size:13px; color:var(--text-secondary); margin-left:14px; line-height:1.2;">До 4 игроков одновременно</span>
-                        </div>
-                    </div>
-
-                    <!-- Separator line -->
-                    <div style="height:1px; background-color:var(--border-color); width:100%;"></div>
-
-                    <!-- Row 3: RTTF Coefficients -->
-                    <div style="display:flex; flex-direction:column; gap:10px;">
-                        <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">📈 Рейтинг RTTF</span>
-                        <p style="font-size:13px; color:var(--text-secondary); line-height:1.4; margin:0;">
-                            Коэффициент турнира рассчитывается автоматически по среднему рейтингу участников.
-                        </p>
-                        <!-- Light blue callout -->
-                        <div style="background-color:rgba(0, 122, 255, 0.06); border-radius:12px; padding:12px; font-size:13px; color:var(--apple-blue); line-height:1.4; font-weight:500;">
-                            RTTF: k зависит от среднего рейтинга турнира, D — от разницы партий. Новички до 5
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SELECT PLAYERS HEADER -->
-                <h4 class="section-title" style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:15px; font-weight:700;">👥 Выберите участников из списка</span>
-                    <span id="draft-selected-count-badge" style="background:var(--apple-blue); color:white; font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px; margin-right:4px; transition: background-color 0.2s;">Выбрано: 0</span>
-                </h4>
-
-                <div id="draft-selected-players-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; margin-top:2px;"></div>
-                
-                <div class="search-bar" style="margin-bottom:8px; position:relative;">
-                    <svg class="svg-icon" viewBox="0 0 24 24" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); width:18px; height:18px;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0; height:44px; border-radius:10px; padding-left:40px; font-size:14px;" autocomplete="off" autocapitalize="words" oninput="renderDraftPlayersSelector()">
-                </div>
-                
-                <div id="draft-players-list-selector" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-                    <!-- Rendered dynamically -->
-                </div>
-
-                <button onclick="submitCreateTournament()" class="login-btn" style="margin-top:16px; height:50px; border-radius:14px; background-color: var(--apple-blue); font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    🏆 Создать турнир
-                </button>
-            `;
-
-            parentContainer.appendChild(card);
-            
-            // Initialize draft parameters from Firebase draft if available
-            const firebaseDraft = clubData.draft || {};
-            window.draftSetup = {
-                playersCount: firebaseDraft.playersCount || 6,
-                tablesCount: firebaseDraft.tablesCount || 2,
-                winsToWin: firebaseDraft.winsToWin || 2
-            };
-
-            setTimeout(() => {
-                const nameInput = document.getElementById('draft-name-input');
-                if (nameInput) {
-                    if (firebaseDraft.name) {
-                        nameInput.value = firebaseDraft.name;
-                    }
-                    nameInput.addEventListener('input', (e) => {
-                        db.ref(`clubs/${activeClubId}/draft/name`).set(e.target.value);
-                    });
-                }
-                const playersVal = document.getElementById('draft-players-val');
-                if (playersVal) playersVal.textContent = window.draftSetup.playersCount;
-                
-                const tablesVal = document.getElementById('draft-tables-val');
-                if (tablesVal) tablesVal.textContent = window.draftSetup.tablesCount;
-
-                const simText = document.getElementById('draft-simultaneous-players-text');
-                if (simText) simText.textContent = `До ${window.draftSetup.tablesCount * 2} игроков одновременно`;
-                
-                selectDraftWins(window.draftSetup.winsToWin);
-            }, 10);
-
-            renderDraftPlayersSelector();
-        }
-
-        // ADJUST COUNTERS
-        window.adjustDraftVal = function(type, delta) {
-            if (!window.draftSetup) return;
-            if (type === 'players') {
-                window.draftSetup.playersCount = Math.max(2, window.draftSetup.playersCount + delta);
-                document.getElementById('draft-players-val').textContent = window.draftSetup.playersCount;
-                db.ref(`clubs/${activeClubId}/draft/playersCount`).set(window.draftSetup.playersCount);
-            } else if (type === 'tables') {
-                window.draftSetup.tablesCount = Math.max(1, window.draftSetup.tablesCount + delta);
-                document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
-                db.ref(`clubs/${activeClubId}/draft/tablesCount`).set(window.draftSetup.tablesCount);
-                
-                const simText = document.getElementById('draft-simultaneous-players-text');
-                if (simText) simText.textContent = `До ${window.draftSetup.tablesCount * 2} игроков одновременно`;
-            }
-            renderDraftPlayersSelector();
-        };
-
-        // WINS COUNT SEGMENT SELECTOR
-        window.selectDraftWins = function(wins) {
-            if (!window.draftSetup) return;
-            window.draftSetup.winsToWin = wins;
-            document.querySelectorAll('.wins-segment-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            const activeBtn = document.getElementById(`wins-btn-${wins}`);
-            if (activeBtn) activeBtn.classList.add('active');
-            db.ref(`clubs/${activeClubId}/draft/winsToWin`).set(wins);
-        };
-
-        // RENDER CHECKBOX SELECTOR FOR DRAFT SETUP
-        window.renderDraftPlayersSelector = function() {
-            const selectedContainer = document.getElementById('draft-selected-players-container');
-            if (selectedContainer) {
-                selectedContainer.innerHTML = '';
-                const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id));
-                
-                // Update selected count badge
-                const countBadge = document.getElementById('draft-selected-count-badge');
-                if (countBadge) {
-                    countBadge.textContent = `Выбрано: ${selectedPlayers.length}`;
-                    const limitVal = window.draftSetup ? window.draftSetup.playersCount : 6;
-                    if (selectedPlayers.length === limitVal) {
-                        countBadge.style.backgroundColor = 'var(--apple-green)';
-                    } else if (selectedPlayers.length > limitVal) {
-                        countBadge.style.backgroundColor = 'var(--apple-red)';
-                    } else {
-                        countBadge.style.backgroundColor = 'var(--apple-blue)';
-                    }
-                }
-                
-                selectedPlayers.forEach(p => {
-                    const chip = document.createElement('div');
-                    chip.className = 'selected-player-chip';
-                    chip.style.backgroundColor = 'rgba(0, 122, 255, 0.08)';
-                    chip.style.border = '1px solid rgba(0, 122, 255, 0.2)';
-                    chip.style.color = 'var(--apple-blue)';
-                    chip.style.padding = '4px 10px';
-                    chip.style.borderRadius = '20px';
-                    chip.style.fontSize = '12px';
-                    chip.style.fontWeight = '700';
-                    chip.style.display = 'flex';
-                    chip.style.alignItems = 'center';
-                    chip.style.gap = '6px';
-                    chip.style.cursor = 'pointer';
-                    chip.style.transition = 'all 0.15s';
-                    
-                    chip.innerHTML = `
-                        <span>${p.fullName} <span style="font-size:10px; opacity:0.75; font-weight:normal;">★${p.rating.toFixed(0)}</span></span>
-                        <span style="font-weight:900; font-size:14px; opacity:0.6; padding-left: 2px;">×</span>
-                    `;
-                    
-                    chip.addEventListener('click', () => {
-                        selectedPlayerIdsForDraft.delete(p.id);
-                        syncDraftSelectedPlayersToFirebase();
-                        renderDraftPlayersSelector();
-                    });
-                    
-                    selectedContainer.appendChild(chip);
-                });
-                
-                if (selectedPlayers.length === 0) {
-                    selectedContainer.style.display = 'none';
-                } else {
-                    selectedContainer.style.display = 'flex';
-                }
-            }
-
-            const listSelector = document.getElementById('draft-players-list-selector');
-            if (!listSelector) return;
-            listSelector.innerHTML = '';
-
-            const query = (document.getElementById('draft-player-search').value || '').trim().toLowerCase();
-            const sorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
-
-            sorted.forEach(p => {
-                if (query && !p.fullName.toLowerCase().includes(query)) return;
-                
-                const item = document.createElement('div');
-                const isSelected = selectedPlayerIdsForDraft.has(p.id);
-                item.className = `draft-player-item ${isSelected ? 'selected' : ''}`;
-                
-                item.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:12px; color:var(--text-secondary); font-weight:700;">★${p.rating.toFixed(0)}</span>
-                        <span style="font-size:14px; font-weight:700;">${p.fullName}</span>
-                    </div>
-                    <div class="draft-player-checkbox">${SVG_ICONS.check}</div>
-                `;
-
-                item.addEventListener('click', () => {
-                    if (selectedPlayerIdsForDraft.has(p.id)) {
-                        selectedPlayerIdsForDraft.delete(p.id);
-                    } else {
-                        selectedPlayerIdsForDraft.add(p.id);
-                    }
-                    syncDraftSelectedPlayersToFirebase();
-                    renderDraftPlayersSelector();
-                });
-
-                listSelector.appendChild(item);
-            });
-
-            if (listSelector.children.length === 0) {
-                listSelector.innerHTML = '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:12px;">Игроки не найдены</div>';
-            }
-        };
-
-        // SUBMIT CREATE TOURNAMENT AND SYNC DRAFT TO FIREBASE
-        window.submitCreateTournament = function() {
-            const name = document.getElementById('draft-name-input').value.trim();
-            if (!name) {
-                showToast("Укажите название турнира!");
-                return;
-            }
-            if (selectedPlayerIdsForDraft.size < 2) {
-                showToast("Выберите как минимум 2 участников!");
-                return;
-            }
-
-            showLoader(true);
-
-            // Fetch selected players profiles
-            const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id))
-                .sort((a, b) => b.rating - a.rating); // sort by rating descending
-
-            // Format playerFields list
-            const playerFields = selectedPlayers.map((p, idx) => {
-                return {
-                    id: idx,
-                    name: safe_encode(p.fullName)
-                };
-            });
-
-            // Calculate starting fixed K
-            const avgRating = selectedPlayers.reduce((sum, p) => sum + p.rating, 0) / selectedPlayers.length;
-            const fixedK = avgRating < 250.0 ? 0.20 : (avgRating < 350.0 ? 0.25 : 0.30);
-
-            const draftObj = {
-                name: name,
-                playersCount: selectedPlayers.length,
-                tablesCount: window.draftSetup.tablesCount,
-                winsToWin: window.draftSetup.winsToWin,
-                isListGenerated: true,
-                fixedK: fixedK,
-                ratingApplied: false,
-                historySaved: false,
-                playerFieldsJson: JSON.stringify(playerFields),
-                matchScores: {},
-                withdrawnPlayers: [],
-                lastFinishedPlayers: [],
-                activeRoundRobinMatches: []
-            };
-
-            // Run scheduling for round robin
-            if (selectedPlayers.length <= 10) {
-                refreshActiveRoundRobinMatches(draftObj, selectedPlayers.length, window.draftSetup.tablesCount);
-            } else {
-                // Initialize playoff empty scores map
-                draftObj.playoffScores = {};
-            }
-
-            db.ref(`clubs/${activeClubId}/draft`).set(draftObj)
-                .then(() => {
-                    selectedPlayerIdsForDraft.clear();
-                    showLoader(false);
-                    showToast("Турнир успешно создан!");
-                })
-                .catch(e => {
-                    showLoader(false);
-                    showToast("Ошибка создания: " + e.message);
-                });
-        };
-
-        // ROUND ROBIN MATCH SCHEDULING (ported from Kotlin)
-        function refreshActiveRoundRobinMatches(draft, playerCount, tablesCount) {
-            const effectiveTablesCount = Math.max(1, Math.min(tablesCount || 1, Math.max(1, Math.floor(playerCount / 2))));
-
-            const withdrawnSet = new Set(draft.withdrawnPlayers || []);
-
-            // 1. Maintain the list size equal to tables count
-            if (!draft.activeRoundRobinMatches) draft.activeRoundRobinMatches = [];
-            while (draft.activeRoundRobinMatches.length < effectiveTablesCount) {
-                draft.activeRoundRobinMatches.push(null);
-            }
-            while (draft.activeRoundRobinMatches.length > effectiveTablesCount) {
-                draft.activeRoundRobinMatches.pop();
-            }
-
-            const scores = draft.matchScores || {};
-
-            // 2. Clear invalid assignments
-            for (let i = 0; i < draft.activeRoundRobinMatches.length; i++) {
-                const pair = draft.activeRoundRobinMatches[i];
-                if (!pair) continue;
-
-                // pair is stored as "f_s" string
-                let f, s;
-                if (typeof pair === 'string') {
-                    const parts = pair.split('_');
-                    f = parseInt(parts[0]);
-                    s = parseInt(parts[1]);
-                } else {
-                    continue;
-                }
-
-                const normalKey = Math.min(f, s) + '_' + Math.max(f, s);
-                const invalid = f < 0 || f >= playerCount ||
-                                s < 0 || s >= playerCount ||
-                                withdrawnSet.has(f) || withdrawnSet.has(s) ||
-                                scores[normalKey] !== undefined;
-
-                if (invalid) {
-                    draft.activeRoundRobinMatches[i] = null;
-                }
-            }
-
-            // Collect busy players
-            const busyPlayers = new Set();
-            for (const pair of draft.activeRoundRobinMatches) {
-                if (!pair) continue;
-                if (typeof pair === 'string') {
-                    const parts = pair.split('_');
-                    busyPlayers.add(parseInt(parts[0]));
-                    busyPlayers.add(parseInt(parts[1]));
-                }
-            }
-
-            // 3. Find empty slots
-            const emptySlots = [];
-            for (let i = 0; i < draft.activeRoundRobinMatches.length; i++) {
-                if (!draft.activeRoundRobinMatches[i]) emptySlots.push(i);
-            }
-            if (emptySlots.length === 0) return;
-
-            // Count matches played per player
-            const matchesPlayed = new Array(playerCount).fill(0);
-            for (let f = 0; f < playerCount; f++) {
-                for (let s = f + 1; s < playerCount; s++) {
-                    const key = f + '_' + s;
-                    if (scores[key] !== undefined) {
-                        matchesPlayed[f]++;
-                        matchesPlayed[s]++;
-                    }
-                }
-            }
-
-            const currentPairs = new Set();
-            for (const pair of draft.activeRoundRobinMatches) {
-                if (pair) currentPairs.add(pair);
-            }
-
-            const lastFinished = new Set(draft.lastFinishedPlayers || []);
-
-            // Build candidate pairs
-            const candidates = [];
-            for (let f = 0; f < playerCount; f++) {
-                if (withdrawnSet.has(f)) continue;
-                for (let s = f + 1; s < playerCount; s++) {
-                    if (withdrawnSet.has(s)) continue;
-
-                    const pairKey = f + '_' + s;
-                    if (scores[pairKey] === undefined && !currentPairs.has(pairKey)) {
-                        const p1Penalty = lastFinished.has(f) ? 20 : 0;
-                        const p2Penalty = lastFinished.has(s) ? 20 : 0;
-                        const weight = matchesPlayed[f] + matchesPlayed[s] + p1Penalty + p2Penalty;
-                        const distance = Math.abs(f - s);
-                        candidates.push({ f, s, priority: weight * 1000 - distance });
-                    }
-                }
-            }
-
-            candidates.sort((a, b) => a.priority - b.priority);
-
-            // Assign candidates to empty slots
-            let nextCandidateIdx = 0;
-            for (const slotIdx of emptySlots) {
-                while (nextCandidateIdx < candidates.length) {
-                    const candidate = candidates[nextCandidateIdx++];
-                    if (!busyPlayers.has(candidate.f) && !busyPlayers.has(candidate.s)) {
-                        draft.activeRoundRobinMatches[slotIdx] = candidate.f + '_' + candidate.s;
-                        busyPlayers.add(candidate.f);
-                        busyPlayers.add(candidate.s);
-                        break;
-                    }
-                }
-            }
-        }
-
-        // PLAYOFF HELPER CARDS
-        function createPlayoffMatchBox(id, scores, names, isFinal = false) {
-            const box = document.createElement('div');
-            box.className = `playoff-match-box${isFinal ? ' final-box' : ''}`;
-
-            const score = scores[id] || "-";
-            const scoreP1 = score.includes(":") ? score.split(":")[0] : "-";
-            const scoreP2 = score.includes(":") ? score.split(":")[1] : "-";
-
-            let p1Name = "?";
-            let p2Name = "?";
-            
-            if (names.length >= 8) {
-                p1Name = getPlayoffParticipant(id, 1, scores, names);
-                p2Name = getPlayoffParticipant(id, 2, scores, names);
-            }
-
-            const row1Winner = scoreP1 !== "-" && parseInt(scoreP1) > parseInt(scoreP2);
-            const row2Winner = scoreP2 !== "-" && parseInt(scoreP2) > parseInt(scoreP1);
-
-            const p1Profile = p1Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p1Name)) : null;
-            const p2Profile = p2Name !== "?" ? clubData.players.find(p => p && p.fullName && cleanNameString(p.fullName) === cleanNameString(p2Name)) : null;
-            const p1Display = p1Profile ? `${p1Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p1Profile.rating.toFixed(0)}</span>` : p1Name;
-            const p2Display = p2Profile ? `${p2Name} <span style="font-size:10px; color:var(--text-secondary); font-weight:normal;">★${p2Profile.rating.toFixed(0)}</span>` : p2Name;
-
-            box.innerHTML = `
-                <div class="playoff-row${row1Winner ? ' winner' : ''}">
-                    <span class="playoff-player-name">${p1Display}</span>
-                    <span class="playoff-score">${scoreP1}</span>
-                </div>
-                <div class="playoff-divider"></div>
-                <div class="playoff-row${row2Winner ? ' winner' : ''}">
-                    <span class="playoff-player-name">${p2Display}</span>
-                    <span class="playoff-score">${scoreP2}</span>
-                </div>
-            `;
-
-            if (isAdmin && p1Name !== "?" && p2Name !== "?") {
-                box.style.cursor = 'pointer';
-                box.addEventListener('click', () => {
-                    openAdminPlayoffScoreDialog(id, p1Name, p2Name);
-                });
-            }
-
-            return box;
-        }
-
-        function getPlayoffParticipant(matchId, slot, scores, names) {
-            if (matchId === 5) {
-                const prevId = slot === 1 ? 1 : 2;
-                return getWinnerOfMatch(prevId, scores, names) || "?";
-            }
-            if (matchId === 6) {
-                const prevId = slot === 1 ? 3 : 4;
-                return getWinnerOfMatch(prevId, scores, names) || "?";
-            }
-            if (matchId === 7) {
-                const prevId = slot === 1 ? 5 : 6;
-                return getWinnerOfMatch(prevId, scores, names) || "?";
-            }
-            // Match 1, 2, 3, 4 quarterfinals are mapped to index 0..7
-            if (matchId === 1) return slot === 1 ? names[0] : names[1];
-            if (matchId === 2) return slot === 1 ? names[2] : names[3];
-            if (matchId === 3) return slot === 1 ? names[4] : names[5];
-            if (matchId === 4) return slot === 1 ? names[6] : names[7];
-            return "?";
-        }
-
-        function getWinnerOfMatch(id, scores, names) {
-            const score = scores[id];
-            if (!score || !score.includes(":")) return null;
-            const parts = score.split(":");
-            const s1 = parseInt(parts[0]);
-            const s2 = parseInt(parts[1]);
-            
-            if (id === 1) return s1 > s2 ? names[0] : names[1];
-            if (id === 2) return s1 > s2 ? names[2] : names[3];
-            if (id === 3) return s1 > s2 ? names[4] : names[5];
-            if (id === 4) return s1 > s2 ? names[6] : names[7];
-            
-            if (id === 5) return s1 > s2 ? getWinnerOfMatch(1, scores, names) : getWinnerOfMatch(2, scores, names);
-            if (id === 6) return s1 > s2 ? getWinnerOfMatch(3, scores, names) : getWinnerOfMatch(4, scores, names);
-            return null;
-        }
-
-        function calculateRoundRobinStandings(playerCount, scores) {
-            const wins = new Array(playerCount).fill(0);
-            
-            for (let f = 0; f < playerCount; f++) {
-                for (let s = f + 1; s < playerCount; s++) {
-                    const scoreKey = `${f}_${s}`;
-                    const score = scores[scoreKey];
-                    if (score) {
-                        if (score === 'W') {
-                            wins[f]++;
-                        } else if (score === 'L') {
-                            wins[s]++;
-                        } else if (score.includes(":")) {
-                            const parts = score.split(":");
-                            const p1 = parseInt(parts[0]);
-                            const p2 = parseInt(parts[1]);
-                            if (p1 > p2) wins[f]++;
-                            else if (p2 > p1) wins[s]++;
-                        }
-                    }
-                }
-            }
-
-            const list = [];
-            for (let i = 0; i < playerCount; i++) {
-                list.push({ index: i, points: wins[i] });
-            }
-
-            // Sort by points descending
-            list.sort((a, b) => b.points - a.points);
-            return list;
-        }
-
-        // ADMIN MATCH SCORING CONTROLLERS
-        function openAdminScoreDialog(fIdx, sIdx, scoreKey, tableIndex = null) {
-            const playerFields = JSON.parse(clubData.draft.playerFieldsJson || "[]");
-            const name1 = decodeName(playerFields[fIdx].name);
-            const name2 = decodeName(playerFields[sIdx].name);
-            
-            activeScoreMatch = { f: fIdx, s: sIdx, scoreKey: scoreKey, index: tableIndex };
-
-            document.getElementById('admin-score-match-title').textContent = `${name1} vs ${name2}`;
-
-            // Show compact if winsToWin == 1
-            const winsToWin = clubData.draft.winsToWin || 2;
-            const compactContainer = document.getElementById('admin-score-compact-container');
-            const standardContainer = document.getElementById('admin-score-standard-container');
-
-            if (winsToWin === 1) {
-                compactContainer.style.display = 'flex';
-                standardContainer.style.display = 'none';
-            } else {
-                compactContainer.style.display = 'none';
-                standardContainer.style.display = 'flex';
-                
-                const btnsGrid = document.getElementById('admin-score-btns-grid');
-                btnsGrid.innerHTML = '';
-
-                // Generate standard scores
-                // winsToWin == 2 -> 2:0, 2:1, 0:2, 1:2
-                // winsToWin == 3 -> 3:0, 3:1, 3:2, 0:3, 1:3, 2:3
-                const possibleScores = [];
-                for (let l = 0; l < winsToWin; l++) {
-                    possibleScores.push({ w: winsToWin, l: l });
-                }
-                
-                const rowLeft = document.createElement('div');
-                rowLeft.style.display = 'flex';
-                rowLeft.style.gap = '8px';
-                
-                const rowRight = document.createElement('div');
-                rowRight.style.display = 'flex';
-                rowRight.style.gap = '8px';
-                rowRight.style.marginTop = '8px';
-
-                possibleScores.forEach(item => {
-                    const btnW = document.createElement('button');
-                    btnW.className = 'dialog-score-btn score-btn-won';
-                    btnW.style.flex = '1';
-                    btnW.textContent = `${item.w} : ${item.l}`;
-                    btnW.addEventListener('click', () => submitQuickScore(`${item.w}:${item.l}`));
-                    rowLeft.appendChild(btnW);
-
-                    const btnL = document.createElement('button');
-                    btnL.className = 'dialog-score-btn score-btn-lost';
-                    btnL.style.flex = '1';
-                    btnL.textContent = `${item.l} : ${item.w}`;
-                    btnL.addEventListener('click', () => submitQuickScore(`${item.l}:${item.w}`));
-                    rowRight.appendChild(btnL);
-                });
-
-                btnsGrid.appendChild(rowLeft);
-                btnsGrid.appendChild(rowRight);
-            }
-
-            // Set withdraw names
-            document.getElementById('withdraw-p1-btn').textContent = `Снять: ${name1}`;
-            document.getElementById('withdraw-p2-btn').textContent = `Снять: ${name2}`;
-
-            document.getElementById('admin-score-modal').style.display = 'flex';
-        }
-
-        function closeAdminScoreModal() {
-            activeScoreMatch = null;
-            document.getElementById('admin-score-modal').style.display = 'none';
-        }
-
-        function reverseScoreString(scoreStr) {
-            if (!scoreStr || !scoreStr.includes(":")) return scoreStr;
-            const parts = scoreStr.split(":");
-            return parts[1] + ":" + parts[0];
-        }
-
-        // SAVE MATCH RESULT (ROUND ROBIN)
-        window.submitQuickScore = function(score) {
-            if (!activeScoreMatch) return;
-            showLoader(true);
-
-            const draft = { ...clubData.draft };
-            if (!draft.matchScores) draft.matchScores = {};
-            
-            let finalScore = score;
-            if (activeScoreMatch.f > activeScoreMatch.s) {
-                finalScore = reverseScoreString(score);
-            }
-            draft.matchScores[activeScoreMatch.scoreKey] = finalScore;
-
-            // Track last finished players
-            draft.lastFinishedPlayers = [activeScoreMatch.f, activeScoreMatch.s];
-
-            // If match was played at a table, clear table assignment
-            if (activeScoreMatch.index !== null && draft.activeRoundRobinMatches) {
-                draft.activeRoundRobinMatches[activeScoreMatch.index] = null;
-            }
-
-            // Reschedule next match
-            refreshActiveRoundRobinMatches(draft, draft.playersCount, draft.tablesCount);
-
-            db.ref(`clubs/${activeClubId}/draft`).set(draft)
-                .then(() => {
-                    closeAdminScoreModal();
-                    showLoader(false);
-                    showToast("Счет сохранен!");
-                })
-                .catch(e => {
-                    showLoader(false);
-                    showToast("Ошибка сохранения: " + e.message);
-                });
-        };
-
-        // WITHDRAW PLAYER (ROUND ROBIN)
-        window.submitPlayerWithdrawal = function(slotIdx) {
-            if (!activeScoreMatch) return;
-            const targetPlayerIdx = slotIdx === 0 ? activeScoreMatch.f : activeScoreMatch.s;
-            const targetPlayerName = decodeName(JSON.parse(clubData.draft.playerFieldsJson || "[]")[targetPlayerIdx].name);
-
-            if (!confirm(`Вы действительно хотите снять игрока "${targetPlayerName}" с текущего турнира? Все его несыгранные матчи будут аннулированы.`)) {
-                return;
-            }
-
-            showLoader(true);
-            const draft = { ...clubData.draft };
-            if (!draft.withdrawnPlayers) draft.withdrawnPlayers = [];
-            
-            // Add to withdrawn list
-            if (!draft.withdrawnPlayers.includes(targetPlayerIdx)) {
-                draft.withdrawnPlayers.push(targetPlayerIdx);
-            }
-
-            // Void all remaining matches for this player in matchScores
-            const playerCount = draft.playersCount;
-            const winsToWin = draft.winsToWin || 2;
-            const lossScore = `0:${winsToWin}`;
-            const winScore = `${winsToWin}:0`;
-            for (let idx = 0; idx < playerCount; idx++) {
-                if (idx === targetPlayerIdx) continue;
-                const scoreKey = targetPlayerIdx < idx ? `${targetPlayerIdx}_${idx}` : `${idx}_${targetPlayerIdx}`;
-                if (!draft.matchScores[scoreKey]) {
-                    draft.matchScores[scoreKey] = targetPlayerIdx < idx ? lossScore : winScore; // auto-defeat
-                }
-            }
-
-            // Clear table slots if occupied
-            if (draft.activeRoundRobinMatches) {
-                for (let i = 0; i < draft.activeRoundRobinMatches.length; i++) {
-                    const match = draft.activeRoundRobinMatches[i];
-                    if (match && (match.startsWith(`${targetPlayerIdx}_`) || match.endsWith(`_${targetPlayerIdx}`))) {
-                        draft.activeRoundRobinMatches[i] = null;
-                    }
-                }
-            }
-
-            // Reschedule next matches
-            refreshActiveRoundRobinMatches(draft, playerCount, draft.tablesCount);
-
-            db.ref(`clubs/${activeClubId}/draft`).set(draft)
-                .then(() => {
-                    closeAdminScoreModal();
-                    showLoader(false);
-                    showToast(`Игрок "${targetPlayerName}" снят с турнира`);
-                })
-                .catch(e => {
-                    showLoader(false);
-                    showToast("Ошибка сохранения: " + e.message);
-                });
-        };
-
-        // PLAYOFF SCORE MODALS
-        function openAdminPlayoffScoreDialog(matchId, p1Name, p2Name) {
-            activePlayoffMatchId = matchId;
-            document.getElementById('admin-playoff-match-title').textContent = `${p1Name} vs ${p2Name}`;
-            document.getElementById('admin-playoff-score-modal').style.display = 'flex';
-        }
-        function closeAdminPlayoffScoreModal() {
-            activePlayoffMatchId = null;
-            document.getElementById('admin-playoff-score-modal').style.display = 'none';
-        }
-        window.submitPlayoffScore = function(score) {
-            if (!activePlayoffMatchId) return;
-            showLoader(true);
-
-            db.ref(`clubs/${activeClubId}/draft/playoffScores/${activePlayoffMatchId}`).set(score)
-                .then(() => {
-                    closeAdminPlayoffScoreModal();
-                    showLoader(false);
-                    showToast("Счет сохранен!");
-                })
-                .catch(e => {
-                    showLoader(false);
-                    showToast("Ошибка сохранения: " + e.message);
-                });
-        };
-
-        // RTTF RATING CALCULATION LOGIC (PORT FROM KOTLIN)
-        function calculateDeltas(playerNames, scores, K, applyPlaceBonuses, playersList) {
-            const tournamentPlayers = playerNames.map(name => {
-                const p = playersList.find(pl => pl.fullName.toLowerCase() === name.toLowerCase());
-                return p ? { ...p } : { id: 999, fullName: name, rating: 200.0, tournamentsPlayed: 0, wins: 0, losses: 0 };
-            });
-
-            const accumulatedDeltas = {};
-            const winIncrements = {};
-            const lossIncrements = {};
-            tournamentPlayers.forEach(p => {
-                accumulatedDeltas[p.fullName.toLowerCase()] = 0.0;
-                winIncrements[p.fullName.toLowerCase()] = 0;
-                lossIncrements[p.fullName.toLowerCase()] = 0;
-            });
-
-            const parseScore = (str) => {
-                if (!str || !str.includes(":")) return null;
-                const p = str.split(":");
-                return [parseInt(p[0]), parseInt(p[1])];
-            };
-
-            for (let f = 0; f < playerNames.length; f++) {
-                for (let s = f + 1; s < playerNames.length; s++) {
-                    const scoreKey = `${f}_${s}`;
-                    const scoreStr = scores[scoreKey];
-                    const score = parseScore(scoreStr);
-                    if (!score || score[0] === score[1]) continue;
-
-                    const p1 = tournamentPlayers[f];
-                    const p2 = tournamentPlayers[s];
-
-                    const p1Won = score[0] > score[1];
-                    const winner = p1Won ? p1 : p2;
-                    const loser = p1Won ? p2 : p1;
-                    const winnerScore = p1Won ? score[0] : score[1];
-                    const loserScore = p1Won ? score[1] : score[0];
-
-                    const winnerName = winner.fullName.toLowerCase();
-                    const loserName = loser.fullName.toLowerCase();
-
-                    winIncrements[winnerName]++;
-                    lossIncrements[loserName]++;
-
-                    // rttfBaseDelta
-                    const diff = winner.rating - loser.rating;
-                    let baseDelta = 0.0;
-                    if (diff < 100.0) {
-                        baseDelta = (100.0 - diff) / 10.0;
-                    }
-
-                    if (baseDelta <= 0.0) continue;
-
-                    // scoreDominanceMultiplier
-                    let scoreCoeff = 1.0;
-                    if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
-                    else if (winnerScore === 3 && loserScore === 2) scoreCoeff = 0.8;
-                    else if (winnerScore === 3 && loserScore === 1) scoreCoeff = 0.9;
-                    else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
-
-                    const winnerIsNovice = winner.tournamentsPlayed <= 5;
-                    const loserIsNovice = loser.tournamentsPlayed <= 5;
-
-                    const winnerDelta = winnerIsNovice ? Math.round(baseDelta * 1.0 * 100) / 100 
-                                                       : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
-                    const loserDelta = loserIsNovice ? Math.round(baseDelta * 0.5 * 100) / 100 
-                                                     : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
-
-                    accumulatedDeltas[winnerName] += winnerDelta;
-                    accumulatedDeltas[loserName] -= loserDelta;
-                }
-            }
-
-            // Standings
-            const standings = calculateRoundRobinStandings(playerNames.length, scores);
-            if (applyPlaceBonuses && playerNames.length >= 3) {
-                const bonus1 = 1.5;
-                const bonus2 = 1.0;
-                const bonus3 = 0.5;
-
-                const p1Name = tournamentPlayers[standings[0].index].fullName.toLowerCase();
-                const p2Name = tournamentPlayers[standings[1].index].fullName.toLowerCase();
-                const p3Name = tournamentPlayers[standings[2].index].fullName.toLowerCase();
-
-                accumulatedDeltas[p1Name] += bonus1;
-                accumulatedDeltas[p2Name] += bonus2;
-                accumulatedDeltas[p3Name] += bonus3;
-            }
-
-            return {
-                deltas: accumulatedDeltas,
-                wins: winIncrements,
-                losses: lossIncrements,
-                standings: standings
-            };
-        }
-
-        // OPEN TOURNAMENT FINALIZE / REVIEW MODAL
-        window.calculatedResult = null; // store calculation outcome
-
-        function openTournamentFinishModal() {
-            const draft = clubData.draft;
-            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
-            const playerNames = playerFields.map(f => decodeName(f.name).trim());
-            const scores = draft.matchScores || {};
-            const K = draft.fixedK || 0.20;
-
-            const applyPlaceBonuses = document.getElementById('finish-bonuses-checkbox').checked;
-            
-            // Calculate
-            const result = calculateDeltas(playerNames, scores, K, applyPlaceBonuses, clubData.players);
-            window.calculatedResult = result;
-
-            const tbody = document.getElementById('finish-tourney-ratings-tbody');
-            tbody.innerHTML = '';
-
-            result.standings.forEach((item, idx) => {
-                const name = playerNames[item.index];
-                const p = clubData.players.find(pl => pl.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
-                const delta = result.deltas[name.toLowerCase()] || 0.0;
-                const newRating = p.rating + delta;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${idx + 1}</td>
-                    <td>${name}</td>
-                    <td>${p.rating.toFixed(1)} → <strong>${newRating.toFixed(1)}</strong></td>
-                    <td style="text-align:right; font-weight:800; color:${delta >= 0 ? 'var(--apple-green)' : 'var(--apple-red)'};">
-                        ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('tournament-finish-modal').style.display = 'flex';
-        }
-
-        function closeTournamentFinishModal() {
-            window.calculatedResult = null;
-            document.getElementById('tournament-finish-modal').style.display = 'none';
-        }
-
-        // Re-calculate when place bonuses checkbox changes
-        document.getElementById('finish-bonuses-checkbox').addEventListener('change', () => {
-            if (document.getElementById('tournament-finish-modal').style.display === 'flex') {
-                openTournamentFinishModal();
-            }
-        });
-
-        // APPLY RATINGS AND SAVE TOURNAMENT TO HISTORY (FINALIZE)
-        window.submitFinalizeTournament = function() {
-            if (!window.calculatedResult) return;
-            showLoader(true);
-
-            const result = window.calculatedResult;
-            const draft = clubData.draft;
-            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
-            const playerNames = playerFields.map(f => decodeName(f.name).trim());
-            const K = draft.fixedK || 0.20;
-
-            // 1. Update player ratings, wins, losses, tournaments count, and medals in player base
-            const updatedPlayers = clubData.players.map(p => {
-                const nameKey = p.fullName.toLowerCase();
-                const delta = result.deltas[nameKey];
-                if (delta !== undefined) {
-                    const winsInc = result.wins[nameKey] || 0;
-                    const lossesInc = result.losses[nameKey] || 0;
-                    
-                    let goldInc = 0;
-                    let silverInc = 0;
-                    let bronzeInc = 0;
-
-                    const finalPlace = result.standings.findIndex(item => playerNames[item.index].toLowerCase() === nameKey) + 1;
-                    if (finalPlace === 1) goldInc = 1;
-                    else if (finalPlace === 2) silverInc = 1;
-                    else if (finalPlace === 3) bronzeInc = 1;
-
-                    return {
-                        ...p,
-                        rating: Math.max(0.0, p.rating + delta),
-                        tournamentsPlayed: (p.tournamentsPlayed || 0) + 1,
-                        wins: (p.wins || 0) + winsInc,
-                        losses: (p.losses || 0) + lossesInc,
-                        goldMedals: (p.goldMedals || 0) + goldInc,
-                        silverMedals: (p.silverMedals || 0) + silverInc,
-                        bronzeMedals: (p.bronzeMedals || 0) + bronzeInc
-                    };
-                }
-                return p;
-            });
-
-            // 2. Format structuredRatings string: name::oldRating::newRating::delta
-            const srRows = [];
-            result.standings.forEach((item) => {
-                const name = playerNames[item.index];
-                const p = clubData.players.find(pl => pl.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
-                const delta = result.deltas[name.toLowerCase()] || 0.0;
-                const newRating = p.rating + delta;
-                srRows.push(`${safe_encode(name)}::${p.rating.toFixed(1)}::${newRating.toFixed(1)}::${delta.toFixed(2)}`);
-            });
-            const structuredRatings = srRows.join(";;");
-
-            // 3. Format structuredMatches string: p1::p2::score::p1Delta::p2Delta
-            const smRows = [];
-            const scores = draft.matchScores || {};
-            for (let f = 0; f < playerNames.length; f++) {
-                for (let s = f + 1; s < playerNames.length; s++) {
-                    const scoreKey = `${f}_${s}`;
-                    const score = scores[scoreKey];
-                    if (score && score.includes(":")) {
-                        const name1 = playerNames[f];
-                        const name2 = playerNames[s];
-                        
-                        // Deltas for this individual match
-                        const p1 = clubData.players.find(pl => pl.fullName.toLowerCase() === name1.toLowerCase()) || { rating: 200.0 };
-                        const p2 = clubData.players.find(pl => pl.fullName.toLowerCase() === name2.toLowerCase()) || { rating: 200.0 };
-                        const matchParts = score.split(":");
-                        const s1 = parseInt(matchParts[0]);
-                        const s2 = parseInt(matchParts[1]);
-                        
-                        const p1Won = s1 > s2;
-                        const winner = p1Won ? p1 : p2;
-                        const loser = p1Won ? p2 : p1;
-                        const winnerScore = p1Won ? s1 : s2;
-                        const loserScore = p1Won ? s2 : s1;
-
-                        const diff = winner.rating - loser.rating;
-                        let baseDelta = 0.0;
-                        if (diff < 100.0) {
-                            baseDelta = (100.0 - diff) / 10.0;
-                        }
-
-                        let matchDelta = 0.0;
-                        if (baseDelta > 0.0) {
-                            let scoreCoeff = 1.0;
-                            if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
-                            else if (winnerScore === 3 && loserScore === 2) scoreCoeff = 0.8;
-                            else if (winnerScore === 3 && loserScore === 1) scoreCoeff = 0.9;
-                            else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
-
-                            const winnerIsNovice = winner.tournamentsPlayed <= 5;
-                            matchDelta = winnerIsNovice ? baseDelta * 1.0 : baseDelta * K * scoreCoeff;
-                            matchDelta = Math.round(matchDelta * 100) / 100;
-                        }
-
-                        const p1Delta = p1Won ? matchDelta : -matchDelta;
-                        const p2Delta = p1Won ? -matchDelta : matchDelta;
-
-                        const p1DeltaStr = (p1Delta >= 0 ? '+' : '') + p1Delta.toFixed(2);
-                        const p2DeltaStr = (p2Delta >= 0 ? '+' : '') + p2Delta.toFixed(2);
-                        smRows.push(safe_encode(name1) + "::" + safe_encode(name2) + "::" + score + "::" + p1DeltaStr + "::" + p2DeltaStr);
-                    }
-                }
-            }
-            const structuredMatches = smRows.join(";;");
-
-            // 4. Create History Entry
-            const standingsText = result.standings.map((item, idx) => {
-                let medal = "";
-                if (idx === 0) medal = "🥇 ";
-                else if (idx === 1) medal = "🥈 ";
-                else if (idx === 2) medal = "🥉 ";
-                return `${idx + 1}. ${medal}${playerNames[item.index]} — ${item.points} оч.`;
-            }).join("\n");
-
-            const ratingText = result.standings.map((item) => {
-                const name = playerNames[item.index];
-                const p = clubData.players.find(pl => pl.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
-                const delta = result.deltas[name.toLowerCase()] || 0.0;
-                const oldRating = p.rating;
-                const newRating = oldRating + delta;
-                const deltaStr = (delta >= 0 ? '+' : '') + delta.toFixed(2);
-                return `${name}: ${oldRating.toFixed(1)} → ${newRating.toFixed(1)} (${deltaStr})`;
-            }).join("\n");
-
-            const winnerName = playerNames[result.standings[0].index];
-            const historyEntry = {
-                id: Date.now(),
-                name: draft.name || "Вечерний турнир",
-                dateText: new Date().toLocaleDateString('ru-RU') + " " + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-                playersCount: playerNames.length,
-                winnerName: winnerName,
-                standingsText: standingsText,
-                ratingText: ratingText,
-                structuredRatings: structuredRatings,
-                structuredMatches: structuredMatches
-            };
-
-            const updatedHistory = [historyEntry, ...clubData.history];
-
-            // 5. Save all to Firebase and clear draft
-            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers))
-                .then(() => {
-                    return db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory));
-                })
-                .then(() => {
-                    // Reset/remove draft
-                    return db.ref(`clubs/${activeClubId}/draft`).remove();
-                })
-                .then(() => {
-                    closeTournamentFinishModal();
-                    showLoader(false);
-                    showToast("Турнир успешно сохранен в историю!");
-                })
-                .catch(e => {
-                    showLoader(false);
-                    showToast("Ошибка сохранения: " + e.message);
-                });
-        };
-
-        // RENDER HISTORY
-        function renderHistory() {
-            const listEl = document.getElementById('history-list-el');
-            listEl.innerHTML = '';
-
-            // Update subtitle count in header/page
-            const subtitleEl = document.getElementById('history-subtitle-el');
-            if (subtitleEl) {
-                subtitleEl.textContent = `${clubData.history.length} завершённых турниров`;
-            }
-
-            const query = (document.getElementById('history-search-input')?.value || '').trim().toLowerCase();
-
-            // Filter history
-            const filtered = clubData.history.filter(entry => {
-                return entry.name.toLowerCase().includes(query) || (entry.winnerName || '').toLowerCase().includes(query);
-            });
-
-            // Sort by id descending to show newest first
-            filtered.sort((a, b) => b.id - a.id);
-
-            filtered.forEach(entry => {
-                const card = document.createElement('div');
-                card.className = 'history-card';
-                card.style.background = 'var(--bg-card)';
-                card.style.border = '1px solid var(--border-color)';
-                card.style.borderRadius = '20px';
-                card.style.padding = '16px';
-                card.style.display = 'flex';
-                card.style.alignItems = 'center';
-                card.style.gap = '16px';
-                card.style.cursor = 'pointer';
-                card.style.width = '100%';
-                card.style.boxSizing = 'border-box';
-                card.style.position = 'relative';
-
-                // Trophy Cup Icon
-                const trophyContainer = document.createElement('div');
-                trophyContainer.style.width = '44px';
-                trophyContainer.style.height = '44px';
-                trophyContainer.style.borderRadius = '50%';
-                trophyContainer.style.backgroundColor = 'rgba(255, 204, 0, 0.1)';
-                trophyContainer.style.display = 'flex';
-                trophyContainer.style.alignItems = 'center';
-                trophyContainer.style.justifyContent = 'center';
-                trophyContainer.style.flexShrink = '0';
-                trophyContainer.style.fontSize = '24px';
-                trophyContainer.textContent = '🏆';
-
-                // Middle: Text details
-                const infoBlock = document.createElement('div');
-                infoBlock.style.display = 'flex';
-                infoBlock.style.flexDirection = 'column';
-                infoBlock.style.gap = '4px';
-                infoBlock.style.flex = '1';
-                infoBlock.style.minWidth = '0';
-
-                const nameEl = document.createElement('div');
-                nameEl.style.fontSize = '16px';
-                nameEl.style.fontWeight = '700';
-                nameEl.style.color = 'var(--text-main)';
-                nameEl.style.whiteSpace = 'nowrap';
-                nameEl.style.overflow = 'hidden';
-                nameEl.style.textOverflow = 'ellipsis';
-                nameEl.textContent = entry.name;
-
-                const detailsRow = document.createElement('div');
-                detailsRow.style.fontSize = '13px';
-                detailsRow.style.color = 'var(--text-secondary)';
-                detailsRow.style.display = 'flex';
-                detailsRow.style.alignItems = 'center';
-                detailsRow.style.flexWrap = 'wrap';
-                detailsRow.style.gap = '6px';
-                detailsRow.innerHTML = `
-                    <span>👥 ${entry.playersCount} участников</span>
-                    <span>•</span>
-                    <span>📅 ${entry.dateText}</span>
-                `;
-
-                const winnerEl = document.createElement('div');
-                winnerEl.style.fontSize = '14px';
-                winnerEl.style.fontWeight = '600';
-                winnerEl.style.color = 'var(--apple-blue)';
-                winnerEl.textContent = `Победитель: ${entry.winnerName || 'Неизвестно'}`;
-
-                infoBlock.appendChild(nameEl);
-                infoBlock.appendChild(detailsRow);
-                infoBlock.appendChild(winnerEl);
-
-                // Right: Chevron arrow
-                const arrowEl = document.createElement('span');
-                arrowEl.style.fontSize = '24px';
-                arrowEl.style.color = '#C7C7CC';
-                arrowEl.textContent = '›';
-
-                if (isAdmin) {
-                    const swipeBg = document.createElement('div');
-                    swipeBg.className = 'history-card-swipe-bg';
-                    swipeBg.style.position = 'absolute';
-                    swipeBg.style.right = '0';
-                    swipeBg.style.top = '0';
-                    swipeBg.style.bottom = '0';
-                    swipeBg.style.width = '100%';
-                    swipeBg.style.backgroundColor = 'var(--apple-red)';
-                    swipeBg.style.color = '#ffffff';
-                    swipeBg.style.display = 'flex';
-                    swipeBg.style.alignItems = 'center';
-                    swipeBg.style.justifyContent = 'flex-end';
-                    swipeBg.style.paddingRight = '20px';
-                    swipeBg.style.borderRadius = '20px';
-                    swipeBg.style.zIndex = '1';
-                    swipeBg.style.opacity = '0';
-                    swipeBg.style.transition = 'opacity 0.15s';
-                    swipeBg.innerHTML = `<span style="font-weight:700;">Удалить</span>`;
-                    card.appendChild(swipeBg);
-
-                    // Touch Swipe handlers
-                    let startX = 0;
-                    let startY = 0;
-                    let isSwiping = false;
-                    let swipeX = 0;
-
-                    const innerCard = document.createElement('div');
-                    innerCard.style.display = 'flex';
-                    innerCard.style.alignItems = 'center';
-                    innerCard.style.gap = '16px';
-                    innerCard.style.width = '100%';
-                    innerCard.style.height = '100%';
-                    innerCard.style.position = 'relative';
-                    innerCard.style.zIndex = '2';
-                    innerCard.style.backgroundColor = 'var(--bg-card)';
-                    innerCard.style.borderRadius = '20px';
-                    innerCard.style.boxSizing = 'border-box';
-                    innerCard.addEventListener('click', () => openHistoryModal(entry));
-                    
-                    innerCard.appendChild(trophyContainer);
-                    innerCard.appendChild(infoBlock);
-                    innerCard.appendChild(arrowEl);
-                    card.appendChild(innerCard);
-
-                    innerCard.addEventListener('touchstart', (e) => {
-                        startX = e.touches[0].clientX;
-                        startY = e.touches[0].clientY;
-                        isSwiping = false;
-                        swipeX = 0;
-                        innerCard.style.transition = 'none';
-                        swipeBg.style.transition = 'none';
-                    }, { passive: true });
-
-                    innerCard.addEventListener('touchmove', (e) => {
-                        const currentX = e.touches[0].clientX;
-                        const currentY = e.touches[0].clientY;
-                        const diffX = currentX - startX;
-                        const diffY = currentY - startY;
-
-                        if (!isSwiping) {
-                            if (Math.abs(diffX) > Math.abs(diffY) && diffX < -10) {
-                                isSwiping = true;
-                            }
-                        }
-
-                        if (isSwiping) {
-                            if (e.cancelable) e.preventDefault();
-                            swipeX = Math.min(0, diffX);
-                            innerCard.style.transform = `translateX(${swipeX}px)`;
-                            swipeBg.style.opacity = Math.min(1, Math.abs(swipeX) / 80);
-                        }
-                    }, { passive: false });
-
-                    innerCard.addEventListener('touchend', () => {
-                        innerCard.style.transition = 'transform 0.2s ease-out';
-                        swipeBg.style.transition = 'opacity 0.2s ease-out';
-
-                        if (swipeX < -80) {
-                            if (confirm(`Вы уверены, что хотите удалить турнир "${entry.name}" из истории?`)) {
-                                deleteHistoryEntry(entry.id);
-                            }
-                        }
-                        
-                        innerCard.style.transform = 'translateX(0)';
-                        swipeBg.style.opacity = '0';
-                    });
-                } else {
-                    card.appendChild(trophyContainer);
-                    card.appendChild(infoBlock);
-                    card.appendChild(arrowEl);
-                    card.addEventListener('click', () => openHistoryModal(entry));
-                }
-
-                listEl.appendChild(card);
-            });
-
-            if (filtered.length === 0) {
-                listEl.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">Турниры не найдены</div>';
-            }
-        }
-
-        // DELETE HISTORY ENTRY
-        function deleteHistoryEntry(id) {
-            showLoader(true);
-            const updatedHistory = clubData.history.filter(e => e.id !== id);
-            db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory))
-                .then(() => {
-                    showLoader(false);
-                    showToast("Турнир успешно удален из истории");
-                })
-                .catch(err => {
-                    showLoader(false);
-                    showToast("Ошибка при удалении: " + err.message);
-                });
-        }
-
-        // VISITOR ANALYTICS CONTROLLER
-        function openAnalyticsModal() {
-            if (!isAdmin) return;
-            const modal = document.getElementById('analytics-modal');
-            modal.style.display = 'flex';
-            showLoader(true);
-
-            db.ref(`clubs/${activeClubId}/analytics/events`).once('value')
-                .then(snapshot => {
-                    showLoader(false);
-                    const rawData = snapshot.val();
-                    
-                    const events = [];
-                    if (rawData) {
-                        Object.keys(rawData).forEach(key => {
-                            events.push({
-                                key: key,
-                                ...rawData[key]
-                            });
-                        });
-                    }
-
-                    // Prune oldest if exceeds 1000 records
-                    if (events.length > 1000) {
-                        events.sort((a, b) => a.timestamp - b.timestamp);
-                        const toDelete = events.slice(0, events.length - 1000);
-                        const updates = {};
-                        toDelete.forEach(ev => {
-                            updates[ev.key] = null;
-                        });
-                        db.ref(`clubs/${activeClubId}/analytics/events`).update(updates);
-                        // keep only remaining 1000 for display
-                        events.splice(0, events.length - 1000);
-                    }
-
-                    // Sort descending for dashboard views
-                    events.sort((a, b) => b.timestamp - a.timestamp);
-
-                    // 1. Visit Statistics (loads)
-                    const now = Date.now();
-                    const oneDayMs = 24 * 60 * 60 * 1000;
-                    const startOfToday = now - (now % oneDayMs);
-                    const startOfWeek = now - 7 * oneDayMs;
-
-                    const uniqueToday = new Set();
-                    const uniqueWeek = new Set();
-
-                    events.forEach(ev => {
-                        if (ev.type === 'load') {
-                            if (ev.timestamp >= startOfToday) {
-                                uniqueToday.add(ev.sessionId);
-                            }
-                            if (ev.timestamp >= startOfWeek) {
-                                uniqueWeek.add(ev.sessionId);
-                            }
-                        }
-                    });
-
-                    document.getElementById('analytics-loads-today').textContent = uniqueToday.size;
-                    document.getElementById('analytics-loads-week').textContent = uniqueWeek.size;
-
-                    // 2. Most popular profiles & searches
-                    const searchCounts = {};
-                    events.forEach(ev => {
-                        if (ev.type === 'view_profile') {
-                            const label = `📈 Профиль: ${ev.detail}`;
-                            searchCounts[label] = (searchCounts[label] || 0) + 1;
-                        } else if (ev.type === 'search') {
-                            const label = `🔍 Поиск: "${ev.detail}"`;
-                            searchCounts[label] = (searchCounts[label] || 0) + 1;
-                        }
-                    });
-
-                    const topSearchesEl = document.getElementById('analytics-top-searches');
-                    topSearchesEl.innerHTML = '';
-                    const sortedSearches = Object.entries(searchCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                    if (sortedSearches.length === 0) {
-                        topSearchesEl.innerHTML = '<div style="color:var(--text-secondary); font-size:12px; padding: 4px 0;">Нет данных</div>';
-                    } else {
-                        sortedSearches.forEach(([label, count]) => {
-                            const row = document.createElement('div');
-                            row.style.display = 'flex';
-                            row.style.justifyContent = 'space-between';
-                            row.style.padding = '4px 0';
-                            row.style.borderBottom = '1px solid #f2f2f7';
-                            row.innerHTML = `<span>${label}</span><strong style="color:var(--apple-blue);">${count} раз</strong>`;
-                            topSearchesEl.appendChild(row);
-                        });
-                    }
-
-                    // 3. Most popular tournaments
-                    const tourneyCounts = {};
-                    events.forEach(ev => {
-                        if (ev.type === 'view_history_tournament') {
-                            tourneyCounts[ev.detail] = (tourneyCounts[ev.detail] || 0) + 1;
-                        }
-                    });
-
-                    const topTourneysEl = document.getElementById('analytics-top-tournaments');
-                    topTourneysEl.innerHTML = '';
-                    const sortedTourneys = Object.entries(tourneyCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
-                    if (sortedTourneys.length === 0) {
-                        topTourneysEl.innerHTML = '<div style="color:var(--text-secondary); font-size:12px; padding: 4px 0;">Нет данных</div>';
-                    } else {
-                        sortedTourneys.forEach(([name, count]) => {
-                            const row = document.createElement('div');
-                            row.style.display = 'flex';
-                            row.style.justifyContent = 'space-between';
-                            row.style.padding = '4px 0';
-                            row.style.borderBottom = '1px solid #f2f2f7';
-                            row.innerHTML = `<span>🏆 ${name}</span><strong style="color:var(--apple-green);">${count} просм.</strong>`;
-                            topTourneysEl.appendChild(row);
-                        });
-                    }
-
-                    // 4. Activity Feed (last 30)
-                    const feedEl = document.getElementById('analytics-recent-feed');
-                    feedEl.innerHTML = '';
-                    const feedEvents = events.slice(0, 30);
-                    if (feedEvents.length === 0) {
-                        feedEl.innerHTML = '<div style="color:var(--text-secondary); text-align:center; padding:12px 0;">Лента пуста</div>';
-                    } else {
-                        feedEvents.forEach(ev => {
-                            let iconText = '📝';
-                            let desc = '';
-                            if (ev.type === 'load') {
-                                iconText = '📱';
-                                desc = 'Вход в приложение';
-                            } else if (ev.type === 'tab_switch') {
-                                iconText = '🏓';
-                                let tabName = ev.detail;
-                                if (tabName === 'ratings') tabName = 'Рейтинг';
-                                else if (tabName === 'active') tabName = 'Турнир';
-                                else if (tabName === 'history') tabName = 'История';
-                                desc = `Переход на вкладку "${tabName}"`;
-                            } else if (ev.type === 'search') {
-                                iconText = '🔍';
-                                desc = `Поиск игрока: "${ev.detail}"`;
-                            } else if (ev.type === 'view_profile') {
-                                iconText = '📈';
-                                desc = `Просмотр профиля: ${ev.detail}`;
-                            } else if (ev.type === 'view_history_tournament') {
-                                iconText = '🏆';
-                                desc = `Открыт турнир из истории: "${ev.detail}"`;
-                            } else if (ev.type === 'expand_history_player') {
-                                iconText = '👤';
-                                desc = `Раскрыты матчи в истории: ${ev.detail}`;
-                            }
-
-                            const row = document.createElement('div');
-                            row.style.display = 'flex';
-                            row.style.justifyContent = 'space-between';
-                            row.style.alignItems = 'center';
-                            row.style.fontSize = '12px';
-                            row.style.padding = '6px 8px';
-                            row.style.borderRadius = '8px';
-                            row.style.backgroundColor = '#f8f8fa';
-
-                            row.innerHTML = `
-                                <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
-                                    <span style="font-size:16px;">${iconText}</span>
-                                    <span style="color:var(--text-main); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${desc}</span>
-                                </div>
-                                <span style="color:var(--text-secondary); font-size:11px; margin-left:8px; flex-shrink:0;">${getRelativeTime(ev.timestamp)}</span>
-                            `;
-                            feedEl.appendChild(row);
-                        });
-                    }
-                })
-                .catch(err => {
-                    showLoader(false);
-                    showToast("Ошибка загрузки аналитики: " + err.message);
-                });
-        }
-
-        function closeAnalyticsModal() {
-            document.getElementById('analytics-modal').style.display = 'none';
-        }
-
-        function getRelativeTime(timestamp) {
-            const diffMs = Date.now() - timestamp;
-            const diffSec = Math.floor(diffMs / 1000);
-            if (diffSec < 60) return "только что";
-            const diffMin = Math.floor(diffSec / 60);
-            if (diffMin < 60) return `${diffMin} мин назад`;
-            const diffHour = Math.floor(diffMin / 60);
-            if (diffHour < 24) return `${diffHour} ч назад`;
-            const diffDay = Math.floor(diffHour / 24);
-            return `${diffDay} дн назад`;
-        }
-
-        // TOGGLE LEGEND ACCORDION IN HALL OF FAME
-        window.toggleHallLegend = function() {
-            const content = document.getElementById('hall-legend-content');
-            const arrow = document.getElementById('hall-legend-arrow');
-            if (content && arrow) {
-                const isHidden = content.style.display === 'none';
-                content.style.display = isHidden ? 'flex' : 'none';
-                arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-            }
-        };
-
-        // VISITOR ANALYTICS WRITER
-        function logAnalyticsEvent(type, detail) {
-            if (isAdmin) return; // Don't log admin events
-            const sessionId = safeStorage.getItem('tennis_session_id') || Math.random().toString(36).substring(2, 10);
-            safeStorage.setItem('tennis_session_id', sessionId);
-            const event = {
-                type: type,
-                detail: detail || '',
-                timestamp: Date.now(),
-                sessionId: sessionId
-            };
-            if (db && activeClubId) {
-                db.ref(`clubs/${activeClubId}/analytics/events`).push(event).catch(err => console.error("Analytics error:", err));
-            }
-        }
-
-        // CALCULATE ACHIEVEMENTS FOR HALL OF FAME
-        function calculateAchievements() {
-            const achievements = {}; // { playerFullNameLower: { badgeName: count } }
-
-            // Initialize structure for all players
-            clubData.players.forEach(p => {
-                achievements[p.fullName.toLowerCase()] = {};
-            });
-
-            // 1. Серийный чемпион (Serial Champion)
-            const sortedHistory = [...clubData.history].sort((a, b) => a.id - b.id);
-            let currentWinner = "";
-            let streakCount = 0;
-            sortedHistory.forEach(entry => {
-                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
-                if (ratings.length > 0) {
-                    const p0 = ratings[0].split("::");
-                    if (p0.length >= 1) {
-                        const winnerName = decodeName(p0[0]).toLowerCase();
-                        if (winnerName === currentWinner) {
-                            streakCount++;
-                            if (streakCount === 3) {
-                                if (achievements[winnerName]) {
-                                    achievements[winnerName]['champion'] = (achievements[winnerName]['champion'] || 0) + 1;
-                                }
-                                streakCount = 0;
-                            }
-                        } else {
-                            currentWinner = winnerName;
-                            streakCount = 1;
-                        }
-                    }
-                }
-            });
-
-            // 2. Гроза авторитетов (Giant Slayer)
-            // 5. Неуязвимый (Invincible)
-            const giantSlayers = {};
-            const invincibles = {};
-            
-            clubData.history.forEach(entry => {
-                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
-                const ratingsMap = {};
-                ratings.forEach(rStr => {
-                    const p = rStr.split("::");
-                    if (p.length >= 2) {
-                        ratingsMap[decodeName(p[0]).toLowerCase()] = parseFloat(p[1]);
-                    }
-                });
-
-                const tourneyStats = {};
-                const matches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
-                matches.forEach(matchStr => {
-                    const p = matchStr.split("::");
-                    if (p.length >= 3) {
-                        const p1 = decodeName(p[0]).toLowerCase();
-                        const p2 = decodeName(p[1]).toLowerCase();
-                        const score = p[2];
-                        const r1 = ratingsMap[p1];
-                        const r2 = ratingsMap[p2];
-
-                        if (!tourneyStats[p1]) tourneyStats[p1] = { played: 0, wins: 0 };
-                        if (!tourneyStats[p2]) tourneyStats[p2] = { played: 0, wins: 0 };
-
-                        tourneyStats[p1].played++;
-                        tourneyStats[p2].played++;
-
-                        const scoreParts = score.split(":");
-                        let p1Won = false;
-                        if (score === 'W') p1Won = true;
-                        else if (score === 'L') p1Won = false;
-                        else if (scoreParts.length === 2) {
-                            p1Won = parseInt(scoreParts[0]) > parseInt(scoreParts[1]);
-                        }
-
-                        if (p1Won) {
-                            tourneyStats[p1].wins++;
-                            if (r1 !== undefined && r2 !== undefined && (r2 - r1 >= 100)) {
-                                giantSlayers[p1] = (giantSlayers[p1] || 0) + 1;
-                            }
-                        } else {
-                            tourneyStats[p2].wins++;
-                            if (r1 !== undefined && r2 !== undefined && (r1 - r2 >= 100)) {
-                                giantSlayers[p2] = (giantSlayers[p2] || 0) + 1;
-                            }
-                        }
-                    }
-                });
-
-                // Compute invincibles for this tourney
-                Object.keys(tourneyStats).forEach(name => {
-                    const stats = tourneyStats[name];
-                    if (stats.played >= 2 && stats.wins === stats.played) {
-                        invincibles[name] = (invincibles[name] || 0) + 1;
-                    }
-                });
-            });
-
-            // Map giantSlayers and invincibles
-            Object.keys(giantSlayers).forEach(name => {
-                if (achievements[name]) achievements[name]['slayer'] = giantSlayers[name];
-            });
-            Object.keys(invincibles).forEach(name => {
-                if (achievements[name]) achievements[name]['invincible'] = invincibles[name];
-            });
-
-            // 3. Взрывной рост (Explosive Growth)
-            const growthMap = {};
-            const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-            clubData.history.forEach(entry => {
-                if (entry.id >= thirtyDaysAgo) {
-                    const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
-                    ratings.forEach(rStr => {
-                        const p = rStr.split("::");
-                        if (p.length >= 4) {
-                            const name = decodeName(p[0]).toLowerCase();
-                            const delta = parseFloat(p[3] || "0");
-                            growthMap[name] = (growthMap[name] || 0) + delta;
-                        }
-                    });
-                }
-            });
-            Object.keys(growthMap).forEach(name => {
-                if (growthMap[name] >= 50 && achievements[name]) {
-                    achievements[name]['growth'] = 1;
-                }
-            });
-
-            // 4. Железный человек (Iron Man)
-            // 6. Гроссмейстер (Grandmaster)
-            clubData.players.forEach(p => {
-                const name = p.fullName.toLowerCase();
-                if (!achievements[name]) achievements[name] = {};
-
-                if (p.tournamentsPlayed >= 100) {
-                    achievements[name]['iron'] = 2;
-                } else if (p.tournamentsPlayed >= 50) {
-                    achievements[name]['iron'] = 1;
-                }
-
-                if (p.rating >= 350.0) {
-                    achievements[name]['grandmaster'] = 1;
-                }
-            });
-
-            return achievements;
-        }
-
-        // GET BADGE SVG GRAPHICS
-        function getBadgeSvg(type) {
-            switch(type) {
-                case 'champion':
-                    return `
-                        <svg viewBox="0 0 100 100" class="badge-icon" title="Серийный чемпион">
-                            <path d="M35 38 h30 v12 c0 8 -6 15 -15 15 s-15 -7 -15 -15 z" fill="url(#gold-grad-legend)"/>
-                            <path d="M35 42 c-5 0 -8 4 -8 8 s3 8 8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
-                            <path d="M65 42 c5 0 8 4 8 8 s-3 8 -8 8" fill="none" stroke="url(#gold-grad-legend)" stroke-width="3"/>
-                            <path d="M46 65 h8 v10 h-8 z" fill="url(#gold-grad-legend)"/>
-                            <path d="M30 75 h40 v6 h-40 z" fill="url(#gold-grad-legend)" rx="2"/>
-                            <path d="M50 15 l2 4 h4 l-3 2.5 l1 4.5 l-4 -3 l-4 3 l1 -4.5 l-3 -2.5 h4 z" fill="#FFE259"/>
-                        </svg>`;
-                case 'slayer':
-                    return `
-                        <svg viewBox="0 0 100 100" class="badge-icon" title="Гроза авторитетов">
-                            <path d="M32 30 c12 0 18 -6 18 -6 s6 6 18 6 v22 c0 12 -18 20 -18 20 s-18 -8 -18 -20 z" fill="url(#shield-grad-legend)"/>
-                            <path d="M50 34 l3 6 v18 h-6 v-18 z" fill="#FFFFFF"/>
-                            <path d="M42 42 h16 v3 h-16 z" fill="#FFFFFF"/>
-                            <path d="M49 61 h2 v4 h-2 z" fill="#FFFFFF"/>
-                        </svg>`;
-                case 'growth':
-                    return `
-                        <svg viewBox="0 0 100 100" class="badge-icon" title="Взрывной рост">
-                            <path d="M34 66 c-2 8 2 12 6 10 l12 -12 l-6 -6 z" fill="#FF512F"/>
-                            <path d="M40 60 l24 -24 c5 -5 10 -6 10 -6 s-1 5 -6 10 l-24 24 z" fill="url(#rocket-grad-legend)"/>
-                            <path d="M43 57 l-9 3 l2 8 z" fill="#11998e"/>
-                            <path d="M57 43 l3 -9 l8 2 z" fill="#11998e"/>
-                            <circle cx="56" cy="44" r="3" fill="#FFFFFF" />
-                        </svg>`;
-                case 'iron':
-                    return `
-                        <svg viewBox="0 0 100 100" class="badge-icon" title="Железный человек">
-                            <path d="M30 32 c0 0 20 -8 20 -8 s20 8 20 8 v18 c0 16 -20 26 -20 26 s-20 -10 -20 -26 z" fill="url(#iron-grad-legend)"/>
-                            <path d="M50 38 l3 8 h9 l-7 5.5 l2.5 8.5 l-7.5 -5 l-7.5 5 l2.5 -8.5 l-7 -5.5 h9 z" fill="#FF8C00"/>
-                            <path d="M34 35 c0 0 16 -6 16 -6 s16 6 16 6 v15 c0 12 -16 21 -16 21 s-16 -9 -16 -21 z" fill="none" stroke="#2c3e50" stroke-width="1.5"/>
-                        </svg>`;
-                case 'invincible':
-                    return `
-                        <svg viewBox="0 0 100 100" class="badge-icon" title="Неуязвимый">
-                            <path d="M46 50 c-8 -8 -20 -4 -20 -4 s4 10 12 10 c4 0 8 -3 8 -6 z" fill="url(#gold-grad2-legend)"/>
-                            <path d="M54 50 c8 -8 20 -4 20 -4 s-4 10 -12 10 c-4 0 -8 -3 -8 -6 z" fill="url(#gold-grad2-legend)"/>
-                            <path d="M52 30 l-10 18 h12 l-6 20 l14 -22 h-12 z" fill="#FFE259"/>
-                        </svg>`;
-                case 'grandmaster':
-                    return `
-                        <svg viewBox="0 0 100 100" class="badge-icon" title="Гроссмейстер">
-                            <polygon points="50,22 68,36 50,78 32,36" fill="url(#cyan-grad-legend)" opacity="0.9"/>
-                            <polygon points="50,22 68,36 50,42" fill="#FFFFFF" opacity="0.3"/>
-                            <polygon points="50,22 32,36 50,42" fill="#FFFFFF" opacity="0.5"/>
-                            <polygon points="32,36 50,78 50,42" fill="#000000" opacity="0.1"/>
-                            <polygon points="68,36 50,78 50,42" fill="#FFFFFF" opacity="0.15"/>
-                        </svg>`;
-                default:
-                    return '';
-            }
         }
 
         function renderHall() {
