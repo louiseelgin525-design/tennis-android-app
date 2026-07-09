@@ -2531,7 +2531,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.8.8 (09.07.2026 10:30)
+                Версия веб-приложения: 1.8.9 (09.07.2026 10:35)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -3530,13 +3530,20 @@
         });
 
         // ROLE SELECTOR TOGGLE
-        window.setRole = function(role) {
+        function setRole(role) {
             selectedRole = role;
-            document.getElementById('role-viewer-btn').classList.toggle('active', role === 'viewer');
-            document.getElementById('role-admin-btn').classList.toggle('active', role === 'admin');
-            document.getElementById('admin-pin-input').style.display = role === 'admin' ? 'block' : 'none';
+            const viewerBtn = document.getElementById('role-viewer-btn');
+            const adminBtn = document.getElementById('role-admin-btn');
+            if (viewerBtn) viewerBtn.classList.toggle('active', role === 'viewer');
+            if (adminBtn) adminBtn.classList.toggle('active', role === 'admin');
+            
+            const pinInput = document.getElementById('admin-pin-input');
+            if (pinInput) {
+                pinInput.style.display = role === 'admin' ? 'block' : 'none';
+            }
             debugLog("Роль переключена на: " + role);
-        };
+        }
+        window.setRole = setRole;
 
         // SET PLAYER SORT TYPE
         window.setPlayerSort = function(type) {
@@ -3549,17 +3556,16 @@
             renderPlayers();
         };
 
-        // Attach event listeners directly to selector buttons
-        window.addEventListener('DOMContentLoaded', () => {
+        // SAFE APP INITIALIZATION
+        function initApp() {
+            debugLog("Инициализация приложения...");
+            
+            // Attach event listeners directly to selector buttons
             const viewerBtn = document.getElementById('role-viewer-btn');
             const adminBtn = document.getElementById('role-admin-btn');
-            if (viewerBtn) viewerBtn.addEventListener('click', () => window.setRole('viewer'));
-            if (adminBtn) adminBtn.addEventListener('click', () => window.setRole('admin'));
-        });
+            if (viewerBtn) viewerBtn.onclick = () => setRole('viewer');
+            if (adminBtn) adminBtn.onclick = () => setRole('admin');
 
-        // INITIAL DOM LOAD LOG
-        window.addEventListener('DOMContentLoaded', () => {
-            debugLog("DOM контент загружен.");
             const cachedId = safeStorage.getItem('tennis_club_id');
             const adminMode = safeStorage.getItem('tennis_admin_mode') === 'true';
             debugLog("Кэшированный ID клуба: " + (cachedId || "отсутствует"));
@@ -3573,9 +3579,15 @@
                 debugLog("Попытка авто-входа в: " + cachedId);
                 attemptLogin(cachedId, safeStorage.getItem('tennis_admin_pin') || '');
             } else {
-                loginScreen.style.display = 'flex';
+                if (loginScreen) loginScreen.style.display = 'flex';
             }
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
 
         // FORM SUBMIT HANDLER (Supports "Go"/"Search" and click across iOS/Android devices)
         if (loginForm) {
