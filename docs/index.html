@@ -802,32 +802,41 @@
         .players-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
 
+        /* NEW PREMIUM PLAYER CARD STYLES (UI SPEC COMPLIANT) */
         .player-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 12px 16px;
+            background-color: #FFFFFF;
+            border: 1px solid #E4E8F0;
+            border-radius: 24px;
+            padding: 14px 16px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
             position: relative;
             z-index: 2;
+            width: 100%;
+            min-height: 128px;
+            box-sizing: border-box;
+            user-select: none;
         }
 
         .player-card:active {
             transform: scale(0.98);
+            background-color: #F8FAFC;
         }
 
         .player-card-wrapper {
             position: relative;
-            border-radius: 16px;
+            border-radius: 24px;
             overflow: hidden;
             width: 100%;
-            background-color: var(--bg-main);
+            background-color: #F5F7FB;
+            margin-bottom: 12px;
         }
 
         .player-card-swipe-bg {
@@ -843,107 +852,381 @@
             padding-left: 16px;
             font-weight: 700;
             font-size: 14px;
-            border-radius: 16px;
+            border-radius: 24px;
             z-index: 1;
             opacity: 0;
             transition: opacity 0.15s;
         }
 
-        .player-rank {
-            width: 28px;
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--apple-blue);
-        }
-
-        .player-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background-color: var(--bg-input);
+        .player-card-main {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 700;
-            margin-right: 12px;
-            background-size: cover;
-            background-position: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 12px;
         }
 
-        .player-info {
+        .player-card-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             flex: 1;
             min-width: 0;
         }
 
-        .player-name {
-            font-size: 15px;
+        /* Ribbon Position Rank Badge */
+        .player-card-rank-badge {
+            width: 32px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: #FFFFFF;
+            flex-shrink: 0;
+            margin-right: 2px;
+            position: relative;
+        }
+
+        /* Top 1 Gold Ribbon */
+        .player-card-rank-badge.top-1 {
+            background: #F6B91E;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 10px rgba(246, 185, 30, 0.25);
+        }
+
+        /* Top 2 Silver Ribbon */
+        .player-card-rank-badge.top-2 {
+            background: #B8C0CC;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 10px rgba(184, 192, 204, 0.25);
+        }
+
+        /* Top 3 Bronze Ribbon */
+        .player-card-rank-badge.top-3 {
+            background: #C9833A;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 10px rgba(201, 131, 58, 0.25);
+        }
+
+        /* Normal Rank Text */
+        .player-card-rank-badge.normal-rank {
+            color: #8A8F9C;
+            font-size: 16px;
             font-weight: 700;
-            color: var(--text-main);
-            white-space: nowrap;
+            width: 32px;
+            height: auto;
+        }
+
+        /* Avatar Container */
+        .player-card-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+            border: 1px solid #E4E8F0;
+        }
+
+        /* Avatar No-Photo style */
+        .player-card-avatar.no-photo {
+            background-color: #E8F2FF;
+            color: #0A84FF;
+            font-size: 26px;
+            font-weight: 700;
+            border-color: rgba(10, 132, 255, 0.1);
+        }
+
+        .player-card-info-text {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .player-card-name {
+            font-size: clamp(17px, 4vw, 19px);
+            font-weight: 800;
+            line-height: 1.15;
+            color: #0D182A;
+            word-wrap: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        .player-substats {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 2px;
+        .player-card-subtext {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+            line-height: 1.3;
         }
 
-        .player-rating-badge {
+        /* Right side: Rating Column */
+        .player-card-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .player-card-rating-col {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            margin-right: 12px;
+            gap: 2px;
+            min-width: 60px;
         }
 
-        .player-rating-val {
+        .player-card-star {
+            color: #F6B91E;
             font-size: 16px;
+            line-height: 1;
+        }
+
+        .player-card-rating-val {
+            font-size: 22px;
             font-weight: 800;
-            color: var(--text-main);
+            color: #0D182A;
+            line-height: 1;
         }
 
-        .player-rating-label {
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-weight: 600;
-            margin-top: 1px;
+        .player-card-delta {
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .player-card-delta.positive {
+            color: #16A34A;
+        }
+        .player-card-delta.negative {
+            color: #DC2626;
+        }
+        .player-card-delta.neutral {
+            color: #8A8F9C;
         }
 
-        .player-card-arrow {
-            font-size: 18px;
-            color: var(--text-secondary);
+        .player-card-chevron {
+            font-size: 20px;
+            color: #94A3B8;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
         }
 
-        /* SORT SELECTOR FOR PLAYERS LIST */
+        /* Achievements / Chips Row */
+        .player-card-badges-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 2px;
+            width: 100%;
+        }
+
+        .player-card-medal-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 28px;
+            min-width: 44px;
+            padding: 0 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #0D182A;
+            box-sizing: border-box;
+        }
+
+        /* Badge Specific Color Styles */
+        .player-card-medal-badge.gold {
+            background-color: #FFF4D6;
+            color: #B28100;
+        }
+        .player-card-medal-badge.silver {
+            background-color: #F1F3F6;
+            color: #7A869A;
+        }
+        .player-card-medal-badge.bronze {
+            background-color: #FFF0E8;
+            color: #A35C24;
+        }
+        .player-card-medal-badge.lightning {
+            background-color: #FFF6D8;
+            color: #D97706;
+        }
+        .player-card-medal-badge.rocket {
+            background-color: #EAFBF1;
+            color: #16A34A;
+        }
+        .player-card-medal-badge.shield {
+            background-color: #F1F3F6;
+            color: #64748B;
+        }
+        .player-card-medal-badge.other-badge {
+            background-color: #E8F2FF;
+            color: #0A84FF;
+        }
+
+        /* PREMIUM SORT SELECTOR */
         .sort-selector {
             display: flex;
-            gap: 12px;
+            height: 52px;
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 18px;
+            padding: 4px;
             margin-bottom: 16px;
             width: 100%;
+            box-sizing: border-box;
+            gap: 0; /* adjacent inside container */
         }
         .sort-btn {
             flex: 1;
-            height: 40px;
-            border-radius: 12px;
-            font-size: 14px;
+            height: 100%;
+            border: none;
+            background-color: transparent;
+            color: #8A8F9C;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--border-color);
-            background-color: var(--bg-card);
-            color: var(--text-secondary);
             outline: none;
         }
         .sort-btn.active {
-            border-color: var(--apple-blue);
-            background-color: rgba(0, 122, 255, 0.08);
-            color: var(--apple-blue);
+            background-color: #0A84FF;
+            color: #FFFFFF;
+            border-radius: 14px;
+            font-weight: 700;
+        }
+
+        /* HEADER & SEARCH BAR STYLES */
+        .players-view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+
+        .players-title-block {
+            text-align: left;
+        }
+
+        .players-main-title {
+            font-size: clamp(32px, 9vw, 36px);
+            font-weight: 800;
+            color: #0D182A;
+            line-height: 1.05;
+            margin: 0;
+        }
+
+        .players-subtitle-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #8A8F9C;
+            margin-top: 4px;
+            line-height: 1.25;
+        }
+
+        .add-player-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background-color: #0A84FF;
+            color: #FFFFFF;
+            border: none;
+            font-size: 28px;
+            font-weight: 400;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(10, 132, 255, 0.25);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .add-player-btn:hover {
+            transform: scale(1.05);
+            background-color: #0070E0;
+        }
+        .add-player-btn:active {
+            transform: scale(0.95);
+        }
+
+        .search-bar-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .premium-search-input {
+            width: 100%;
+            height: 52px;
+            border-radius: 18px;
+            padding-left: 48px;
+            padding-right: 16px;
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            font-size: 17px;
+            font-weight: 400;
+            color: #0D182A;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .premium-search-input:focus {
+            border-color: #0A84FF;
+            box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+            outline: none;
+        }
+
+        .premium-search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 22px;
+            color: #8A8F9C;
+            pointer-events: none;
+        }
+
+        @media (max-width: 360px) {
+            .player-card {
+                padding: 12px 14px;
+                min-height: 124px;
+            }
+            .player-card-avatar {
+                width: 52px;
+                height: 52px;
+            }
+            .player-card-avatar.no-photo {
+                font-size: 24px;
+            }
+            .player-card-name {
+                font-size: 17px;
+            }
+            .player-card-rating-val {
+                font-size: 20px;
+            }
+            .add-player-btn {
+                width: 52px;
+                height: 52px;
+                border-radius: 26px;
+                font-size: 26px;
+            }
         }
 
         /* MEDAL CONTAINER */
@@ -2531,7 +2814,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.9.0 (09.07.2026 10:40)
+                Версия веб-приложения: 1.9.1 (09.07.2026 11:00)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -2564,31 +2847,37 @@
         <main class="views-container">
             <!-- TAB 1: RATINGS -->
             <section id="view-ratings" class="view">
-                <div class="players-view-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <div>
-                        <h2 style="font-size:24px; font-weight:800; color:var(--text-main); margin:0;">База игроков</h2>
-                        <div id="players-subtitle" style="font-size:13px; color:var(--text-secondary); margin-top:2px;">0 игроков • рейтинг, аватарки</div>
+                <!-- HEADER -->
+                <div class="players-view-header">
+                    <div class="players-title-block">
+                        <h2 class="players-main-title">База игроков</h2>
+                        <div id="players-subtitle" class="players-subtitle-text">0 игроков · рейтинг, аватарки</div>
                     </div>
-                    <button id="add-player-header-btn" onclick="openPlayerAddModal()" style="display:none; width:40px; height:40px; border-radius:50%; background-color:var(--apple-blue); color:white; border:none; font-size:22px; font-weight:bold; cursor:pointer; align-items:center; justify-content:center; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    <button id="add-player-header-btn" class="add-player-btn" onclick="openPlayerAddModal()" style="display:none;">
                         +
                     </button>
                 </div>
 
-                <div class="search-bar" style="margin-bottom:12px;">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    <input type="text" id="player-search" class="search-input" placeholder="Поиск по фамилии или имени" autocomplete="off" autocapitalize="words">
+                <!-- SEARCH BAR -->
+                <div class="search-bar-container">
+                    <svg class="premium-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="player-search" class="premium-search-input" placeholder="Поиск по фамилии или имени" autocomplete="off" autocapitalize="words">
                 </div>
 
+                <!-- SORT SELECTOR -->
                 <div class="sort-selector">
-                    <button id="sort-by-rating-btn" class="sort-btn active" onclick="setPlayerSort('rating')">По рейтингу</button>
-                    <button id="sort-by-name-btn" class="sort-btn" onclick="setPlayerSort('alphabet')">По алфавиту</button>
+                    <button class="sort-btn active" id="sort-by-rating-btn" onclick="setPlayerSort('rating')">По рейтингу</button>
+                    <button class="sort-btn" id="sort-by-name-btn" onclick="setPlayerSort('alphabet')">По алфавиту</button>
                 </div>
 
                 <div class="players-list" id="players-list-el">
                     <!-- Loaded dynamically -->
                 </div>
             </section>
-
+            
             <!-- TAB 2: ACTIVE TOURNAMENT -->
             <section id="view-active" class="view">
                 <div id="active-tournament-container">
@@ -3939,6 +4228,7 @@ function getPlayerLastDelta(player) {
 
         function renderPlayers() {
             const listEl = document.getElementById('players-list-el');
+            if (!listEl) return;
             listEl.innerHTML = '';
 
             const achievements = calculateAchievements();
@@ -3949,7 +4239,7 @@ function getPlayerLastDelta(player) {
 
             const subtitle = document.getElementById('players-subtitle');
             if (subtitle) {
-                subtitle.textContent = `${clubData.players.length} игроков • рейтинг, аватарки`;
+                subtitle.textContent = `${clubData.players.length} игроков · рейтинг, аватарки`;
             }
 
             const query = playerSearch.value.trim().toLowerCase();
@@ -3969,7 +4259,7 @@ function getPlayerLastDelta(player) {
             // Create rating sorted array to calculate ranks
             const ratingSorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
 
-            filtered.forEach((player, index) => {
+            filtered.forEach((player) => {
                 const rank = ratingSorted.findIndex(p => p.id === player.id) + 1;
                 const totalGames = player.wins + player.losses;
 
@@ -3977,33 +4267,34 @@ function getPlayerLastDelta(player) {
                 wrapper.className = 'player-card-wrapper';
 
                 const swipeBg = document.createElement('div');
-                swipeBg.className = 'player-card-swipe-bg';
-                swipeBg.innerHTML = `${SVG_ICONS.plus} <span style="margin-left: 8px; font-weight:700;">Добавить в турнир</span>`;
                 wrapper.appendChild(swipeBg);
 
                 const card = document.createElement('div');
                 card.className = 'player-card';
 
-                // Left Column: Rank + Avatar + Info
+                // Main card content flex container
+                const cardMain = document.createElement('div');
+                cardMain.className = 'player-card-main';
+
+                // Left side: Rank + Avatar + NameBlock
                 const leftSide = document.createElement('div');
                 leftSide.className = 'player-card-left';
-                leftSide.style.cursor = 'pointer';
-                leftSide.addEventListener('click', () => openPlayerModal(player));
 
                 // Rank badge
                 const rankBadge = document.createElement('div');
                 rankBadge.className = 'player-card-rank-badge';
                 if (rank === 1) {
-                    rankBadge.textContent = '🥇';
+                    rankBadge.textContent = '1';
                     rankBadge.classList.add('top-1');
                 } else if (rank === 2) {
-                    rankBadge.textContent = '🥈';
+                    rankBadge.textContent = '2';
                     rankBadge.classList.add('top-2');
                 } else if (rank === 3) {
-                    rankBadge.textContent = '🥉';
+                    rankBadge.textContent = '3';
                     rankBadge.classList.add('top-3');
                 } else {
                     rankBadge.textContent = `#${rank}`;
+                    rankBadge.classList.add('normal-rank');
                 }
 
                 // Avatar
@@ -4015,9 +4306,7 @@ function getPlayerLastDelta(player) {
                     avatarEl.style.backgroundImage = `url("${cloudAvatar}")`;
                     avatarEl.textContent = '';
                 } else {
-                    avatarEl.style.backgroundImage = 'none';
-                    avatarEl.style.backgroundColor = 'rgba(0, 122, 255, 0.08)';
-                    avatarEl.style.color = 'var(--apple-blue)';
+                    avatarEl.classList.add('no-photo');
                     const parts = player.fullName.trim().split(/\s+/);
                     let initial = "";
                     if (parts.length > 0) initial = parts[0].charAt(0).toUpperCase();
@@ -4028,112 +4317,134 @@ function getPlayerLastDelta(player) {
                 const textBlock = document.createElement('div');
                 textBlock.className = 'player-card-info-text';
 
-                // Name
+                // Name formatting (hide middle/patronymics, allow 2 lines wrap)
+                const nameParts = player.fullName.trim().split(/\s+/);
+                let displayName = player.fullName;
+                if (nameParts.length >= 2) {
+                    displayName = `${nameParts[0]} ${nameParts[1]}`;
+                }
+
                 const nameEl = document.createElement('div');
                 nameEl.className = 'player-card-name';
-                nameEl.textContent = player.fullName;
+                nameEl.textContent = displayName;
 
-                // Subtext
+                // Subtext block
                 const subtextEl = document.createElement('div');
                 subtextEl.className = 'player-card-subtext';
-                subtextEl.textContent = `#${rank} в клубе · ${totalGames} игр · ${player.tournamentsPlayed || 0} турн`;
+                subtextEl.innerHTML = `#${rank} в клубе<br>${totalGames} игр · ${player.tournamentsPlayed || 0} турниров`;
 
-                // Badges/Medals row
+                textBlock.appendChild(nameEl);
+                textBlock.appendChild(subtextEl);
+
+                leftSide.appendChild(rankBadge);
+                leftSide.appendChild(avatarEl);
+                leftSide.appendChild(textBlock);
+
+                // Right Column: Rating block + chevron
+                const rightSide = document.createElement('div');
+                rightSide.className = 'player-card-right';
+
+                const ratingCol = document.createElement('div');
+                ratingCol.className = 'player-card-rating-col';
+
+                // Yellow Star icon
+                const starEl = document.createElement('span');
+                starEl.className = 'player-card-star';
+                starEl.textContent = '⭐';
+                ratingCol.appendChild(starEl);
+
+                // Rating Value
+                const ratingVal = document.createElement('div');
+                ratingVal.className = 'player-card-rating-val';
+                ratingVal.textContent = player.rating.toFixed(1);
+                ratingCol.appendChild(ratingVal);
+
+                // Last Delta
+                const lastDelta = getPlayerLastDelta(player);
+                const deltaEl = document.createElement('div');
+                if (lastDelta > 0) {
+                    deltaEl.className = 'player-card-delta positive';
+                    deltaEl.textContent = `+${lastDelta.toFixed(1)}`;
+                } else if (lastDelta < 0) {
+                    deltaEl.className = 'player-card-delta negative';
+                    deltaEl.textContent = lastDelta.toFixed(1);
+                } else {
+                    deltaEl.className = 'player-card-delta neutral';
+                    deltaEl.textContent = '0.0';
+                }
+                ratingCol.appendChild(deltaEl);
+
+                rightSide.appendChild(ratingCol);
+
+                // Chevron icon (Right arrow ›)
+                const chevronEl = document.createElement('span');
+                chevronEl.className = 'player-card-chevron';
+                chevronEl.textContent = '›';
+                rightSide.appendChild(chevronEl);
+
+                cardMain.appendChild(leftSide);
+                cardMain.appendChild(rightSide);
+                card.appendChild(cardMain);
+
+                // Achievements/Chips Row (at the bottom)
                 const badgesRow = document.createElement('div');
                 badgesRow.className = 'player-card-badges-row';
 
+                // Gold medals
                 if (player.goldMedals > 0) {
                     const badge = document.createElement('span');
-                    badge.className = 'player-card-medal-badge';
+                    badge.className = 'player-card-medal-badge gold';
                     badge.innerHTML = `🥇 <span>${player.goldMedals}</span>`;
                     badgesRow.appendChild(badge);
                 }
+                // Silver medals
                 if (player.silverMedals > 0) {
                     const badge = document.createElement('span');
-                    badge.className = 'player-card-medal-badge';
+                    badge.className = 'player-card-medal-badge silver';
                     badge.innerHTML = `🥈 <span>${player.silverMedals}</span>`;
                     badgesRow.appendChild(badge);
                 }
+                // Bronze medals
                 if (player.bronzeMedals > 0) {
                     const badge = document.createElement('span');
-                    badge.className = 'player-card-medal-badge';
+                    badge.className = 'player-card-medal-badge bronze';
                     badge.innerHTML = `🥉 <span>${player.bronzeMedals}</span>`;
                     badgesRow.appendChild(badge);
                 }
 
+                // Special achievements
                 const pAchievements = achievements[player.fullName.toLowerCase()] || {};
                 const specialBadgeTypes = [
-                    { key: 'champion', icon: '🏆' },
-                    { key: 'slayer', icon: '⚔️' },
-                    { key: 'growth', icon: '🚀' },
-                    { key: 'iron', icon: '🛡️' },
-                    { key: 'invincible', icon: '⚡' },
-                    { key: 'grandmaster', icon: '💎' }
+                    { key: 'champion', icon: '🏆', css: 'other-badge' },
+                    { key: 'slayer', icon: '⚔️', css: 'other-badge' },
+                    { key: 'growth', icon: '🚀', css: 'rocket' },
+                    { key: 'iron', icon: '🛡️', css: 'shield' },
+                    { key: 'invincible', icon: '⚡', css: 'lightning' },
+                    { key: 'grandmaster', icon: '💎', css: 'other-badge' }
                 ];
 
                 specialBadgeTypes.forEach(t => {
                     const count = pAchievements[t.key] || 0;
                     if (count > 0) {
                         const badge = document.createElement('span');
-                        badge.className = 'player-card-medal-badge';
+                        badge.className = `player-card-medal-badge ${t.css}`;
                         badge.innerHTML = `${t.icon} <span>${count}</span>`;
                         badgesRow.appendChild(badge);
                     }
                 });
 
-                textBlock.appendChild(nameEl);
-                textBlock.appendChild(subtextEl);
                 if (badgesRow.childNodes.length > 0) {
-                    textBlock.appendChild(badgesRow);
+                    card.appendChild(badgesRow);
                 }
 
-                leftSide.appendChild(rankBadge);
-                leftSide.appendChild(avatarEl);
-                leftSide.appendChild(textBlock);
+                // Handle click on card to open player detail profile modal
+                card.addEventListener('click', () => openPlayerModal(player));
 
-                // Right Column: Rating + Delta + edit icon (if admin)
-                const rightSide = document.createElement('div');
-                rightSide.className = 'player-card-right';
-
-                const ratingBadge = document.createElement('div');
-                ratingBadge.className = 'player-card-rating-badge';
-                ratingBadge.innerHTML = `⭐ <span>${player.rating.toFixed(1)}</span>`;
-                ratingBadge.style.cursor = 'pointer';
-                ratingBadge.addEventListener('click', () => openPlayerModal(player));
-
-                rightSide.appendChild(ratingBadge);
-
-                // Delta
-                const lastDelta = getPlayerLastDelta(player);
-                if (lastDelta !== 0) {
-                    const deltaBadge = document.createElement('div');
-                    deltaBadge.className = 'player-card-delta-badge' + (lastDelta < 0 ? ' negative' : '');
-                    deltaBadge.textContent = (lastDelta >= 0 ? '+' : '') + lastDelta.toFixed(1);
-                    deltaBadge.style.cursor = 'pointer';
-                    deltaBadge.addEventListener('click', () => openPlayerModal(player));
-                    rightSide.appendChild(deltaBadge);
-                }
-
-                card.appendChild(leftSide);
-                card.appendChild(rightSide);
-
-                // Admin functionality: Pencil edit icon + swipe to add
+                // Touch Swipe gesture to quickly add to tournament draft (only for admins)
                 if (isAdmin) {
-                    const editIcon = document.createElement('span');
-                    editIcon.className = 'edit-player-icon';
-                    editIcon.style.cursor = 'pointer';
-                    editIcon.style.display = 'inline-flex';
-                    editIcon.style.alignItems = 'center';
-                    editIcon.style.padding = '4px';
-                    editIcon.style.marginLeft = '8px';
-                    editIcon.innerHTML = SVG_ICONS.pencil;
-                    editIcon.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        openPlayerEditModal(player);
-                    });
-                    rightSide.appendChild(editIcon);
+                    swipeBg.className = 'player-card-swipe-bg';
+                    swipeBg.innerHTML = `${SVG_ICONS.plus} <span style="margin-left: 8px; font-weight:700;">Добавить в турнир</span>`;
 
-                    // Touch Swipe handlers
                     let startX = 0;
                     let startY = 0;
                     let isSwiping = false;
@@ -4192,28 +4503,14 @@ function getPlayerLastDelta(player) {
                         card.style.transform = 'translateX(0)';
                         swipeBg.style.opacity = '0';
                     });
-                } else {
-                    // Non-admin arrow indicator
-                    const arrowEl = document.createElement('span');
-                    arrowEl.style.fontSize = '24px';
-                    arrowEl.style.color = '#C7C7CC';
-                    arrowEl.textContent = '›';
-                    arrowEl.style.cursor = 'pointer';
-                    arrowEl.style.marginLeft = '8px';
-                    arrowEl.addEventListener('click', () => openPlayerModal(player));
-                    rightSide.appendChild(arrowEl);
                 }
 
                 wrapper.appendChild(card);
                 listEl.appendChild(wrapper);
             });
-
-            if (filtered.length === 0) {
-                listEl.innerHTML += '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">Игроки не найдены</div>';
-            }
         }
 
-        // PLAYER BASE WRITE OPERATIONS (Admin Modals)
+                // PLAYER BASE WRITE OPERATIONS (Admin Modals)
         let selectedAddAvatarBase64 = "";
         let selectedEditAvatarBase64 = "";
 
