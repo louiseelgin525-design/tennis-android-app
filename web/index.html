@@ -3060,7 +3060,7 @@
             </button>
             <!-- Auto-synchronized across root, docs, and web -->
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 2.0.5 (09.07.2026 16:50)
+                Версия веб-приложения: 2.0.6 (09.07.2026 16:55)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -3974,6 +3974,23 @@
             3: `<svg class="svg-medal" viewBox="0 0 36 44" width="22" height="26" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M12 2 L6 20 L18 20 Z" fill="#d84315"/><path d="M24 2 L18 20 L30 20 Z" fill="#bf360c"/><circle cx="18" cy="27" r="13" fill="#d7ccc8" stroke="#a1887f" stroke-width="1.5"/><circle cx="18" cy="27" r="10" fill="none" stroke="#a1887f" stroke-width="1" stroke-dasharray="2,2"/><text x="18" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" text-anchor="middle" fill="#6d4c41">3</text></svg>`
         };
 
+        // Russian Pluralization Helpers
+        function getPluralNoun(n, one, two, five) {
+            const n10 = Math.abs(n) % 10;
+            const n100 = Math.abs(n) % 100;
+            if (n10 === 1 && n100 !== 11) {
+                return one;
+            }
+            if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) {
+                return two;
+            }
+            return five;
+        }
+
+        function formatPlural(n, one, two, five) {
+            return `${n} ${getPluralNoun(n, one, two, five)}`;
+        }
+
         // LONG PRESS GESTURE BINDING
         function bindLongPress(element, callback, duration = 1200) {
             let timer = null;
@@ -4671,7 +4688,7 @@ function getPlayerLastDelta(player) {
             const subtitle = document.getElementById('players-subtitle');
             if (subtitle) {
                 const totalPlayers = clubData.players.length;
-                subtitle.textContent = `${totalPlayers} игроков · рейтинг, аватарки`;
+                subtitle.textContent = `${formatPlural(totalPlayers, 'игрок', 'игрока', 'игроков')} · рейтинг, аватарки`;
             }
 
             const query = playerSearch.value.trim().toLowerCase();
@@ -4777,9 +4794,9 @@ function getPlayerLastDelta(player) {
                 const subtextEl = document.createElement('div');
                 subtextEl.className = 'player-card-subtext';
                 if (isCoachCard) {
-                    subtextEl.innerHTML = `${totalGames} игр · ${player.tournamentsPlayed || 0} турниров<br><span style="color:#8A8F9C; font-size:12px; font-weight:555; margin-top:2px; display:inline-block;">Может играть на рейтинг · Вне нумерации</span>`;
+                    subtextEl.innerHTML = `${formatPlural(totalGames, 'игра', 'игры', 'игр')} · ${formatPlural(player.tournamentsPlayed || 0, 'турнир', 'турнира', 'турниров')}<br><span style="color:#8A8F9C; font-size:12px; font-weight:555; margin-top:2px; display:inline-block;">Может играть на рейтинг · Вне нумерации</span>`;
                 } else {
-                    subtextEl.innerHTML = `#${rank} в клубе<br>${totalGames} игр · ${player.tournamentsPlayed || 0} турниров`;
+                    subtextEl.innerHTML = `#${rank} в клубе<br>${formatPlural(totalGames, 'игра', 'игры', 'игр')} · ${formatPlural(player.tournamentsPlayed || 0, 'турнир', 'турнира', 'турниров')}`;
                 }
                 textBlock.appendChild(subtextEl);
                 leftSide.appendChild(textBlock);
@@ -5913,9 +5930,9 @@ function getPlayerLastDelta(player) {
             const subtitleStatsEl = document.getElementById('modal-player-subtitle-stats');
             if (subtitleStatsEl) {
                 if (player.role === 'coach') {
-                    subtitleStatsEl.textContent = `👑 Тренер клуба · ${totalGames} игр · ${player.tournamentsPlayed} турниров`;
+                    subtitleStatsEl.textContent = `👑 Тренер клуба · ${formatPlural(totalGames, 'игра', 'игры', 'игр')} · ${formatPlural(player.tournamentsPlayed, 'турнир', 'турнира', 'турниров')}`;
                 } else {
-                    subtitleStatsEl.textContent = `#${rank} в клубе · ${totalGames} игр · ${player.tournamentsPlayed} турниров`;
+                    subtitleStatsEl.textContent = `#${rank} в клубе · ${formatPlural(totalGames, 'игра', 'игры', 'игр')} · ${formatPlural(player.tournamentsPlayed, 'турнир', 'турнира', 'турниров')}`;
                 }
             }
 
@@ -6098,7 +6115,7 @@ function getPlayerLastDelta(player) {
                     <div class="profile-achievement-tile">
                         <div class="profile-achievement-icon-box" style="background: rgba(249, 115, 22, 0.08); color: #F97316;">🔥</div>
                         <div class="profile-achievement-info">
-                            <span class="profile-achievement-title">${bestStreak} побед подряд</span>
+                            <span class="profile-achievement-title">${formatPlural(bestStreak, 'победа', 'победы', 'побед')} подряд</span>
                             <span class="profile-achievement-desc">${isCurrentActive ? 'Текущая серия побед' : 'Рекордная серия побед'}</span>
                         </div>
                     </div>
@@ -8161,7 +8178,7 @@ function getPlayerLastDelta(player) {
             // Update subtitle count in header/page
             const subtitleEl = document.getElementById('history-subtitle-el');
             if (subtitleEl) {
-                subtitleEl.textContent = `${clubData.history.length} завершённых турниров`;
+                subtitleEl.textContent = formatPlural(clubData.history.length, 'завершённый турнир', 'завершённых турнира', 'завершённых турниров');
             }
 
             const query = (document.getElementById('history-search-input')?.value || '').trim().toLowerCase();
@@ -9243,7 +9260,7 @@ function getPlayerLastDelta(player) {
             if (bestStreakName && maxStreak > 0) {
                 const pObj = clubData.players.find(p => p.fullName.toLowerCase() === bestStreakName);
                 if (pObj) {
-                    records.streak = { player: pObj, value: `${maxStreak} побед` };
+                    records.streak = { player: pObj, value: formatPlural(maxStreak, 'победа', 'победы', 'побед') };
                 }
             }
 
@@ -9324,12 +9341,12 @@ function getPlayerLastDelta(player) {
                         <div class="potw-metric-chip">
                             <span class="potw-metric-icon">🏆</span>
                             <strong>${streakCount}</strong>
-                            <small>побед подряд</small>
+                            <small>${getPluralNoun(streakCount, 'победа', 'победы', 'побед')} подряд</small>
                         </div>
                         <div class="potw-metric-chip">
                             <span class="potw-metric-icon">📅</span>
                             <strong>${tourneysCount}</strong>
-                            <small>турнира</small>
+                            <small>${getPluralNoun(tourneysCount, 'турнир', 'турнира', 'турниров')}</small>
                         </div>
                     </div>
                 </div>
@@ -9498,7 +9515,7 @@ function getPlayerLastDelta(player) {
                 stats.style.fontSize = '11px';
                 stats.style.color = 'var(--text-secondary)';
                 stats.style.marginTop = '2px';
-                stats.textContent = `★${p.rating.toFixed(1)}  ·  ${p.wins + p.losses} игр  ·  ${p.tournamentsPlayed} турниров`;
+                stats.textContent = `★${p.rating.toFixed(1)}  ·  ${formatPlural(p.wins + p.losses, 'игра', 'игры', 'игр')}  ·  ${formatPlural(p.tournamentsPlayed, 'турнир', 'турнира', 'турниров')}`;
 
                 info.appendChild(name);
                 info.appendChild(stats);
