@@ -874,40 +874,36 @@
             min-width: 0;
         }
 
-        /* Ribbon Position Rank Badge */
+        /* Rank Badge */
         .player-card-rank-badge {
             width: 32px;
-            height: 44px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 800;
-            color: #FFFFFF;
             flex-shrink: 0;
             margin-right: 2px;
             position: relative;
         }
 
-        /* Top 1 Gold Ribbon */
+        /* Top 1 Gold */
         .player-card-rank-badge.top-1 {
-            background: #F6B91E;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 10px rgba(246, 185, 30, 0.25);
+            background: transparent;
+            box-shadow: none;
         }
 
-        /* Top 2 Silver Ribbon */
+        /* Top 2 Silver */
         .player-card-rank-badge.top-2 {
-            background: #B8C0CC;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 10px rgba(184, 192, 204, 0.25);
+            background: transparent;
+            box-shadow: none;
         }
 
-        /* Top 3 Bronze Ribbon */
+        /* Top 3 Bronze */
         .player-card-rank-badge.top-3 {
-            background: #C9833A;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 10px rgba(201, 131, 58, 0.25);
+            background: transparent;
+            box-shadow: none;
         }
 
         /* Normal Rank Text */
@@ -2825,7 +2821,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.9.7 (09.07.2026 14:00)
+                Версия веб-приложения: 1.9.8 (09.07.2026 14:05)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -4559,17 +4555,25 @@ function getPlayerLastDelta(player) {
                 const ratingCol = document.createElement('div');
                 ratingCol.className = 'player-card-rating-col';
 
+                // Rating Row (Star + Value inline)
+                const ratingRow = document.createElement('div');
+                ratingRow.style.display = 'flex';
+                ratingRow.style.alignItems = 'center';
+                ratingRow.style.gap = '4px';
+
                 // Star icon
                 const starEl = document.createElement('span');
                 starEl.className = 'player-card-star';
                 starEl.textContent = '⭐';
-                ratingCol.appendChild(starEl);
+                ratingRow.appendChild(starEl);
 
                 // Rating Value
                 const ratingVal = document.createElement('div');
                 ratingVal.className = 'player-card-rating-val';
                 ratingVal.textContent = player.rating.toFixed(1);
-                ratingCol.appendChild(ratingVal);
+                ratingRow.appendChild(ratingVal);
+                
+                ratingCol.appendChild(ratingRow);
 
                 // Last Delta
                 const lastDelta = getPlayerLastDelta(player);
