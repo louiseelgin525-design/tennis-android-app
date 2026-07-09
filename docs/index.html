@@ -734,9 +734,17 @@
         }
 
         .bottom-sheet-item-icon {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bottom-sheet-item-icon .badge-icon {
+            width: 36px;
+            height: 36px;
         }
 
         .bottom-sheet-item-content {
@@ -1923,7 +1931,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.8.3 (09.07.2026 09:25)
+                Версия веб-приложения: 1.8.4 (09.07.2026 09:35)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -2516,7 +2524,7 @@
     <!-- BOTTOM SHEET: BADGE LEGEND -->
     <div id="badge-legend-sheet" class="bottom-sheet-overlay" onclick="closeBadgeLegendSheet(event)">
         <!-- GLOBAL ACHIEVEMENTS GRADIENTS DEFS -->
-        <svg style="display:none; width:0; height:0;">
+        <svg style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; opacity: 0;">
             <defs>
                 <linearGradient id="gold-grad-legend" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#FFE259" />
@@ -2563,7 +2571,7 @@
                         </svg>
                     </div>
                     <div class="bottom-sheet-item-content">
-                        <span class="bottom-sheet-item-title">Серийный чемпион (🏆)</span>
+                        <span class="bottom-sheet-item-title">Серийный чемпион</span>
                         <span class="bottom-sheet-item-desc">Выиграл 3 турнира клуба подряд (первые места в последовательных completed турнирах).</span>
                     </div>
                 </div>
@@ -2578,7 +2586,7 @@
                         </svg>
                     </div>
                     <div class="bottom-sheet-item-content">
-                        <span class="bottom-sheet-item-title">Гроза авторитетов (⚔️)</span>
+                        <span class="bottom-sheet-item-title">Гроза авторитетов</span>
                         <span class="bottom-sheet-item-desc">Одержал победу в матче над игроком, чей стартовый рейтинг был на 100+ очков выше.</span>
                     </div>
                 </div>
@@ -2594,7 +2602,7 @@
                         </svg>
                     </div>
                     <div class="bottom-sheet-item-content">
-                        <span class="bottom-sheet-item-title">Взрывной рост (🚀 / 📈)</span>
+                        <span class="bottom-sheet-item-title">Взрывной рост</span>
                         <span class="bottom-sheet-item-desc">Набрал 50 и более очков рейтинга за последние 30 календарных дней.</span>
                     </div>
                 </div>
@@ -2608,7 +2616,7 @@
                         </svg>
                     </div>
                     <div class="bottom-sheet-item-content">
-                        <span class="bottom-sheet-item-title">Железный человек (🛡️)</span>
+                        <span class="bottom-sheet-item-title">Железный человек</span>
                         <span class="bottom-sheet-item-desc">Сыграл 50 или более турниров за всё время участия в клубе (100+ для x2).</span>
                     </div>
                 </div>
@@ -2622,7 +2630,7 @@
                         </svg>
                     </div>
                     <div class="bottom-sheet-item-content">
-                        <span class="bottom-sheet-item-title">Неуязвимый (⚡)</span>
+                        <span class="bottom-sheet-item-title">Неуязвимый</span>
                         <span class="bottom-sheet-item-desc">Прошел весь турнир со 100% результатом (минимум 2 сыгранных матча без поражений).</span>
                     </div>
                 </div>
@@ -2638,13 +2646,14 @@
                         </svg>
                     </div>
                     <div class="bottom-sheet-item-content">
-                        <span class="bottom-sheet-item-title">Гроссмейстер (💎)</span>
+                        <span class="bottom-sheet-item-title">Гроссмейстер</span>
                         <span class="bottom-sheet-item-desc">Достиг текущего рейтинга 350.0 очков и более.</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <script>
         // SVG ICONS & MEDALS DICTIONARIES
