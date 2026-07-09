@@ -513,8 +513,8 @@
 
         .potw-decor-star {
             position: relative;
-            width: 84px;
-            height: 100px;
+            width: 64px;
+            height: 64px;
             flex: 0 0 auto;
             filter: drop-shadow(0 10px 18px rgba(58, 162, 255, 0.45));
             opacity: 1;
@@ -522,33 +522,12 @@
 
         .potw-decor-star .star-shape {
             position: absolute;
-            left: 14px;
+            left: 0;
             top: 0;
             width: 64px;
             height: 64px;
             background: linear-gradient(135deg, #eaf8ff, #6fd0ff 35%, #2f8bff 65%, #0d4ec8);
             clip-path: polygon(50% 0%, 63% 34%, 100% 37%, 71% 59%, 80% 95%, 50% 76%, 20% 95%, 29% 59%, 0 37%, 37% 34%);
-        }
-
-        .potw-decor-star .star-base {
-            position: absolute;
-            left: 10px;
-            bottom: 4px;
-            width: 76px;
-            height: 22px;
-            border-radius: 12px;
-            background: linear-gradient(90deg, #07162f, #1676e8, #07162f);
-        }
-
-        .potw-decor-star .star-base::before {
-            content: "";
-            position: absolute;
-            left: 16px;
-            bottom: 18px;
-            width: 44px;
-            height: 28px;
-            border-radius: 9px;
-            background: linear-gradient(90deg, #0b2a5b, #1676e8, #07162f);
         }
 
         .potw-metrics {
@@ -594,27 +573,31 @@
             text-align: left;
         }
 
-        @media (max-width: 360px) {
-            .potw-card {
-                min-height: 188px;
-            }
-
-            .potw-decor-star {
-                width: 62px;
-                transform: scale(0.9);
-                transform-origin: right center;
-            }
-
-            .potw-change {
-                font-size: 34px;
-            }
-
+        @media (max-width: 480px) {
             .potw-metrics {
                 grid-template-columns: 1fr 1fr;
             }
 
             .potw-metric-wide {
                 display: none;
+            }
+
+            .potw-card {
+                min-height: 188px;
+            }
+
+            .potw-decor-star {
+                width: 54px;
+                height: 54px;
+            }
+
+            .potw-decor-star .star-shape {
+                width: 54px;
+                height: 54px;
+            }
+
+            .potw-change {
+                font-size: 34px;
             }
         }
 
@@ -1940,7 +1923,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.8.2 (09.07.2026 09:15)
+                Версия веб-приложения: 1.8.3 (09.07.2026 09:25)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -7166,7 +7149,6 @@
 
                         <div class="potw-decor-star" aria-hidden="true">
                             <div class="star-shape"></div>
-                            <div class="star-base"></div>
                         </div>
                     </div>
 
