@@ -1369,78 +1369,673 @@
             margin-bottom: 24px;
         }
 
-        /* PLAYER DETAILS MODAL DETAILS */
-        .player-modal-header {
+        /* PLAYER PROFILE DESIGN */
+        .profile-modal-card {
+            background-color: #F5F7FB !important;
+            padding: 0 !important;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px;
+            overflow: hidden;
+            border-radius: 24px !important;
         }
 
-        .player-modal-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: var(--bg-input);
+        .profile-header-container {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            background: #ffffff;
+            border-bottom: 1px solid #E4E8F0;
+            position: relative;
+        }
+
+        .profile-back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 18px;
+            background: #ffffff;
+            border: 1px solid #E4E8F0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 12px;
+            cursor: pointer;
+            color: var(--text-main);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+            padding: 0;
+        }
+        .profile-back-btn:hover {
+            background: #F5F7FB;
+            transform: scale(1.03);
+        }
+
+        .profile-header-title-container {
+            flex-grow: 1;
+            margin-left: 14px;
+            text-align: left;
+        }
+
+        .profile-header-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .profile-header-subtitle {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-menu-container {
+            position: relative;
+        }
+
+        .profile-menu-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s ease;
+        }
+        .profile-menu-btn:hover {
+            background: rgba(0,0,0,0.04);
+        }
+
+        .profile-dropdown-menu {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #E4E8F0;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            width: 190px;
+            z-index: 1000;
+            display: none;
+            padding: 6px;
+        }
+
+        .profile-dropdown-menu button {
+            width: 100%;
+            padding: 10px 14px;
+            background: none;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .profile-dropdown-menu button:hover {
+            background: #F5F7FB;
+        }
+        .profile-dropdown-menu button.danger {
+            color: #FF3B30;
+        }
+        .profile-dropdown-menu button.danger:hover {
+            background: #FFECEB;
+        }
+
+        /* Hero Card */
+        .profile-hero-card {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            margin: 16px 20px;
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #E4E8F0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.015);
+        }
+
+        .profile-hero-avatar-wrapper {
+            position: relative;
+            margin-right: 20px;
+        }
+
+        .profile-hero-avatar {
+            width: 84px;
+            height: 84px;
+            border-radius: 24px;
+            background-color: #E8F2FF;
+            color: #007AFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 800;
             background-size: cover;
             background-position: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 2px solid #ffffff;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.1);
         }
 
-        .player-modal-stats-grid {
+        .profile-hero-status {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            background: #8A8F9C;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .profile-hero-status.active {
+            background: #22C55E;
+        }
+
+        .profile-hero-info {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .profile-hero-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text-main);
+            margin: 0 0 6px 0;
+            line-height: 1.1;
+        }
+
+        .profile-hero-rating-row {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .profile-hero-rating-star {
+            font-size: 14px;
+        }
+
+        .profile-hero-rating {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .profile-hero-rating-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .profile-hero-stats-line {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .profile-hero-growth-row {
+            margin-top: 6px;
+            display: flex;
+        }
+
+        .profile-hero-growth-badge {
+            background: #E8F8EE;
+            color: #22C55E;
+            font-size: 11px;
+            font-weight: 750;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+        .profile-hero-growth-badge.negative {
+            background: #FFECEB;
+            color: #FF3B30;
+        }
+
+        /* Tabs */
+        .profile-tabs {
+            display: flex;
+            background: #ffffff;
+            border-bottom: 1px solid #E4E8F0;
+            padding: 0 20px;
+        }
+
+        .profile-tab-btn {
+            background: none;
+            border: none;
+            padding: 14px 16px;
+            font-size: 13px;
+            font-weight: 750;
+            color: var(--text-secondary);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s ease;
+        }
+        .profile-tab-btn:hover {
+            color: var(--text-main);
+        }
+        .profile-tab-btn.active {
+            color: #007AFF;
+        }
+        .profile-tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 16px;
+            right: 16px;
+            height: 3px;
+            background: #007AFF;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+        }
+
+        /* Tab Content */
+        .profile-tab-content {
+            display: none;
+            flex-direction: column;
+            padding: 16px 20px 32px 20px;
+            max-height: 480px;
+            overflow-y: auto;
+        }
+        .profile-tab-content.active {
+            display: flex;
+        }
+
+        /* Stats Grid */
+        .profile-stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
-            margin-bottom: 20px;
-            width: 100%;
+            margin-bottom: 16px;
         }
 
-        .player-modal-stat-box {
-            background-color: rgba(0, 0, 0, 0.02);
-            border: 1px solid var(--border-color);
+        .profile-stat-tile {
+            background: #ffffff;
+            border: 1px solid #E4E8F0;
+            border-radius: 16px;
+            padding: 14px 16px;
+            text-align: left;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+        }
+
+        .profile-stat-val {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        .profile-stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        /* Cards inside Overview */
+        .profile-section-card {
+            background: #ffffff;
+            border: 1px solid #E4E8F0;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+        }
+
+        .profile-section-title {
+            font-size: 14px;
+            font-weight: 850;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .profile-section-more-btn {
+            background: none;
+            border: none;
+            color: #007AFF;
+            font-size: 12px;
+            font-weight: 750;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* Rating Trend block */
+        .profile-rating-trend-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .profile-rating-stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            border-bottom: 1px dashed #E4E8F0;
+            padding-bottom: 12px;
+        }
+
+        .profile-rating-stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .profile-rating-stat-lbl {
+            font-size: 9px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .profile-rating-stat-val {
+            font-size: 14px;
+            font-weight: 850;
+            color: var(--text-main);
+            margin-top: 2px;
+        }
+        .profile-rating-stat-val.positive {
+            color: #22C55E;
+        }
+        .profile-rating-stat-val.negative {
+            color: #FF3B30;
+        }
+
+        /* Awards counters row */
+        .profile-awards-counters-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-bottom: 1px dashed #E4E8F0;
+            padding-bottom: 12px;
+        }
+
+        .profile-award-counter-badge {
+            background: #F5F7FB;
+            border: 1px solid #E4E8F0;
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 750;
+            color: var(--text-main);
+        }
+
+        /* Awards recent list */
+        .profile-awards-recent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .profile-award-card {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: #F5F7FB;
             border-radius: 14px;
-            padding: 12px 8px;
-            text-align: center;
+            border: 1px solid #E4E8F0;
+            text-align: left;
         }
 
-        .player-modal-stat-val {
-            font-size: 16px;
+        .profile-award-card-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .profile-award-card-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-award-card-title {
+            font-size: 12px;
             font-weight: 800;
             color: var(--text-main);
         }
 
-        .player-modal-stat-label {
+        .profile-award-card-desc {
             font-size: 10px;
             color: var(--text-secondary);
-            margin-top: 2px;
             font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .profile-award-card-count {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-secondary);
+            background: rgba(0,0,0,0.04);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        /* H2H list styles */
+        .profile-h2h-summary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .profile-h2h-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #E4E8F0;
+            border-radius: 14px;
+            padding: 10px 12px;
+        }
+
+        .profile-h2h-card-left {
+            display: flex;
+            align-items: center;
+            text-align: left;
+        }
+
+        .profile-h2h-opponent-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: #E8F2FF;
+            color: #007AFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            margin-right: 12px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .profile-h2h-opponent-name {
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .profile-h2h-matches-count {
+            display: block;
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .profile-h2h-score-badge {
+            background: #F5F7FB;
+            border: 1px solid #E4E8F0;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        /* Tourneys list styles */
+        .profile-tourneys-summary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .profile-tourney-expandable-card {
+            background: #ffffff;
+            border: 1px solid #E4E8F0;
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 8px;
+        }
+
+        .profile-tourney-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .profile-tourney-header-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+            flex-grow: 1;
+            padding-right: 8px;
+        }
+
+        .profile-tourney-date {
+            font-size: 9px;
+            color: var(--text-secondary);
+            font-weight: 700;
             text-transform: uppercase;
         }
 
-        .player-modal-medals-row {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            padding: 12px;
-            background-color: rgba(0, 0, 0, 0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            margin-bottom: 20px;
-            width: 100%;
+        .profile-tourney-name {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-top: 2px;
         }
 
-        .modal-medal-item {
+        .profile-tourney-header-right {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+        }
+
+        .profile-tourney-place-badge {
+            font-size: 11px;
             font-weight: 800;
-            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .profile-tourney-delta-badge {
+            background: #E8F8EE;
+            color: #22C55E;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+        .profile-tourney-delta-badge.negative {
+            background: #FFECEB;
+            color: #FF3B30;
+        }
+
+        .profile-tourney-expand-arrow {
+            font-size: 10px;
+            color: var(--text-secondary);
+            transition: transform 0.2s ease;
+        }
+
+        .profile-tourney-expandable-card.active .profile-tourney-expand-arrow {
+            transform: rotate(180deg);
+        }
+
+        .profile-tourney-matches-expanded {
+            display: none;
+            border-top: 1px dashed #E4E8F0;
+            background: #F5F7FB;
+            padding: 10px 14px;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .profile-tourney-expandable-card.active .profile-tourney-matches-expanded {
+            display: flex;
+        }
+
+        .profile-expanded-match-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 750;
+            padding: 4px 0;
+        }
+
+        .profile-match-opp-name {
+            color: var(--text-main);
+            text-align: left;
+            flex-grow: 1;
+        }
+
+        .profile-match-score {
+            color: var(--text-secondary);
+            font-weight: 800;
+            margin: 0 16px;
+            min-width: 32px;
+            text-align: center;
+        }
+        .profile-match-score.win {
+            color: #22C55E;
+        }
+
+        .profile-match-delta {
+            font-weight: 800;
+            min-width: 48px;
+            text-align: right;
+        }
+        .profile-match-delta.positive {
+            color: #22C55E;
+        }
+        .profile-match-delta.negative {
+            color: #FF3B30;
+        }
+
+        /* Lists for Full tabs */
+        .profile-tourneys-full-list,
+        .profile-h2h-full-list,
+        .profile-awards-full-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .profile-tab-header-row {
+            margin-bottom: 12px;
         }
 
         .matches-scroll-list {
@@ -2141,73 +2736,185 @@
     </div>
 
     <!-- MODAL: PLAYER DETAIL -->
-    <div id="player-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 600px; width: 100%;">
-            <button class="modal-close-btn" onclick="closePlayerModal()"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-            <div class="player-modal-header">
-                <div class="player-modal-avatar" id="modal-player-avatar">И</div>
-                <h3 class="modal-title" id="modal-player-name">Иванов Иван</h3>
-                <span class="modal-subtitle">Подробная статистика</span>
-            </div>
-            
-            <div class="player-modal-stats-grid">
-                <div class="player-modal-stat-box">
-                    <div class="player-modal-stat-val" id="modal-stat-rating">100.0</div>
-                    <div class="player-modal-stat-label">Рейтинг</div>
+    <div id="player-modal" class="modal-overlay" onclick="closePlayerModalOutside(event)">
+        <div class="modal-card profile-modal-card" style="max-width: 600px; width: 100%;">
+            <!-- Header Block -->
+            <div class="profile-header-container">
+                <button class="profile-back-btn" onclick="closePlayerModal()">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <div class="profile-header-title-container">
+                    <h3 class="profile-header-name" id="modal-player-title-name">Иванов Иван</h3>
+                    <span class="profile-header-subtitle">Профиль игрока</span>
                 </div>
-                <div class="player-modal-stat-box">
-                    <div class="player-modal-stat-val" id="modal-stat-games">0</div>
-                    <div class="player-modal-stat-label">Игры (В:П)</div>
-                </div>
-                <div class="player-modal-stat-box">
-                    <div class="player-modal-stat-val" id="modal-stat-tourneys">0</div>
-                    <div class="player-modal-stat-label">Турниры</div>
-                </div>
-            </div>
-
-            <div class="player-modal-medals-row" id="modal-medals-row">
-                <div class="modal-medal-item"><svg class="svg-medal" viewBox="0 0 36 44" width="18" height="22" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M12 2 L6 20 L18 20 Z" fill="#2e7d32"/><path d="M24 2 L18 20 L30 20 Z" fill="#1b5e20"/><circle cx="18" cy="27" r="13" fill="#ffd700" stroke="#f5b041" stroke-width="1.5"/><circle cx="18" cy="27" r="10" fill="none" stroke="#f5b041" stroke-width="1" stroke-dasharray="2,2"/><text x="18" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" text-anchor="middle" fill="#d35400">1</text></svg> <span id="modal-medal-gold">0</span></div>
-                <div class="modal-medal-item"><svg class="svg-medal" viewBox="0 0 36 44" width="18" height="22" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M12 2 L6 20 L18 20 Z" fill="#1565c0"/><path d="M24 2 L18 20 L30 20 Z" fill="#0d47a1"/><circle cx="18" cy="27" r="13" fill="#e0e0e0" stroke="#b0bec5" stroke-width="1.5"/><circle cx="18" cy="27" r="10" fill="none" stroke="#b0bec5" stroke-width="1" stroke-dasharray="2,2"/><text x="18" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" text-anchor="middle" fill="#546e7a">2</text></svg> <span id="modal-medal-silver">0</span></div>
-                <div class="modal-medal-item"><svg class="svg-medal" viewBox="0 0 36 44" width="18" height="22" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M12 2 L6 20 L18 20 Z" fill="#d84315"/><path d="M24 2 L18 20 L30 20 Z" fill="#bf360c"/><circle cx="18" cy="27" r="13" fill="#d7ccc8" stroke="#a1887f" stroke-width="1.5"/><circle cx="18" cy="27" r="10" fill="none" stroke="#a1887f" stroke-width="1" stroke-dasharray="2,2"/><text x="18" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" text-anchor="middle" fill="#6d4c41">3</text></svg> <span id="modal-medal-bronze">0</span></div>
-            </div>
-
-            <!-- RATING HISTORY CHART -->
-            <div id="chart-section-block" style="display:none; width: 100%; margin-bottom: 24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                    <span id="chart-max-rating" style="font-size: 13px; font-weight:700; color:#FFB300;">Максимальный: -</span>
-                    <div class="chart-ranges" style="display:flex; gap:4px;">
-                        <button class="chart-range-btn active" data-range="all" onclick="changeChartRange('all')">Все время</button>
-                        <button class="chart-range-btn" data-range="year" onclick="changeChartRange('year')">Год</button>
-                        <button class="chart-range-btn" data-range="6m" onclick="changeChartRange('6m')">6 мес</button>
-                        <button class="chart-range-btn" data-range="10" onclick="changeChartRange('10')">10 игр</button>
+                <div class="profile-menu-container" id="profile-menu-container" style="display: none;">
+                    <button class="profile-menu-btn" onclick="toggleProfileMenu(event)">⋯</button>
+                    <div id="profile-dropdown-menu" class="profile-dropdown-menu">
+                        <button onclick="triggerEditPlayerFromProfile()">Редактировать</button>
+                        <button onclick="triggerChangePhotoFromProfile()">Заменить фото</button>
+                        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 4px 0;">
+                        <button onclick="triggerDeletePlayerFromProfile()" class="danger">Удалить</button>
                     </div>
                 </div>
-                <div style="position:relative; width: 100%; height: 220px; background: #A2AAB0; border-radius:16px; border: none; padding: 12px 10px 8px 10px;">
-                    <canvas id="rating-chart" style="width:100%; height:100%;"></canvas>
-                    <div id="chart-tooltip" style="position:absolute; display:none; background:rgba(30,41,59,0.95); border:1px solid var(--border-color); padding:8px 12px; border-radius:8px; font-size:11px; z-index:1000; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+            </div>
+
+            <!-- Hero Card -->
+            <div class="profile-hero-card">
+                <div class="profile-hero-avatar-wrapper">
+                    <div class="profile-hero-avatar" id="modal-player-avatar">И</div>
+                    <div class="profile-hero-status" id="modal-player-status">Активный игрок</div>
+                </div>
+                <div class="profile-hero-info">
+                    <h2 class="profile-hero-name" id="modal-player-name">Иванов Иван</h2>
+                    <div class="profile-hero-rating-row">
+                        <span class="profile-hero-rating-star">⭐</span>
+                        <span class="profile-hero-rating" id="modal-player-rating-val">247.2</span>
+                        <span class="profile-hero-rating-label">рейтинг</span>
+                    </div>
+                    <div class="profile-hero-stats-line" id="modal-player-subtitle-stats">
+                        #2 в клубе · 45 игр · 13 турниров
+                    </div>
+                    <div class="profile-hero-growth-row" id="modal-player-growth-row">
+                        <span class="profile-hero-growth-badge" id="modal-player-growth-badge">+4.8 за месяц</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- AWARDS / MEDALS GROUPED -->
-            <div id="player-awards-section" style="display:none; width: 100%; margin-bottom: 24px;">
-                <h4 class="section-title">Награды</h4>
-                <div id="player-awards-list" style="background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
-                    <!-- Filled dynamically -->
+            <!-- Tabs Section -->
+            <div class="profile-tabs">
+                <button class="profile-tab-btn active" id="profile-tab-btn-overview" onclick="switchProfileTab('overview')">Обзор</button>
+                <button class="profile-tab-btn" id="profile-tab-btn-tourneys" onclick="switchProfileTab('tourneys')">Турниры</button>
+                <button class="profile-tab-btn" id="profile-tab-btn-h2h" onclick="switchProfileTab('h2h')">H2H</button>
+                <button class="profile-tab-btn" id="profile-tab-btn-awards" onclick="switchProfileTab('awards')">Награды</button>
+            </div>
+
+            <!-- Tab Content 1: Overview -->
+            <div id="profile-tab-overview" class="profile-tab-content active">
+                <!-- 2x2 Stats Grid -->
+                <div class="profile-stats-grid">
+                    <div class="profile-stat-tile">
+                        <div class="profile-stat-val" id="profile-stat-games-val">45</div>
+                        <div class="profile-stat-label">Игр</div>
+                    </div>
+                    <div class="profile-stat-tile">
+                        <div class="profile-stat-val" id="profile-stat-winrate-val">62%</div>
+                        <div class="profile-stat-label">Побед / поражений</div>
+                    </div>
+                    <div class="profile-stat-tile">
+                        <div class="profile-stat-val" id="profile-stat-tourneys-val">13</div>
+                        <div class="profile-stat-label">Турниров</div>
+                    </div>
+                    <div class="profile-stat-tile">
+                        <div class="profile-stat-val" id="profile-stat-streak-val">4</div>
+                        <div class="profile-stat-label">Серия побед</div>
+                    </div>
+                </div>
+
+                <!-- Rating Trend Block -->
+                <div class="profile-section-card">
+                    <div class="profile-rating-trend-header">
+                        <h4 class="profile-section-title">Рейтинг</h4>
+                        <div class="chart-ranges" style="display:flex; gap:4px;">
+                            <button class="chart-range-btn active" data-range="all" onclick="changeChartRange('all')">Все время</button>
+                            <button class="chart-range-btn" data-range="year" onclick="changeChartRange('year')">Год</button>
+                            <button class="chart-range-btn" data-range="6m" onclick="changeChartRange('6m')">6 мес</button>
+                            <button class="chart-range-btn" data-range="10" onclick="changeChartRange('10')">10 игр</button>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-rating-stats-row">
+                        <div class="profile-rating-stat-item">
+                            <span class="profile-rating-stat-lbl">Текущий</span>
+                            <strong class="profile-rating-stat-val" id="trend-rating-current">247.2</strong>
+                        </div>
+                        <div class="profile-rating-stat-item">
+                            <span class="profile-rating-stat-lbl">За месяц</span>
+                            <strong class="profile-rating-stat-val" id="trend-rating-delta">+4.8</strong>
+                        </div>
+                        <div class="profile-rating-stat-item">
+                            <span class="profile-rating-stat-lbl">Лучший</span>
+                            <strong class="profile-rating-stat-val" id="trend-rating-best">252.6</strong>
+                        </div>
+                        <div class="profile-rating-stat-item">
+                            <span class="profile-rating-stat-lbl">Стартовый</span>
+                            <strong class="profile-rating-stat-val" id="trend-rating-start">200.0</strong>
+                        </div>
+                    </div>
+
+                    <div style="position:relative; width: 100%; height: 160px; background: rgba(0,0,0,0.02); border-radius:16px; padding: 12px 10px 8px 10px; margin-top: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                        <canvas id="rating-chart" style="width:100%; height:100%;"></canvas>
+                        <div id="chart-tooltip" style="position:absolute; display:none; background:rgba(30,41,59,0.955); border:1px solid var(--border-color); padding:8px 12px; border-radius:8px; font-size:11px; z-index:1000; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
+                    </div>
+                </div>
+
+                <!-- Awards Summary Card -->
+                <div class="profile-section-card" id="profile-overview-awards-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h4 class="profile-section-title">Награды</h4>
+                        <button class="profile-section-more-btn" onclick="switchProfileTab('awards')">Все →</button>
+                    </div>
+                    <!-- Badges counters -->
+                    <div class="profile-awards-counters-row" id="profile-overview-badges-counters">
+                        <!-- Filled dynamically e.g. 🥇 5  🥈 3  🥉 1  🔥 2  📈 1 -->
+                    </div>
+                    <!-- Recent achievements list (up to 3) -->
+                    <div style="font-size:12px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin: 16px 0 8px 0; text-align: left;">Последние достижения</div>
+                    <div class="profile-awards-recent-list" id="profile-overview-awards-list">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <!-- H2H Summary Card -->
+                <div class="profile-section-card" id="profile-overview-h2h-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h4 class="profile-section-title">Личные встречи</h4>
+                        <button class="profile-section-more-btn" onclick="switchProfileTab('h2h')">Все →</button>
+                    </div>
+                    <div class="profile-h2h-summary-list" id="profile-overview-h2h-list">
+                        <!-- Filled dynamically (top 5 matchups) -->
+                    </div>
+                </div>
+
+                <!-- Tournaments Summary Card -->
+                <div class="profile-section-card" id="profile-overview-tourneys-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h4 class="profile-section-title">Последние турниры</h4>
+                        <button class="profile-section-more-btn" onclick="switchProfileTab('tourneys')">Все →</button>
+                    </div>
+                    <div class="profile-tourneys-summary-list" id="profile-overview-tourneys-list">
+                        <!-- Filled dynamically (last 3 tournaments) -->
+                    </div>
                 </div>
             </div>
 
-            <!-- H2H MATCHUPS SECTION -->
-            <div id="player-h2h-section" style="display:none; width: 100%; margin-bottom: 24px;">
-                <h4 class="section-title">⚔️ Личные встречи (H2H)</h4>
-                <div id="player-h2h-list" style="background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
-                    <!-- Filled dynamically -->
+            <!-- Tab Content 2: Tournaments & Matches -->
+            <div id="profile-tab-tourneys" class="profile-tab-content">
+                <div class="profile-tab-header-row">
+                    <h4 class="profile-section-title" style="text-align: left;">История турниров</h4>
+                </div>
+                <div class="profile-tourneys-full-list" id="profile-full-tourneys-list">
+                    <!-- List of all tournaments with click-to-expand matches table -->
                 </div>
             </div>
 
-            <!-- RESULTS LIST -->
-            <h4 class="section-title">Результаты матчей</h4>
-            <div id="player-results-list" style="width: 100%; display:flex; flex-direction:column; gap:16px;">
-                <!-- Filled dynamically -->
+            <!-- Tab Content 3: H2H -->
+            <div id="profile-tab-h2h" class="profile-tab-content">
+                <div class="profile-tab-header-row">
+                    <h4 class="profile-section-title" style="text-align: left;">Личные встречи H2H</h4>
+                </div>
+                <div class="profile-h2h-full-list" id="profile-full-h2h-list">
+                    <!-- Full list of opponents -->
+                </div>
+            </div>
+
+            <!-- Tab Content 4: Awards -->
+            <div id="profile-tab-awards" class="profile-tab-content">
+                <div class="profile-tab-header-row">
+                    <h4 class="profile-section-title" style="text-align: left;">Награды игрока</h4>
+                </div>
+                <div class="profile-awards-full-list" id="profile-full-awards-list">
+                    <!-- Categorized awards with counters and descriptions -->
+                </div>
             </div>
         </div>
     </div>
@@ -4128,21 +4835,80 @@
         }
 
         // MODAL: OPEN PLAYER PROFILE
+        let currentProfilePlayer = null;
+
+        window.toggleProfileMenu = function(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('profile-dropdown-menu');
+            if (menu) {
+                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+            }
+        };
+
+        window.triggerEditPlayerFromProfile = function() {
+            if (!currentProfilePlayer) return;
+            const p = currentProfilePlayer;
+            closePlayerModal();
+            openPlayerEditModal(p);
+        };
+
+        window.triggerChangePhotoFromProfile = function() {
+            if (!currentProfilePlayer) return;
+            const p = currentProfilePlayer;
+            closePlayerModal();
+            openPlayerEditModal(p);
+            setTimeout(() => {
+                const input = document.getElementById('edit-player-avatar-input');
+                if (input) input.click();
+            }, 150);
+        };
+
+        window.triggerDeletePlayerFromProfile = function() {
+            if (!currentProfilePlayer) return;
+            const p = currentProfilePlayer;
+            closePlayerModal();
+            openPlayerEditModal(p);
+            setTimeout(() => {
+                submitDeletePlayer();
+            }, 150);
+        };
+
+        window.closePlayerModalOutside = function(e) {
+            if (e.target === document.getElementById('player-modal')) {
+                closePlayerModal();
+            }
+        };
+
+        document.addEventListener('click', () => {
+            const menu = document.getElementById('profile-dropdown-menu');
+            if (menu) menu.style.display = 'none';
+        });
+
+        window.switchProfileTab = function(tabName) {
+            document.querySelectorAll('.profile-tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.profile-tabs .profile-tab-btn').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            const content = document.getElementById(`profile-tab-${tabName}`);
+            if (content) content.classList.add('active');
+            
+            const btn = document.getElementById(`profile-tab-btn-${tabName}`);
+            if (btn) btn.classList.add('active');
+        };
+
         function openPlayerModal(player) {
+            currentProfilePlayer = player;
             currentChartRange = 'all';
             const modal = document.getElementById('player-modal');
             logAnalyticsEvent('view_profile', player.fullName);
             
+            document.getElementById('modal-player-title-name').textContent = player.fullName;
             document.getElementById('modal-player-name').textContent = player.fullName;
-            document.getElementById('modal-stat-rating').textContent = player.rating.toFixed(1);
-            document.getElementById('modal-stat-games').textContent = `${player.wins} : ${player.losses}`;
-            document.getElementById('modal-stat-tourneys').textContent = player.tournamentsPlayed;
-
-            // Medals
-            document.getElementById('modal-medal-gold').textContent = player.goldMedals;
-            document.getElementById('modal-medal-silver').textContent = player.silverMedals;
-            document.getElementById('modal-medal-bronze').textContent = player.bronzeMedals;
-
+            document.getElementById('profile-menu-container').style.display = isAdmin ? 'block' : 'none';
+            
             // Avatar
             const avatarEl = document.getElementById('modal-player-avatar');
             const cloudAvatar = clubData.avatars[player.id];
@@ -4252,55 +5018,197 @@
 
             modal.playerHistory = playerHistory;
 
-            // Render Chart
-            const chartSection = document.getElementById('chart-section-block');
+            // Render Chart Range Trigger
             if (playerHistory.length > 0) {
-                chartSection.style.display = 'block';
                 setTimeout(updateChartData, 50);
-            } else {
-                chartSection.style.display = 'none';
             }
 
-            // Render Awards
-            const awardsSection = document.getElementById('player-awards-section');
-            const awardsListEl = document.getElementById('player-awards-list');
-            awardsListEl.innerHTML = '';
+            // Rank & Status line
+            const sortedPlayers = [...clubData.players].sort((a, b) => b.rating - a.rating);
+            const rank = sortedPlayers.findIndex(p => p.id === player.id) + 1;
+            const totalGames = player.wins + player.losses;
+            document.getElementById('modal-player-subtitle-stats').textContent = `#${rank} в клубе · ${totalGames} игр · ${player.tournamentsPlayed} турниров`;
             
-            const awardsMap = {};
+            // Status Badge logic
+            const now = Date.now();
+            const statusEl = document.getElementById('modal-player-status');
+            let lastPlayedTime = 0;
             playerHistory.forEach(h => {
-                if (h.place <= 3) {
-                    const nameBase = h.tournamentName.replace(/\d+[\.\/]\d+[\.\/]\d+/g, '').replace(/ - /g, '').trim();
-                    if (!awardsMap[nameBase]) awardsMap[nameBase] = [];
-                    awardsMap[nameBase].push(h.place);
+                if (h.timestamp > lastPlayedTime) lastPlayedTime = h.timestamp;
+            });
+            const daysSinceLastPlay = lastPlayedTime ? (now - lastPlayedTime) / (1000 * 60 * 60 * 24) : 999;
+            if (daysSinceLastPlay <= 7) {
+                statusEl.textContent = 'В форме 🔥';
+                statusEl.className = 'profile-hero-status active';
+            } else if (daysSinceLastPlay <= 30) {
+                statusEl.textContent = 'Активный игрок';
+                statusEl.className = 'profile-hero-status';
+            } else {
+                statusEl.textContent = 'Ветеран ⏳';
+                statusEl.className = 'profile-hero-status';
+            }
+
+            // Monthly Growth calculation
+            let monthlyDelta = 0;
+            const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+            playerHistory.forEach(h => {
+                if (h.timestamp >= thirtyDaysAgo) {
+                    monthlyDelta += (h.newRating - h.oldRating);
+                }
+            });
+            const growthEl = document.getElementById('modal-player-growth-badge');
+            if (monthlyDelta >= 0) {
+                growthEl.textContent = `+${monthlyDelta.toFixed(1)} за месяц`;
+                growthEl.className = 'profile-hero-growth-badge';
+            } else {
+                growthEl.textContent = `${monthlyDelta.toFixed(1)} за месяц`;
+                growthEl.className = 'profile-hero-growth-badge negative';
+            }
+
+            // Tab 1: Overview 2x2 stats & rating
+            let currentStreak = 0;
+            let bestStreak = 0;
+            const chronologicalHistory = [...playerHistory].sort((a, b) => a.timestamp - b.timestamp);
+            chronologicalHistory.forEach(h => {
+                h.matches.forEach(m => {
+                    if (m.isWin) {
+                        currentStreak++;
+                        if (currentStreak > bestStreak) bestStreak = currentStreak;
+                    } else {
+                        currentStreak = 0;
+                    }
+                });
+            });
+            document.getElementById('profile-stat-games-val').textContent = totalGames;
+            document.getElementById('profile-stat-winrate-val').textContent = `${player.wins} - ${player.losses}`;
+            document.getElementById('profile-stat-tourneys-val').textContent = player.tournamentsPlayed;
+            document.getElementById('profile-stat-streak-val').textContent = bestStreak;
+
+            let bestRating = player.rating;
+            playerHistory.forEach(h => {
+                if (h.newRating > bestRating) bestRating = h.newRating;
+            });
+            let startingRating = 200.0;
+            if (chronologicalHistory.length > 0) {
+                startingRating = chronologicalHistory[0].oldRating;
+            }
+            document.getElementById('trend-rating-current').textContent = player.rating.toFixed(1);
+            document.getElementById('modal-player-rating-val').textContent = player.rating.toFixed(1);
+            
+            const trendDeltaEl = document.getElementById('trend-rating-delta');
+            trendDeltaEl.textContent = (monthlyDelta >= 0 ? '+' : '') + monthlyDelta.toFixed(1);
+            trendDeltaEl.className = 'profile-rating-stat-val ' + (monthlyDelta >= 0 ? 'positive' : 'negative');
+            document.getElementById('trend-rating-best').textContent = bestRating.toFixed(1);
+            document.getElementById('trend-rating-start').textContent = startingRating.toFixed(1);
+
+            // Compute achievements
+            const allAchievements = calculateAchievements();
+            const pAchievements = allAchievements[player.fullName.toLowerCase()] || {};
+
+            // Overview Awards counters
+            const badgesCounters = document.getElementById('profile-overview-badges-counters');
+            badgesCounters.innerHTML = '';
+            let countersHTML = '';
+            if (player.goldMedals > 0) countersHTML += `<span class="profile-award-counter-badge">🥇 ${player.goldMedals}</span>`;
+            if (player.silverMedals > 0) countersHTML += `<span class="profile-award-counter-badge">🥈 ${player.silverMedals}</span>`;
+            if (player.bronzeMedals > 0) countersHTML += `<span class="profile-award-counter-badge">🥉 ${player.bronzeMedals}</span>`;
+
+            const specialTypes = [
+                { key: 'champion', icon: '🏆' },
+                { key: 'slayer', icon: '⚔️' },
+                { key: 'growth', icon: '🚀' },
+                { key: 'iron', icon: '🛡️' },
+                { key: 'invincible', icon: '⚡' },
+                { key: 'grandmaster', icon: '💎' }
+            ];
+
+            specialTypes.forEach(t => {
+                const count = pAchievements[t.key] || 0;
+                if (count > 0) {
+                    countersHTML += `<span class="profile-award-counter-badge">${t.icon} ${count}</span>`;
+                }
+            });
+            badgesCounters.innerHTML = countersHTML || '<span style="font-size:12px; color:var(--text-secondary); font-weight:550; padding: 4px 0;">Наград пока нет</span>';
+
+            // Overview recent achievements (up to 3)
+            const recentAwardsEl = document.getElementById('profile-overview-awards-list');
+            recentAwardsEl.innerHTML = '';
+            let recentHTML = '';
+            let recentCount = 0;
+
+            const achievementInfo = {
+                champion: { title: 'Серийный чемпион', desc: '3 золота подряд', iconKey: 'champion' },
+                slayer: { title: 'Гроза авторитетов', desc: 'Победа над топ-игроком (100+ разница)', iconKey: 'slayer' },
+                growth: { title: 'Взрывной рост', desc: '+50 рейтинга за 30 дней', iconKey: 'growth' },
+                iron: { title: 'Железный человек', desc: '50+ сыгранных турниров', iconKey: 'iron' },
+                invincible: { title: 'Неуязвимый', desc: 'Турнир без поражений (мин. 2 игры)', iconKey: 'invincible' },
+                grandmaster: { title: 'Гроссмейстер', desc: 'Рейтинг 350.0 очков и более', iconKey: 'grandmaster' }
+            };
+
+            Object.keys(pAchievements).forEach(key => {
+                const count = pAchievements[key];
+                if (count > 0 && recentCount < 3) {
+                    const info = achievementInfo[key];
+                    if (info) {
+                        recentHTML += `
+                            <div class="profile-award-card">
+                                <div class="profile-award-card-icon">
+                                    ${getBadgeSvg(info.iconKey)}
+                                </div>
+                                <div class="profile-award-card-info">
+                                    <span class="profile-award-card-title">${info.title}</span>
+                                    <span class="profile-award-card-desc">${info.desc}</span>
+                                </div>
+                                <span class="profile-award-card-count">x${count}</span>
+                            </div>
+                        `;
+                        recentCount++;
+                    }
                 }
             });
 
-            const awardNames = Object.keys(awardsMap);
-            if (awardNames.length > 0) {
-                awardsSection.style.display = 'block';
-                awardNames.forEach(name => {
-                    const row = document.createElement('div');
-                    row.style.display = 'flex';
-                    row.style.justifyContent = 'space-between';
-                    row.style.alignItems = 'center';
-                    row.style.fontSize = '13px';
-                    row.style.fontWeight = '600';
-                    
-                    const medalsHTML = awardsMap[name].map(p => {
-                        if (p === 1) return '🟡';
-                        if (p === 2) return '⚪';
-                        if (p === 3) return '🟤';
-                        return '';
-                    }).join('');
-                    
-                    row.innerHTML = `<span>${name}</span><span>${medalsHTML}</span>`;
-                    awardsListEl.appendChild(row);
-                });
-            } else {
-                awardsSection.style.display = 'none';
+            if (recentCount < 3 && player.goldMedals > 0) {
+                recentHTML += `
+                    <div class="profile-award-card">
+                        <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥇</div>
+                        <div class="profile-award-card-info">
+                            <span class="profile-award-card-title">Золотые медали</span>
+                            <span class="profile-award-card-desc">1 место в турнирах клуба</span>
+                        </div>
+                        <span class="profile-award-card-count">x${player.goldMedals}</span>
+                    </div>
+                `;
+                recentCount++;
             }
+            if (recentCount < 3 && player.silverMedals > 0) {
+                recentHTML += `
+                    <div class="profile-award-card">
+                        <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥈</div>
+                        <div class="profile-award-card-info">
+                            <span class="profile-award-card-title">Серебряные медали</span>
+                            <span class="profile-award-card-desc">2 место в турнирах клуба</span>
+                        </div>
+                        <span class="profile-award-card-count">x${player.silverMedals}</span>
+                    </div>
+                `;
+                recentCount++;
+            }
+            if (recentCount < 3 && player.bronzeMedals > 0) {
+                recentHTML += `
+                    <div class="profile-award-card">
+                        <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥉</div>
+                        <div class="profile-award-card-info">
+                            <span class="profile-award-card-title">Бронзовые медали</span>
+                            <span class="profile-award-card-desc">3 место в турнирах клуба</span>
+                        </div>
+                        <span class="profile-award-card-count">x${player.bronzeMedals}</span>
+                    </div>
+                `;
+                recentCount++;
+            }
+            recentAwardsEl.innerHTML = recentHTML || '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:13px;">Достижения отсутствуют</div>';
 
-            // Calculate Head-to-Head (H2H) stats dynamically from history
+            // Calculate H2H
             const h2h = {};
             playerHistory.forEach(h => {
                 h.matches.forEach(m => {
@@ -4323,106 +5231,256 @@
                 };
             }).sort((a, b) => b.total - a.total);
 
-            const h2hSection = document.getElementById('player-h2h-section');
-            const h2hListEl = document.getElementById('player-h2h-list');
-            h2hListEl.innerHTML = '';
+            // Overview H2H (top 5)
+            const overviewH2hEl = document.getElementById('profile-overview-h2h-list');
+            overviewH2hEl.innerHTML = '';
+            let h2hHTML = '';
 
-            if (h2hList.length > 0) {
-                h2hSection.style.display = 'block';
-                h2hList.forEach(item => {
-                    const row = document.createElement('div');
-                    row.style.display = 'flex';
-                    row.style.justifyContent = 'space-between';
-                    row.style.alignItems = 'center';
-                    row.style.fontSize = '13px';
-                    row.style.fontWeight = '700';
-                    row.style.padding = '8px 12px';
-                    row.style.borderRadius = '12px';
-                    row.style.backgroundColor = 'rgba(255,255,255,0.02)';
-                    row.style.border = '1px solid rgba(255,255,255,0.04)';
+            h2hList.slice(0, 5).forEach(item => {
+                const initial = item.opponent.charAt(0).toUpperCase();
+                const oppPlayer = clubData.players.find(p => p.fullName.toLowerCase() === item.opponent.toLowerCase());
+                let oppAvatarHTML = `<div class="profile-h2h-opponent-avatar">${initial}</div>`;
+                if (oppPlayer) {
+                    const cloudOppAvatar = clubData.avatars[oppPlayer.id];
+                    if (cloudOppAvatar && cloudOppAvatar.startsWith("data:image")) {
+                        oppAvatarHTML = `<div class="profile-h2h-opponent-avatar" style="background-image: url('${cloudOppAvatar}');"></div>`;
+                    }
+                }
+                
+                const ratioColor = item.wins > item.losses ? '#22C55E' : (item.wins < item.losses ? '#FF3B30' : '#8A8F9C');
+                const scoreText = `<span style="color:${ratioColor}; font-weight:800;">${item.wins} : ${item.losses}</span>`;
 
-                    const ratioColor = item.wins > item.losses ? 'var(--apple-green)' : (item.wins < item.losses ? 'var(--apple-red)' : 'var(--text-secondary)');
-                    const ratioText = '<span style="color:' + ratioColor + '; font-weight:800;">' + item.wins + ' : ' + item.losses + '</span>';
+                h2hHTML += `
+                    <div class="profile-h2h-card">
+                        <div class="profile-h2h-card-left">
+                            ${oppAvatarHTML}
+                            <div>
+                                <span class="profile-h2h-opponent-name">${item.opponent}</span>
+                                <span class="profile-h2h-matches-count">${item.total} матчей</span>
+                            </div>
+                        </div>
+                        <div class="profile-h2h-score-badge">
+                            ${scoreText}
+                        </div>
+                    </div>
+                `;
+            });
+            overviewH2hEl.innerHTML = h2hHTML || '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:13px;">Личные встречи отсутствуют</div>';
 
-                    row.innerHTML = `
-                        <span>${item.opponent}</span>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:11px; color:var(--text-secondary); font-weight:500;">Игр: ${item.total}</span>
-                            ${ratioText}
+            // Overview Tournaments (last 3)
+            const overviewTourneysEl = document.getElementById('profile-overview-tourneys-list');
+            overviewTourneysEl.innerHTML = '';
+            let tourneysHTML = '';
+
+            const reversedHistory = [...playerHistory].reverse();
+            reversedHistory.slice(0, 3).forEach((h, idx) => {
+                let medal = '';
+                if (h.place === 1) medal = '🥇 ';
+                else if (h.place === 2) medal = '🥈 ';
+                else if (h.place === 3) medal = '🥉 ';
+
+                const deltaVal = h.newRating - h.oldRating;
+                const deltaClass = deltaVal >= 0 ? '' : 'negative';
+                const deltaText = (deltaVal >= 0 ? '+' : '') + deltaVal.toFixed(1);
+
+                let matchesRowsHTML = '';
+                h.matches.forEach(m => {
+                    const matchDeltaVal = m.delta;
+                    const matchDeltaClass = matchDeltaVal >= 0 ? 'positive' : 'negative';
+                    const matchDeltaText = (matchDeltaVal >= 0 ? '+' : '') + matchDeltaVal.toFixed(2);
+                    
+                    matchesRowsHTML += `
+                        <div class="profile-expanded-match-row">
+                            <span class="profile-match-opp-name">${m.opponent}</span>
+                            <span class="profile-match-score ${m.isWin ? 'win' : ''}">${m.score}</span>
+                            <span class="profile-match-delta ${matchDeltaClass}">${matchDeltaText}</span>
                         </div>
                     `;
-                    h2hListEl.appendChild(row);
                 });
-            } else {
-                h2hSection.style.display = 'none';
-            }
 
-            // Render Results
-            const resultsListEl = document.getElementById('player-results-list');
-            resultsListEl.innerHTML = '';
+                tourneysHTML += `
+                    <div class="profile-tourney-expandable-card" id="overview-tourney-card-${idx}">
+                        <div class="profile-tourney-card-header" onclick="toggleOverviewTourneyCard(${idx})">
+                            <div class="profile-tourney-header-left">
+                                <span class="profile-tourney-date">${h.dateText}</span>
+                                <span class="profile-tourney-name">${h.tournamentName}</span>
+                            </div>
+                            <div class="profile-tourney-header-right">
+                                <span class="profile-tourney-place-badge">${medal}${h.place} место</span>
+                                <span class="profile-tourney-delta-badge ${deltaClass}">${deltaText}</span>
+                                <span class="profile-tourney-expand-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="profile-tourney-matches-expanded">
+                            ${matchesRowsHTML}
+                        </div>
+                    </div>
+                `;
+            });
+            overviewTourneysEl.innerHTML = tourneysHTML || '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:13px;">Турниры отсутствуют</div>';
 
-            if (playerHistory.length > 0) {
-                const reversed = [...playerHistory].reverse();
-                reversed.forEach(h => {
-                    const card = document.createElement('div');
-                    card.className = 'results-tourney-card';
+            window.toggleOverviewTourneyCard = function(idx) {
+                const card = document.getElementById(`overview-tourney-card-${idx}`);
+                if (card) {
+                    card.classList.toggle('active');
+                }
+            };
 
-                    const header = document.createElement('div');
-                    header.className = 'results-tourney-header';
-                    header.innerHTML = `
-                        <span>${h.dateText} • ${h.playersCount} участников</span>
-                        <span style="font-weight:700;">${h.tournamentName}</span>
-                    `;
+            // Tab 2: Full Tournaments List
+            const fullTourneysEl = document.getElementById('profile-full-tourneys-list');
+            fullTourneysEl.innerHTML = '';
+            let fullTourneysHTML = '';
 
-                    const playerInfo = document.createElement('div');
-                    playerInfo.className = 'results-player-info';
+            reversedHistory.forEach((h, idx) => {
+                let medal = '';
+                if (h.place === 1) medal = '🥇 ';
+                else if (h.place === 2) medal = '🥈 ';
+                else if (h.place === 3) medal = '🥉 ';
+
+                const deltaVal = h.newRating - h.oldRating;
+                const deltaClass = deltaVal >= 0 ? '' : 'negative';
+                const deltaText = (deltaVal >= 0 ? '+' : '') + deltaVal.toFixed(1);
+
+                let matchesRowsHTML = '';
+                h.matches.forEach(m => {
+                    const matchDeltaVal = m.delta;
+                    const matchDeltaClass = matchDeltaVal >= 0 ? 'positive' : 'negative';
+                    const matchDeltaText = (matchDeltaVal >= 0 ? '+' : '') + matchDeltaVal.toFixed(2);
                     
-                    let medal = '';
-                    if (h.place === 1) medal = SVG_MEDALS[1] + ' ';
-                    else if (h.place === 2) medal = SVG_MEDALS[2] + ' ';
-                    else if (h.place === 3) medal = SVG_MEDALS[3] + ' ';
-
-                    playerInfo.innerHTML = `
-                        <span>${player.fullName} <span style="color:var(--apple-blue); font-weight:800;">★${h.newRating.toFixed(1)}</span></span>
-                        <span style="font-size:12px; color:var(--text-secondary);">${medal}${h.place} место</span>
+                    matchesRowsHTML += `
+                        <div class="profile-expanded-match-row">
+                            <span class="profile-match-opp-name">${m.opponent}</span>
+                            <span class="profile-match-score ${m.isWin ? 'win' : ''}">${m.score}</span>
+                            <span class="profile-match-delta ${matchDeltaClass}">${matchDeltaText}</span>
+                        </div>
                     `;
-
-                    const table = document.createElement('table');
-                    table.className = 'results-table';
-                    table.innerHTML = `
-                        <thead>
-                            <tr>
-                                <th>Соперник</th>
-                                <th class="score-col">Счет</th>
-                                <th class="delta-col">+/-</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    `;
-                    const tbody = table.querySelector('tbody');
-
-                    h.matches.forEach(m => {
-                        const tr = document.createElement('tr');
-                        const oppRatingText = m.oppRating ? ` <span style="color:var(--text-secondary); font-size:11px;">★${m.oppRating.toFixed(1)}</span>` : '';
-                        
-                        tr.innerHTML = `
-                            <td>${m.opponent}${oppRatingText}</td>
-                            <td class="score-col ${m.isWin ? 'outcome-win' : 'outcome-lost'}" style="background:none;">${m.score}</td>
-                            <td class="delta-col" style="color:${m.delta >= 0 ? 'var(--apple-green)' : 'var(--apple-red)'}; font-weight:800;">${m.delta >= 0 ? '+' : ''}${m.delta.toFixed(2)}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-
-                    card.appendChild(header);
-                    card.appendChild(playerInfo);
-                    card.appendChild(table);
-                    resultsListEl.appendChild(card);
                 });
-            } else {
-                resultsListEl.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;">Результаты турниров отсутствуют</div>';
-            }
 
+                fullTourneysHTML += `
+                    <div class="profile-tourney-expandable-card" id="full-tourney-card-${idx}">
+                        <div class="profile-tourney-card-header" onclick="toggleFullTourneyCard(${idx})">
+                            <div class="profile-tourney-header-left">
+                                <span class="profile-tourney-date">${h.dateText}</span>
+                                <span class="profile-tourney-name">${h.tournamentName}</span>
+                            </div>
+                            <div class="profile-tourney-header-right">
+                                <span class="profile-tourney-place-badge">${medal}${h.place} место</span>
+                                <span class="profile-tourney-delta-badge ${deltaClass}">${deltaText}</span>
+                                <span class="profile-tourney-expand-arrow">▼</span>
+                            </div>
+                        </div>
+                        <div class="profile-tourney-matches-expanded">
+                            ${matchesRowsHTML}
+                        </div>
+                    </div>
+                `;
+            });
+            fullTourneysEl.innerHTML = fullTourneysHTML || '<div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;">Турниры отсутствуют</div>';
+
+            window.toggleFullTourneyCard = function(idx) {
+                const card = document.getElementById(`full-tourney-card-${idx}`);
+                if (card) {
+                    card.classList.toggle('active');
+                }
+            };
+
+            // Tab 3: Full H2H List
+            const fullH2hEl = document.getElementById('profile-full-h2h-list');
+            fullH2hEl.innerHTML = '';
+            let fullH2hHTML = '';
+
+            h2hList.forEach(item => {
+                const initial = item.opponent.charAt(0).toUpperCase();
+                const oppPlayer = clubData.players.find(p => p.fullName.toLowerCase() === item.opponent.toLowerCase());
+                let oppAvatarHTML = `<div class="profile-h2h-opponent-avatar">${initial}</div>`;
+                if (oppPlayer) {
+                    const cloudOppAvatar = clubData.avatars[oppPlayer.id];
+                    if (cloudOppAvatar && cloudOppAvatar.startsWith("data:image")) {
+                        oppAvatarHTML = `<div class="profile-h2h-opponent-avatar" style="background-image: url('${cloudOppAvatar}');"></div>`;
+                    }
+                }
+                
+                const ratioColor = item.wins > item.losses ? '#22C55E' : (item.wins < item.losses ? '#FF3B30' : '#8A8F9C');
+                const scoreText = `<span style="color:${ratioColor}; font-weight:800;">${item.wins} : ${item.losses}</span>`;
+
+                fullH2hHTML += `
+                    <div class="profile-h2h-card">
+                        <div class="profile-h2h-card-left">
+                            ${oppAvatarHTML}
+                            <div>
+                                <span class="profile-h2h-opponent-name">${item.opponent}</span>
+                                <span class="profile-h2h-matches-count">${item.total} матчей</span>
+                            </div>
+                        </div>
+                        <div class="profile-h2h-score-badge">
+                            ${scoreText}
+                        </div>
+                    </div>
+                `;
+            });
+            fullH2hEl.innerHTML = fullH2hHTML || '<div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;">Личные встречи отсутствуют</div>';
+
+            // Tab 4: Full Awards List
+            const fullAwardsEl = document.getElementById('profile-full-awards-list');
+            fullAwardsEl.innerHTML = '';
+            let fullAwardsHTML = '';
+
+            fullAwardsHTML += `<div style="font-size:12px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin: 8px 0 4px 0; text-align: left;">Медали турниров</div>`;
+            fullAwardsHTML += `
+                <div class="profile-award-card">
+                    <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥇</div>
+                    <div class="profile-award-card-info">
+                        <span class="profile-award-card-title">Золото</span>
+                        <span class="profile-award-card-desc">1 место в турнире</span>
+                    </div>
+                    <span class="profile-award-card-count">x${player.goldMedals}</span>
+                </div>
+                <div class="profile-award-card">
+                    <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥈</div>
+                    <div class="profile-award-card-info">
+                        <span class="profile-award-card-title">Серебро</span>
+                        <span class="profile-award-card-desc">2 место в турнире</span>
+                    </div>
+                    <span class="profile-award-card-count">x${player.silverMedals}</span>
+                </div>
+                <div class="profile-award-card">
+                    <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥉</div>
+                    <div class="profile-award-card-info">
+                        <span class="profile-award-card-title">Бронза</span>
+                        <span class="profile-award-card-desc">3 место в турнире</span>
+                    </div>
+                    <span class="profile-award-card-count">x${player.bronzeMedals}</span>
+                </div>
+            `;
+
+            fullAwardsHTML += `<div style="font-size:12px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin: 16px 0 4px 0; text-align: left;">Особые достижения</div>`;
+            const specialAwardsList = [
+                { key: 'champion', title: 'Серийный чемпион', desc: 'Выиграл 3 турнира клуба подряд.' },
+                { key: 'slayer', title: 'Гроза авторитетов', desc: 'Одержал победу в матче над игроком, чей стартовый рейтинг был на 100+ очков выше.' },
+                { key: 'growth', title: 'Взрывной рост', desc: 'Набрал 50 и более очков рейтинга за последние 30 календарных дней.' },
+                { key: 'iron', title: 'Железный человек', desc: 'Сыграл 50 или более турниров за всё время участия в клубе.' },
+                { key: 'invincible', title: 'Неуязвимый', desc: 'Прошел весь турнир со 100% результатом (минимум 2 сыгранных матча без поражений).' },
+                { key: 'grandmaster', title: 'Гроссмейстер', desc: 'Достиг текущего рейтинга 350.0 очков и более.' }
+            ];
+
+            specialAwardsList.forEach(t => {
+                const count = pAchievements[t.key] || 0;
+                fullAwardsHTML += `
+                    <div class="profile-award-card">
+                        <div class="profile-award-card-icon">
+                            ${getBadgeSvg(t.key)}
+                        </div>
+                        <div class="profile-award-card-info">
+                            <span class="profile-award-card-title">${t.title}</span>
+                            <span class="profile-award-card-desc">${t.desc}</span>
+                        </div>
+                        <span class="profile-award-card-count">x${count}</span>
+                    </div>
+                `;
+            });
+            fullAwardsEl.innerHTML = fullAwardsHTML;
+
+            switchProfileTab('overview');
             modal.style.display = 'flex';
         }
 
