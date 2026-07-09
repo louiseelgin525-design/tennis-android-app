@@ -2526,7 +2526,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.8.6 (09.07.2026 10:20)
+                Версия веб-приложения: 1.8.7 (09.07.2026 10:25)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -4538,10 +4538,12 @@ function getPlayerLastDelta(player) {
             });
 
             const maxLabelEl = document.getElementById('chart-max-rating');
-            if (maxPoint) {
-                maxLabelEl.textContent = `Максимальный: ★${maxRating.toFixed(1)} (${maxPoint.dateText})`;
-            } else {
-                maxLabelEl.textContent = '';
+            if (maxLabelEl) {
+                if (maxPoint) {
+                    maxLabelEl.textContent = `Максимальный: ★${maxRating.toFixed(1)} (${maxPoint.dateText})`;
+                } else {
+                    maxLabelEl.textContent = '';
+                }
             }
 
             drawCanvasChart(filtered);
