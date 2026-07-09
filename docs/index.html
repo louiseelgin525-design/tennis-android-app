@@ -2526,7 +2526,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.8.5 (09.07.2026 10:15)
+                Версия веб-приложения: 1.8.6 (09.07.2026 10:20)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -3901,6 +3901,28 @@
         });
 
         // RENDER READ-ONLY AND ADMIN PLAYERS LIST
+function getPlayerLastDelta(player) {
+            let lastDelta = 0;
+            const sortedHistory = [...clubData.history].sort((a, b) => b.id - a.id);
+            for (const entry of sortedHistory) {
+                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+                let found = false;
+                for (const rStr of ratings) {
+                    const p = rStr.split("::");
+                    if (p.length >= 4) {
+                        const name = decodeName(p[0]);
+                        if (name.toLowerCase() === player.fullName.toLowerCase()) {
+                            lastDelta = parseFloat(p[3]);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (found) break;
+            }
+            return lastDelta;
+        }
+
         function renderPlayers() {
             const listEl = document.getElementById('players-list-el');
             listEl.innerHTML = '';
@@ -3930,7 +3952,13 @@
                 filtered.sort((a, b) => b.rating - a.rating);
             }
 
+            // Create rating sorted array to calculate ranks
+            const ratingSorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
+
             filtered.forEach((player, index) => {
+                const rank = ratingSorted.findIndex(p => p.id === player.id) + 1;
+                const totalGames = player.wins + player.losses;
+
                 const wrapper = document.createElement('div');
                 wrapper.className = 'player-card-wrapper';
 
@@ -3941,41 +3969,36 @@
 
                 const card = document.createElement('div');
                 card.className = 'player-card';
-                card.style.padding = '16px';
-                card.style.borderRadius = '20px';
-                card.style.display = 'flex';
-                card.style.alignItems = 'center';
-                card.style.justifyContent = 'space-between';
-                card.style.width = '100%';
-                card.style.boxSizing = 'border-box';
 
-                // Left Column: Avatar + Info
+                // Left Column: Rank + Avatar + Info
                 const leftSide = document.createElement('div');
-                leftSide.style.display = 'flex';
-                leftSide.style.alignItems = 'center';
-                leftSide.style.gap = '16px';
-                leftSide.style.flex = '1';
-                leftSide.style.minWidth = '0';
+                leftSide.className = 'player-card-left';
+                leftSide.style.cursor = 'pointer';
+                leftSide.addEventListener('click', () => openPlayerModal(player));
+
+                // Rank badge
+                const rankBadge = document.createElement('div');
+                rankBadge.className = 'player-card-rank-badge';
+                if (rank === 1) {
+                    rankBadge.textContent = '🥇';
+                    rankBadge.classList.add('top-1');
+                } else if (rank === 2) {
+                    rankBadge.textContent = '🥈';
+                    rankBadge.classList.add('top-2');
+                } else if (rank === 3) {
+                    rankBadge.textContent = '🥉';
+                    rankBadge.classList.add('top-3');
+                } else {
+                    rankBadge.textContent = `#${rank}`;
+                }
 
                 // Avatar
                 const avatarEl = document.createElement('div');
-                avatarEl.className = 'player-avatar';
-                avatarEl.style.width = '48px';
-                avatarEl.style.height = '48px';
-                avatarEl.style.borderRadius = '50%';
-                avatarEl.style.flexShrink = '0';
-                avatarEl.style.display = 'flex';
-                avatarEl.style.alignItems = 'center';
-                avatarEl.style.justifyContent = 'center';
-                avatarEl.style.fontSize = '20px';
-                avatarEl.style.fontWeight = '700';
-                avatarEl.style.marginRight = '0';
+                avatarEl.className = 'player-card-avatar';
 
                 const cloudAvatar = clubData.avatars[player.id];
                 if (cloudAvatar && cloudAvatar.startsWith("data:image")) {
                     avatarEl.style.backgroundImage = `url("${cloudAvatar}")`;
-                    avatarEl.style.backgroundSize = 'cover';
-                    avatarEl.style.backgroundPosition = 'center';
                     avatarEl.textContent = '';
                 } else {
                     avatarEl.style.backgroundImage = 'none';
@@ -3989,134 +4012,98 @@
 
                 // Info text block
                 const textBlock = document.createElement('div');
-                textBlock.style.display = 'flex';
-                textBlock.style.flexDirection = 'column';
-                textBlock.style.gap = '2px';
-                textBlock.style.flex = '1';
-                textBlock.style.minWidth = '0';
+                textBlock.className = 'player-card-info-text';
 
                 // Name
                 const nameEl = document.createElement('div');
-                nameEl.style.fontSize = '16px';
-                nameEl.style.fontWeight = '700';
-                nameEl.style.color = 'var(--text-main)';
-                nameEl.style.whiteSpace = 'nowrap';
-                nameEl.style.overflow = 'hidden';
-                nameEl.style.textOverflow = 'ellipsis';
+                nameEl.className = 'player-card-name';
                 nameEl.textContent = player.fullName;
 
-                // Rating
-                const ratingEl = document.createElement('div');
-                ratingEl.style.fontSize = '14px';
-                ratingEl.style.fontWeight = '600';
-                ratingEl.style.color = 'var(--apple-blue)';
-                ratingEl.textContent = `Рейтинг ${player.rating.toFixed(1)}`;
+                // Subtext
+                const subtextEl = document.createElement('div');
+                subtextEl.className = 'player-card-subtext';
+                subtextEl.textContent = `#${rank} в клубе · ${totalGames} игр · ${player.tournamentsPlayed || 0} турн`;
 
-                // Tournaments count
-                const tourneysEl = document.createElement('div');
-                tourneysEl.style.fontSize = '13px';
-                tourneysEl.style.color = 'var(--text-secondary)';
-                tourneysEl.textContent = `Турниров: ${player.tournamentsPlayed || 0}`;
+                // Badges/Medals row
+                const badgesRow = document.createElement('div');
+                badgesRow.className = 'player-card-badges-row';
 
-                // Games & Medals row
-                const gamesRow = document.createElement('div');
-                gamesRow.style.display = 'flex';
-                gamesRow.style.alignItems = 'center';
-                gamesRow.style.gap = '10px';
-                gamesRow.style.marginTop = '2px';
-                gamesRow.style.fontSize = '13px';
-                gamesRow.style.color = 'var(--text-secondary)';
-
-                const gamesText = document.createElement('span');
-                gamesText.textContent = `Игры: ${(player.wins || 0)}–${(player.losses || 0)}`;
-
-                const medalsContainer = document.createElement('div');
-                medalsContainer.style.display = 'flex';
-                medalsContainer.style.alignItems = 'center';
-                medalsContainer.style.gap = '6px';
-
-                function createMedalDotMarkup(color, count) {
-                    return `
-                        <div style="display:inline-flex; align-items:center; gap:3px;">
-                            <div style="width:10px; height:10px; border-radius:50%; background-color:${color}; flex-shrink:0;"></div>
-                            <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">${count}</span>
-                        </div>
-                    `;
+                if (player.goldMedals > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'player-card-medal-badge';
+                    badge.innerHTML = `🥇 <span>${player.goldMedals}</span>`;
+                    badgesRow.appendChild(badge);
+                }
+                if (player.silverMedals > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'player-card-medal-badge';
+                    badge.innerHTML = `🥈 <span>${player.silverMedals}</span>`;
+                    badgesRow.appendChild(badge);
+                }
+                if (player.bronzeMedals > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'player-card-medal-badge';
+                    badge.innerHTML = `🥉 <span>${player.bronzeMedals}</span>`;
+                    badgesRow.appendChild(badge);
                 }
 
-                medalsContainer.innerHTML = `
-                    ${createMedalDotMarkup('#FFD54F', player.goldMedals || 0)}
-                    ${createMedalDotMarkup('#C0C0C0', player.silverMedals || 0)}
-                    ${createMedalDotMarkup('#CD7F32', player.bronzeMedals || 0)}
-                `;
-
-                gamesRow.appendChild(gamesText);
-                gamesRow.appendChild(medalsContainer);
-
-                // Add achievements/badges to player card
                 const pAchievements = achievements[player.fullName.toLowerCase()] || {};
-                const badgesContainer = document.createElement('div');
-                badgesContainer.style.display = 'flex';
-                badgesContainer.style.alignItems = 'center';
-                badgesContainer.style.gap = '5px';
-                badgesContainer.style.marginLeft = '4px';
+                const specialBadgeTypes = [
+                    { key: 'champion', icon: '🏆' },
+                    { key: 'slayer', icon: '⚔️' },
+                    { key: 'growth', icon: '🚀' },
+                    { key: 'iron', icon: '🛡️' },
+                    { key: 'invincible', icon: '⚡' },
+                    { key: 'grandmaster', icon: '💎' }
+                ];
 
-                Object.keys(pAchievements).forEach(key => {
-                    const count = pAchievements[key];
+                specialBadgeTypes.forEach(t => {
+                    const count = pAchievements[t.key] || 0;
                     if (count > 0) {
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'badge-wrapper';
-                        wrapper.innerHTML = getBadgeSvg(key);
-                        
-                        const svg = wrapper.querySelector('svg');
-                        if (svg) {
-                            svg.style.width = '20px';
-                            svg.style.height = '20px';
-                        }
-                        
-                        if (count > 1) {
-                            const badgeCount = document.createElement('span');
-                            badgeCount.className = 'badge-count';
-                            badgeCount.style.width = '11px';
-                            badgeCount.style.height = '11px';
-                            badgeCount.style.fontSize = '7px';
-                            badgeCount.style.top = '-2px';
-                            badgeCount.style.right = '-2px';
-                            badgeCount.style.borderWidth = '1px';
-                            badgeCount.textContent = count;
-                            wrapper.appendChild(badgeCount);
-                        }
-                        badgesContainer.appendChild(wrapper);
+                        const badge = document.createElement('span');
+                        badge.className = 'player-card-medal-badge';
+                        badge.innerHTML = `${t.icon} <span>${count}</span>`;
+                        badgesRow.appendChild(badge);
                     }
                 });
-                gamesRow.appendChild(badgesContainer);
 
                 textBlock.appendChild(nameEl);
-                textBlock.appendChild(ratingEl);
-                textBlock.appendChild(tourneysEl);
-                textBlock.appendChild(gamesRow);
+                textBlock.appendChild(subtextEl);
+                if (badgesRow.childNodes.length > 0) {
+                    textBlock.appendChild(badgesRow);
+                }
 
+                leftSide.appendChild(rankBadge);
                 leftSide.appendChild(avatarEl);
                 leftSide.appendChild(textBlock);
-                textBlock.style.cursor = 'pointer';
-                leftSide.addEventListener('click', () => openPlayerModal(player));
 
-                // Right Column: edit button + arrow
+                // Right Column: Rating + Delta + edit icon (if admin)
                 const rightSide = document.createElement('div');
-                rightSide.style.display = 'flex';
-                rightSide.style.alignItems = 'center';
-                rightSide.style.gap = '8px';
+                rightSide.className = 'player-card-right';
 
-                const arrowEl = document.createElement('span');
-                arrowEl.style.fontSize = '24px';
-                arrowEl.style.color = '#C7C7CC';
-                arrowEl.textContent = '›';
-                arrowEl.style.cursor = 'pointer';
-                arrowEl.addEventListener('click', () => openPlayerModal(player));
+                const ratingBadge = document.createElement('div');
+                ratingBadge.className = 'player-card-rating-badge';
+                ratingBadge.innerHTML = `⭐ <span>${player.rating.toFixed(1)}</span>`;
+                ratingBadge.style.cursor = 'pointer';
+                ratingBadge.addEventListener('click', () => openPlayerModal(player));
+
+                rightSide.appendChild(ratingBadge);
+
+                // Delta
+                const lastDelta = getPlayerLastDelta(player);
+                if (lastDelta !== 0) {
+                    const deltaBadge = document.createElement('div');
+                    deltaBadge.className = 'player-card-delta-badge' + (lastDelta < 0 ? ' negative' : '');
+                    deltaBadge.textContent = (lastDelta >= 0 ? '+' : '') + lastDelta.toFixed(1);
+                    deltaBadge.style.cursor = 'pointer';
+                    deltaBadge.addEventListener('click', () => openPlayerModal(player));
+                    rightSide.appendChild(deltaBadge);
+                }
 
                 card.appendChild(leftSide);
                 card.appendChild(rightSide);
 
+                // Admin functionality: Pencil edit icon + swipe to add
                 if (isAdmin) {
                     const editIcon = document.createElement('span');
                     editIcon.className = 'edit-player-icon';
@@ -4124,6 +4111,7 @@
                     editIcon.style.display = 'inline-flex';
                     editIcon.style.alignItems = 'center';
                     editIcon.style.padding = '4px';
+                    editIcon.style.marginLeft = '8px';
                     editIcon.innerHTML = SVG_ICONS.pencil;
                     editIcon.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -4190,9 +4178,18 @@
                         card.style.transform = 'translateX(0)';
                         swipeBg.style.opacity = '0';
                     });
+                } else {
+                    // Non-admin arrow indicator
+                    const arrowEl = document.createElement('span');
+                    arrowEl.style.fontSize = '24px';
+                    arrowEl.style.color = '#C7C7CC';
+                    arrowEl.textContent = '›';
+                    arrowEl.style.cursor = 'pointer';
+                    arrowEl.style.marginLeft = '8px';
+                    arrowEl.addEventListener('click', () => openPlayerModal(player));
+                    rightSide.appendChild(arrowEl);
                 }
 
-                rightSide.appendChild(arrowEl);
                 wrapper.appendChild(card);
                 listEl.appendChild(wrapper);
             });
