@@ -3059,7 +3059,7 @@
             </button>
             <!-- Auto-synchronized across root, docs, and web -->
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 2.0.3 (09.07.2026 15:30)
+                Версия веб-приложения: 2.0.4 (09.07.2026 16:38)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -5947,8 +5947,21 @@ function getPlayerLastDelta(player) {
                 avatarBadge.style.display = 'none';
             }
             
-            // Status Badge logic
+            // Monthly Growth calculation
             const now = Date.now();
+            let monthlyDelta = 0;
+            const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+            playerHistory.forEach(h => {
+                if (h.timestamp >= thirtyDaysAgo) {
+                    monthlyDelta += (h.newRating - h.oldRating);
+                }
+            });
+
+            // Calculate if won last 2 tournaments in a row
+            const recentHistory = [...playerHistory].sort((a, b) => b.timestamp - a.timestamp);
+            const wonLastTwoTournaments = recentHistory.length >= 2 && recentHistory[0].place === 1 && recentHistory[1].place === 1;
+
+            // Status Badge logic
             const statusEl = document.getElementById('modal-player-status');
             let lastPlayedTime = 0;
             playerHistory.forEach(h => {
@@ -5958,6 +5971,15 @@ function getPlayerLastDelta(player) {
             
             if (player.role === 'coach') {
                 statusEl.innerHTML = 'Тренер 👑';
+                statusEl.className = 'profile-hero-status';
+            } else if (wonLastTwoTournaments) {
+                statusEl.innerHTML = 'В ударе ⚡';
+                statusEl.className = 'profile-hero-status active';
+            } else if (monthlyDelta >= 25.0) {
+                statusEl.innerHTML = 'На подъёме 📈';
+                statusEl.className = 'profile-hero-status active';
+            } else if (playerHistory.length < 3) {
+                statusEl.innerHTML = 'Новичок 🌱';
                 statusEl.className = 'profile-hero-status';
             } else if (daysSinceLastPlay <= 7) {
                 statusEl.innerHTML = 'В форме 🔥';
@@ -5970,14 +5992,6 @@ function getPlayerLastDelta(player) {
                 statusEl.className = 'profile-hero-status';
             }
 
-            // Monthly Growth calculation
-            let monthlyDelta = 0;
-            const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-            playerHistory.forEach(h => {
-                if (h.timestamp >= thirtyDaysAgo) {
-                    monthlyDelta += (h.newRating - h.oldRating);
-                }
-            });
             const growthEl = document.getElementById('modal-player-growth-badge');
             if (growthEl) {
                 if (monthlyDelta >= 0) {
