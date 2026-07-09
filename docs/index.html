@@ -1679,42 +1679,62 @@
             margin-bottom: 24px;
         }
 
-        /* PLAYER PROFILE DESIGN */
+        /* PLAYER PROFILE DESIGN FIXED (v1.9.7) */
         .profile-modal-card {
-            background-color: #F5F7FB !important;
+            background-color: #F8FAFC !important;
             padding: 0 !important;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            border-radius: 24px !important;
+            border-radius: 28px !important;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15) !important;
+            position: relative;
+        }
+
+        /* Abstract background sport tracks/circles */
+        .profile-modal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 280px;
+            background: radial-gradient(circle at 85% 15%, rgba(10, 132, 255, 0.08), transparent 55%),
+                        radial-gradient(circle at 15% 65%, rgba(168, 85, 247, 0.05), transparent 50%);
+            pointer-events: none;
+            z-index: 1;
         }
 
         .profile-header-container {
             display: flex;
             align-items: center;
             padding: 16px 20px;
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid #E4E8F0;
             position: relative;
+            z-index: 10;
         }
 
         .profile-back-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 18px;
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
             background: #ffffff;
-            border: 1px solid #E4E8F0;
+            border: 1px solid #E2E8F0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: var(--text-main);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            color: #64748B;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
             transition: all 0.2s ease;
             padding: 0;
         }
         .profile-back-btn:hover {
-            background: #F5F7FB;
+            background: #F1F5F9;
+            color: #0F172A;
             transform: scale(1.03);
         }
 
@@ -1727,49 +1747,52 @@
         .profile-header-name {
             font-size: 16px;
             font-weight: 800;
-            color: var(--text-main);
+            color: #0F172A;
             margin: 0;
             line-height: 1.2;
         }
 
         .profile-header-subtitle {
-            font-size: 11px;
-            color: var(--text-secondary);
-            font-weight: 600;
+            font-size: 10px;
+            color: #8A8F9C;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .profile-menu-container {
             position: relative;
+            z-index: 100;
         }
 
         .profile-menu-btn {
-            background: none;
-            border: none;
-            font-size: 22px;
-            color: var(--text-secondary);
+            background: #ffffff;
+            border: 1px solid #E2E8F0;
+            font-size: 16px;
+            color: #64748B;
             cursor: pointer;
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            transition: background 0.2s ease;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
         .profile-menu-btn:hover {
-            background: rgba(0,0,0,0.04);
+            background: #F1F5F9;
+            color: #0F172A;
         }
 
         .profile-dropdown-menu {
             position: absolute;
-            top: 40px;
+            top: 44px;
             right: 0;
             background: #ffffff;
             border: 1px solid #E4E8F0;
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
             width: 190px;
             z-index: 1000;
             display: none;
@@ -1784,22 +1807,22 @@
             border-radius: 10px;
             font-size: 13px;
             font-weight: 600;
-            color: var(--text-main);
+            color: #0F172A;
             text-align: left;
             cursor: pointer;
             transition: background 0.2s ease;
         }
         .profile-dropdown-menu button:hover {
-            background: #F5F7FB;
+            background: #F1F5F9;
         }
         .profile-dropdown-menu button.danger {
-            color: #FF3B30;
+            color: #EF4444;
         }
         .profile-dropdown-menu button.danger:hover {
-            background: #FFECEB;
+            background: #FEF2F2;
         }
 
-        /* Hero Card */
+        /* Hero Card Premium Dashboard Style */
         .profile-hero-card {
             display: flex;
             align-items: center;
@@ -1808,13 +1831,31 @@
             padding: 20px;
             border-radius: 24px;
             border: 1px solid #E4E8F0;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-            gap: 16px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+            gap: 20px;
             box-sizing: border-box;
             position: relative;
+            z-index: 5;
+            background-image: radial-gradient(circle at 90% 10%, rgba(10, 132, 255, 0.05), transparent 45%),
+                              radial-gradient(circle at 10% 90%, rgba(168, 85, 247, 0.03), transparent 45%),
+                              radial-gradient(#E2E8F0 1.2px, transparent 1.2px);
+            background-size: 100% 100%, 100% 100%, 14px 14px;
+            overflow: hidden;
+        }
+
+        .profile-hero-crest {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            width: 58px;
+            height: 66px;
+            opacity: 0.65;
+            pointer-events: none;
+            z-index: 1;
         }
 
         .profile-hero-avatar-wrapper {
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1824,34 +1865,53 @@
         .profile-hero-avatar {
             width: 80px;
             height: 80px;
-            border-radius: 50% !important; /* circular avatar */
+            border-radius: 50% !important;
             background-color: #E8F2FF;
             color: #0A84FF;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
+            font-size: 34px;
             font-weight: 800;
             background-size: cover;
             background-position: center;
+            border: 3.5px solid #FFFFFF;
+            box-shadow: 0 0 0 2px #0A84FF, 0 8px 20px rgba(10, 132, 255, 0.14);
+            transition: box-shadow 0.3s;
+        }
+
+        .profile-hero-avatar-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #F6B91E;
             border: 2px solid #FFFFFF;
-            box-shadow: 0 4px 16px rgba(10, 132, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.15);
+            z-index: 5;
         }
 
         .profile-hero-status {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 750;
             padding: 4px 10px;
-            border-radius: 12px;
+            border-radius: 999px;
             white-space: nowrap;
             letter-spacing: 0.1px;
             text-transform: none;
             box-shadow: none;
-            position: static;
-            transform: none;
-            margin-top: 8px; /* space below avatar */
+            margin-top: 4px;
             background-color: #F1F5F9;
             color: #64748B;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
         
         .profile-hero-status.active {
@@ -1863,15 +1923,16 @@
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             text-align: left;
             min-width: 0;
+            z-index: 2;
         }
 
         .profile-hero-name {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 800;
-            color: #0D182A;
+            color: #0F172A;
             margin: 0;
             line-height: 1.15;
         }
@@ -1885,14 +1946,16 @@
 
         .profile-hero-rating-star {
             color: #F6B91E;
-            font-size: 24px;
+            font-size: 22px;
+            line-height: 1;
         }
 
         .profile-hero-rating {
-            font-size: 28px;
-            font-weight: 800;
-            color: #0A84FF; /* Blue main rating color */
+            font-size: 30px;
+            font-weight: 850;
+            color: #0A84FF;
             line-height: 1;
+            letter-spacing: -0.5px;
         }
 
         .profile-hero-rating-label {
@@ -1902,27 +1965,41 @@
             margin-left: 2px;
         }
 
-        .profile-hero-stats-line {
-            font-size: 14px;
-            color: #64748B;
-            font-weight: 550;
-            line-height: 1.3;
+        .profile-hero-chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .profile-hero-chip {
+            background-color: #F1F5F9;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
         }
 
         .profile-hero-growth-row {
             margin-top: 2px;
             display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
         .profile-hero-growth-badge {
             background-color: #EAFBF1;
             color: #16A34A;
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 750;
             padding: 4px 10px;
-            border-radius: 10px;
+            border-radius: 999px;
             display: inline-flex;
             align-items: center;
+            gap: 4px;
         }
         .profile-hero-growth-badge.negative {
             background-color: #FFECEB;
@@ -1935,6 +2012,8 @@
             background: #ffffff;
             border-bottom: 1px solid #E4E8F0;
             padding: 0 20px;
+            z-index: 10;
+            position: relative;
         }
 
         .profile-tab-btn {
@@ -1943,16 +2022,16 @@
             padding: 14px 16px;
             font-size: 13px;
             font-weight: 750;
-            color: var(--text-secondary);
+            color: #64748B;
             cursor: pointer;
             position: relative;
             transition: color 0.2s ease;
         }
         .profile-tab-btn:hover {
-            color: var(--text-main);
+            color: #0F172A;
         }
         .profile-tab-btn.active {
-            color: #007AFF;
+            color: #0A84FF;
         }
         .profile-tab-btn.active::after {
             content: '';
@@ -1960,8 +2039,8 @@
             bottom: 0;
             left: 16px;
             right: 16px;
-            height: 3px;
-            background: #007AFF;
+            height: 3.5px;
+            background: #0A84FF;
             border-top-left-radius: 3px;
             border-top-right-radius: 3px;
         }
@@ -1973,12 +2052,14 @@
             padding: 16px 20px 32px 20px;
             max-height: 480px;
             overflow-y: auto;
+            z-index: 5;
+            position: relative;
         }
         .profile-tab-content.active {
             display: flex;
         }
 
-        /* Stats Grid */
+        /* Stats Grid 2x2 cards */
         .profile-stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -1989,60 +2070,112 @@
         .profile-stat-tile {
             background: #ffffff;
             border: 1px solid #E4E8F0;
-            border-radius: 16px;
-            padding: 14px 16px;
+            border-radius: 18px;
+            padding: 16px;
             text-align: left;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.015);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+        }
+
+        .profile-stat-icon-wrapper {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 700;
         }
 
         .profile-stat-val {
-            font-size: 18px;
-            font-weight: 900;
-            color: var(--text-main);
+            font-size: 20px;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.1;
         }
 
         .profile-stat-label {
             font-size: 10px;
-            color: var(--text-secondary);
+            color: #8A8F9C;
             font-weight: 700;
             text-transform: uppercase;
-            margin-top: 4px;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
+            line-height: 1;
         }
 
-        /* Cards inside Overview */
+        /* Premium Section Cards */
         .profile-section-card {
             background: #ffffff;
             border: 1px solid #E4E8F0;
             border-radius: 20px;
-            padding: 16px;
+            padding: 18px;
             margin-bottom: 16px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
         }
 
         .profile-section-title {
-            font-size: 14px;
-            font-weight: 850;
-            color: var(--text-main);
+            font-size: 15px;
+            font-weight: 800;
+            color: #0F172A;
             margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .profile-section-more-btn {
             background: none;
             border: none;
-            color: #007AFF;
+            color: #0A84FF;
             font-size: 12px;
             font-weight: 750;
             cursor: pointer;
-            padding: 4px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .profile-section-more-btn:hover {
+            background: rgba(10, 132, 255, 0.08);
         }
 
-        /* Rating Trend block */
+        /* Segmented Controller Period switcher */
+        .chart-ranges-segmented {
+            display: flex;
+            background: #F1F5F9;
+            border-radius: 12px;
+            padding: 3px;
+            border: none;
+            align-self: center;
+        }
+
+        .chart-range-btn {
+            background: transparent;
+            border: none;
+            border-radius: 9px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 750;
+            color: #64748B;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .chart-range-btn.active {
+            background: #FFFFFF !important;
+            color: #0A84FF !important;
+            border: none !important;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+        }
+
+        /* Rating stats summary */
         .profile-rating-trend-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .profile-rating-stats-row {
@@ -2061,7 +2194,7 @@
 
         .profile-rating-stat-lbl {
             font-size: 9px;
-            color: var(--text-secondary);
+            color: #8A8F9C;
             font-weight: 700;
             text-transform: uppercase;
         }
@@ -2069,17 +2202,69 @@
         .profile-rating-stat-val {
             font-size: 14px;
             font-weight: 850;
-            color: var(--text-main);
+            color: #0F172A;
             margin-top: 2px;
         }
         .profile-rating-stat-val.positive {
-            color: #22C55E;
+            color: #16A34A;
         }
         .profile-rating-stat-val.negative {
-            color: #FF3B30;
+            color: #DC2626;
         }
 
-        /* Awards counters row */
+        /* Achievements / awards list premium styling */
+        .profile-achievements-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .profile-achievement-tile {
+            background: #FFFFFF;
+            border: 1px solid #E4E8F0;
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.01);
+            text-align: left;
+        }
+
+        .profile-achievement-icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .profile-achievement-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .profile-achievement-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.2;
+        }
+
+        .profile-achievement-desc {
+            font-size: 11px;
+            color: #64748B;
+            font-weight: 550;
+            margin-top: 2px;
+        }
+
+        /* Deprecated styles but kept for backwards compatibility */
         .profile-awards-counters-row {
             display: flex;
             flex-wrap: wrap;
@@ -2089,27 +2274,24 @@
         }
 
         .profile-award-counter-badge {
-            background: #F5F7FB;
+            background: #F1F5F9;
             border: 1px solid #E4E8F0;
             border-radius: 10px;
             padding: 4px 10px;
             font-size: 12px;
             font-weight: 750;
-            color: var(--text-main);
+            color: #0F172A;
         }
 
-        /* Awards recent list */
         .profile-awards-recent-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            display: none;
         }
 
         .profile-award-card {
             display: flex;
             align-items: center;
             padding: 10px 12px;
-            background: #F5F7FB;
+            background: #F1F5F9;
             border-radius: 14px;
             border: 1px solid #E4E8F0;
             text-align: left;
@@ -2133,12 +2315,12 @@
         .profile-award-card-title {
             font-size: 12px;
             font-weight: 800;
-            color: var(--text-main);
+            color: #0F172A;
         }
 
         .profile-award-card-desc {
             font-size: 10px;
-            color: var(--text-secondary);
+            color: #8A8F9C;
             font-weight: 600;
             margin-top: 2px;
         }
@@ -2146,219 +2328,11 @@
         .profile-award-card-count {
             font-size: 12px;
             font-weight: 800;
-            color: var(--text-secondary);
+            color: #64748B;
             background: rgba(0,0,0,0.04);
             padding: 2px 8px;
             border-radius: 6px;
         }
-
-        /* H2H list styles */
-        .profile-h2h-summary-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .profile-h2h-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            border: 1px solid #E4E8F0;
-            border-radius: 14px;
-            padding: 10px 12px;
-        }
-
-        .profile-h2h-card-left {
-            display: flex;
-            align-items: center;
-            text-align: left;
-        }
-
-        .profile-h2h-opponent-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            background: #E8F2FF;
-            color: #007AFF;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 800;
-            margin-right: 12px;
-            background-size: cover;
-            background-position: center;
-        }
-
-        .profile-h2h-opponent-name {
-            display: block;
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--text-main);
-        }
-
-        .profile-h2h-matches-count {
-            display: block;
-            font-size: 10px;
-            color: var(--text-secondary);
-            font-weight: 600;
-            margin-top: 2px;
-        }
-
-        .profile-h2h-score-badge {
-            background: #F5F7FB;
-            border: 1px solid #E4E8F0;
-            padding: 4px 10px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        /* Tourneys list styles */
-        .profile-tourneys-summary-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .profile-tourney-expandable-card {
-            background: #ffffff;
-            border: 1px solid #E4E8F0;
-            border-radius: 16px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 8px;
-        }
-
-        .profile-tourney-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 14px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .profile-tourney-header-left {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            text-align: left;
-            flex-grow: 1;
-            padding-right: 8px;
-        }
-
-        .profile-tourney-date {
-            font-size: 9px;
-            color: var(--text-secondary);
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .profile-tourney-name {
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--text-main);
-            margin-top: 2px;
-        }
-
-        .profile-tourney-header-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .profile-tourney-place-badge {
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--text-main);
-        }
-
-        .profile-tourney-delta-badge {
-            background: #E8F8EE;
-            color: #22C55E;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 6px;
-        }
-        .profile-tourney-delta-badge.negative {
-            background: #FFECEB;
-            color: #FF3B30;
-        }
-
-        .profile-tourney-expand-arrow {
-            font-size: 10px;
-            color: var(--text-secondary);
-            transition: transform 0.2s ease;
-        }
-
-        .profile-tourney-expandable-card.active .profile-tourney-expand-arrow {
-            transform: rotate(180deg);
-        }
-
-        .profile-tourney-matches-expanded {
-            display: none;
-            border-top: 1px dashed #E4E8F0;
-            background: #F5F7FB;
-            padding: 10px 14px;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .profile-tourney-expandable-card.active .profile-tourney-matches-expanded {
-            display: flex;
-        }
-
-        .profile-expanded-match-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            font-weight: 750;
-            padding: 4px 0;
-        }
-
-        .profile-match-opp-name {
-            color: var(--text-main);
-            text-align: left;
-            flex-grow: 1;
-        }
-
-        .profile-match-score {
-            color: var(--text-secondary);
-            font-weight: 800;
-            margin: 0 16px;
-            min-width: 32px;
-            text-align: center;
-        }
-        .profile-match-score.win {
-            color: #22C55E;
-        }
-
-        .profile-match-delta {
-            font-weight: 800;
-            min-width: 48px;
-            text-align: right;
-        }
-        .profile-match-delta.positive {
-            color: #22C55E;
-        }
-        .profile-match-delta.negative {
-            color: #FF3B30;
-        }
-
-        /* Lists for Full tabs */
-        .profile-tourneys-full-list,
-        .profile-h2h-full-list,
-        .profile-awards-full-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
         .profile-tab-header-row {
             margin-bottom: 12px;
         }
@@ -2851,7 +2825,7 @@
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
             </button>
             <div style="font-size:10px; color:var(--text-secondary); text-align:center; margin-top:16px; opacity:0.5;">
-                Версия веб-приложения: 1.9.6 (09.07.2026 13:46)
+                Версия веб-приложения: 1.9.7 (09.07.2026 14:00)
             </div>
         </form>
         <div style="margin-top: 16px;">
@@ -3088,9 +3062,26 @@
 
             <!-- Hero Card -->
             <div class="profile-hero-card">
+                <!-- Premium Sport Crest/Shield Graphic -->
+                <div class="profile-hero-crest">
+                    <svg viewBox="0 0 64 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+                        <path d="M32 0 C16 4 12 12 12 28 C12 48 32 68 32 68 C32 68 52 48 52 28 C52 12 48 4 32 0 Z" fill="url(#crest-shield-grad)" stroke="#A9CFFF" stroke-width="1.2" />
+                        <circle cx="32" cy="28" r="8" stroke="#0A84FF" stroke-width="2" fill="none" />
+                        <line x1="32" y1="36" x2="32" y2="46" stroke="#0A84FF" stroke-width="2" />
+                        <path d="M18 36 C16 28 18 20 22 16" stroke="#0A84FF" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="1 2.5" />
+                        <path d="M46 36 C48 28 46 20 42 16" stroke="#0A84FF" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="1 2.5" />
+                        <defs>
+                            <linearGradient id="crest-shield-grad" x1="32" y1="0" x2="32" y2="68" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="rgba(235, 244, 255, 0.6)" />
+                                <stop offset="100%" stop-color="rgba(207, 228, 255, 0.4)" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+
                 <div class="profile-hero-avatar-wrapper">
                     <div class="profile-hero-avatar" id="modal-player-avatar">И</div>
-                    <div class="profile-hero-status" id="modal-player-status">Активный игрок</div>
+                    <span id="modal-player-avatar-badge" class="profile-hero-avatar-badge" style="display: none;">🥇</span>
                 </div>
                 <div class="profile-hero-info">
                     <h2 class="profile-hero-name" id="modal-player-name">Иванов Иван</h2>
@@ -3098,11 +3089,13 @@
                         <span class="profile-hero-rating-star">⭐</span>
                         <span class="profile-hero-rating" id="modal-player-rating-val">247.2</span>
                         <span class="profile-hero-rating-label">рейтинг</span>
+                        <span style="color: #94A3B8; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; margin-left: 4px;" onclick="showToast('Рейтинг рассчитывается по формуле Elo на основе матчей клуба')">ⓘ</span>
                     </div>
-                    <div class="profile-hero-stats-line" id="modal-player-subtitle-stats">
-                        #2 в клубе · 45 игр · 13 турниров
+                    <div class="profile-hero-chips-container" id="modal-player-chips">
+                        <!-- Filled dynamically (e.g. #1 в клубе, 45 игр, 13 турниров) -->
                     </div>
                     <div class="profile-hero-growth-row" id="modal-player-growth-row">
+                        <span class="profile-hero-status" id="modal-player-status">Активный игрок</span>
                         <span class="profile-hero-growth-badge" id="modal-player-growth-badge">+4.8 за месяц</span>
                     </div>
                 </div>
@@ -3121,19 +3114,23 @@
                 <!-- 2x2 Stats Grid -->
                 <div class="profile-stats-grid">
                     <div class="profile-stat-tile">
+                        <div class="profile-stat-icon-wrapper" style="background: rgba(10, 132, 255, 0.08); color: #0A84FF;">🏓</div>
                         <div class="profile-stat-val" id="profile-stat-games-val">45</div>
                         <div class="profile-stat-label">Игр</div>
                     </div>
                     <div class="profile-stat-tile">
-                        <div class="profile-stat-val" id="profile-stat-winrate-val">62%</div>
+                        <div class="profile-stat-icon-wrapper" style="background: rgba(22, 163, 74, 0.08); color: #16A34A;">🛡️</div>
+                        <div class="profile-stat-val" id="profile-stat-winrate-val">34 - 11</div>
                         <div class="profile-stat-label">Побед / поражений</div>
                     </div>
                     <div class="profile-stat-tile">
+                        <div class="profile-stat-icon-wrapper" style="background: rgba(168, 85, 247, 0.08); color: #A855F7;">🏆</div>
                         <div class="profile-stat-val" id="profile-stat-tourneys-val">13</div>
                         <div class="profile-stat-label">Турниров</div>
                     </div>
                     <div class="profile-stat-tile">
-                        <div class="profile-stat-val" id="profile-stat-streak-val">4</div>
+                        <div class="profile-stat-icon-wrapper" style="background: rgba(249, 115, 22, 0.08); color: #F97316;">🔥</div>
+                        <div class="profile-stat-val" id="profile-stat-streak-val">3</div>
                         <div class="profile-stat-label">Серия побед</div>
                     </div>
                 </div>
@@ -3141,8 +3138,8 @@
                 <!-- Rating Trend Block -->
                 <div class="profile-section-card">
                     <div class="profile-rating-trend-header">
-                        <h4 class="profile-section-title">Рейтинг</h4>
-                        <div class="chart-ranges" style="display:flex; gap:4px;">
+                        <h4 class="profile-section-title">📈 Рейтинг <span style="font-size:10px; color:#8A8F9C; font-weight:normal; margin-left:6px;">динамика формы</span></h4>
+                        <div class="chart-ranges-segmented">
                             <button class="chart-range-btn active" data-range="all" onclick="changeChartRange('all')">Все время</button>
                             <button class="chart-range-btn" data-range="year" onclick="changeChartRange('year')">Год</button>
                             <button class="chart-range-btn" data-range="6m" onclick="changeChartRange('6m')">6 мес</button>
@@ -3169,7 +3166,7 @@
                         </div>
                     </div>
 
-                    <div style="position:relative; width: 100%; height: 160px; background: rgba(0,0,0,0.02); border-radius:16px; padding: 12px 10px 8px 10px; margin-top: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div style="position:relative; width: 100%; height: 160px; background: rgba(0,0,0,0.01); border-radius:16px; padding: 12px 10px 8px 10px; margin-top: 12px; border: 1px solid var(--border-color); overflow: hidden;">
                         <canvas id="rating-chart" style="width:100%; height:100%;"></canvas>
                         <div id="chart-tooltip" style="position:absolute; display:none; background:rgba(30,41,59,0.955); border:1px solid var(--border-color); padding:8px 12px; border-radius:8px; font-size:11px; z-index:1000; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
                     </div>
@@ -3178,24 +3175,21 @@
                 <!-- Awards Summary Card -->
                 <div class="profile-section-card" id="profile-overview-awards-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h4 class="profile-section-title">Награды</h4>
+                        <h4 class="profile-section-title">🏅 Последние достижения</h4>
                         <button class="profile-section-more-btn" onclick="switchProfileTab('awards')">Все →</button>
                     </div>
-                    <!-- Badges counters -->
-                    <div class="profile-awards-counters-row" id="profile-overview-badges-counters">
-                        <!-- Filled dynamically e.g. 🥇 5  🥈 3  🥉 1  🔥 2  📈 1 -->
-                    </div>
-                    <!-- Recent achievements list (up to 3) -->
-                    <div style="font-size:12px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin: 16px 0 8px 0; text-align: left;">Последние достижения</div>
-                    <div class="profile-awards-recent-list" id="profile-overview-awards-list">
-                        <!-- Filled dynamically -->
+                    <!-- Badges counters (kept hidden but updated in JS) -->
+                    <div class="profile-awards-counters-row" id="profile-overview-badges-counters" style="display: none;"></div>
+                    <!-- Recent achievements list -->
+                    <div class="profile-achievements-container" id="profile-overview-awards-list">
+                        <!-- Filled dynamically with premium tiles -->
                     </div>
                 </div>
 
                 <!-- H2H Summary Card -->
                 <div class="profile-section-card" id="profile-overview-h2h-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h4 class="profile-section-title">Личные встречи</h4>
+                        <h4 class="profile-section-title">⚔️ Личные встречи</h4>
                         <button class="profile-section-more-btn" onclick="switchProfileTab('h2h')">Все →</button>
                     </div>
                     <div class="profile-h2h-summary-list" id="profile-overview-h2h-list">
@@ -3206,7 +3200,7 @@
                 <!-- Tournaments Summary Card -->
                 <div class="profile-section-card" id="profile-overview-tourneys-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h4 class="profile-section-title">Последние турниры</h4>
+                        <h4 class="profile-section-title">🏆 Последние турниры</h4>
                         <button class="profile-section-more-btn" onclick="switchProfileTab('tourneys')">Все →</button>
                     </div>
                     <div class="profile-tourneys-summary-list" id="profile-overview-tourneys-list">
@@ -5155,8 +5149,8 @@ function getPlayerLastDelta(player) {
             if (points.length === 0) return;
 
             const paddingLeft = 32;
-            const paddingRight = 12;
-            const paddingTop = 12;
+            const paddingRight = 16;
+            const paddingTop = 20;
             const paddingBottom = 24;
 
             const chartWidth = width - paddingLeft - paddingRight;
@@ -5165,21 +5159,23 @@ function getPlayerLastDelta(player) {
             const ratings = points.map(p => p.rating);
             let maxVal = Math.max(...ratings);
             let minVal = Math.min(...ratings);
+            const maxValReal = maxVal;
+            const minValReal = minVal;
 
             const diff = maxVal - minVal;
             if (diff === 0) {
-                maxVal += 50;
-                minVal = Math.max(0, minVal - 50);
+                maxVal += 30;
+                minVal = Math.max(0, minVal - 30);
             } else {
-                maxVal += diff * 0.15;
-                minVal = Math.max(0, minVal - diff * 0.15);
+                maxVal += diff * 0.25;
+                minVal = Math.max(0, minVal - diff * 0.25);
             }
 
             // Draw Y Grid lines & Labels
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
-            ctx.lineWidth = 0.5;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-            ctx.font = '9px sans-serif';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.lineWidth = 0.8;
+            ctx.fillStyle = '#8A8F9C';
+            ctx.font = '500 9px sans-serif';
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
 
@@ -5194,7 +5190,7 @@ function getPlayerLastDelta(player) {
                 ctx.lineTo(width - paddingRight, y);
                 ctx.stroke();
 
-                ctx.fillText(Math.round(val), paddingLeft - 6, y);
+                ctx.fillText(Math.round(val), paddingLeft - 8, y);
             }
 
             const getX = (idx) => {
@@ -5217,42 +5213,67 @@ function getPlayerLastDelta(player) {
                 ctx.closePath();
 
                 const grad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
-                grad.addColorStop(0, 'rgba(0, 122, 255, 0.2)');
-                grad.addColorStop(1, 'rgba(0, 122, 255, 0.0)');
+                grad.addColorStop(0, 'rgba(10, 132, 255, 0.15)');
+                grad.addColorStop(1, 'rgba(10, 132, 255, 0.0)');
                 ctx.fillStyle = grad;
                 ctx.fill();
             }
 
             // Line
-            ctx.beginPath();
-            ctx.strokeStyle = '#007aff';
-            ctx.lineWidth = 2.5;
-            ctx.lineJoin = 'round';
-            for (let i = 0; i < points.length; i++) {
-                const x = getX(i);
-                const y = getY(points[i].rating);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+            if (points.length >= 2) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#0a84ff';
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                for (let i = 0; i < points.length; i++) {
+                    const x = getX(i);
+                    const y = getY(points[i].rating);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
             }
-            ctx.stroke();
 
-            // Points
+            // Points & labels above them
             points.forEach((p, idx) => {
                 const x = getX(idx);
                 const y = getY(p.rating);
 
+                let pointColor = '#0a84ff';
+                let radius = 3.5;
+
+                if (p.rating === maxValReal) {
+                    pointColor = '#16a34a';
+                    radius = 4.5;
+                } else if (p.rating === minValReal) {
+                    pointColor = '#dc2626';
+                    radius = 4.5;
+                } else if (idx === points.length - 1) {
+                    pointColor = '#0a84ff';
+                    radius = 4.5;
+                }
+
                 ctx.beginPath();
-                ctx.arc(x, y, 4, 0, 2 * Math.PI);
-                ctx.fillStyle = '#007aff';
+                ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = pointColor;
                 ctx.fill();
+                
                 ctx.beginPath();
                 ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
                 ctx.fillStyle = '#ffffff';
                 ctx.fill();
+
+                // Draw rating label above
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillStyle = pointColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(p.rating.toFixed(1), x, y - 6);
             });
 
             // Date labels on X Axis
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.fillStyle = '#8A8F9C';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
 
@@ -5268,10 +5289,10 @@ function getPlayerLastDelta(player) {
                 ctx.clearRect(0, 0, width, height);
 
                 // Grid
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
-                ctx.lineWidth = 0.5;
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-                ctx.font = '9px sans-serif';
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.lineWidth = 0.8;
+                ctx.fillStyle = '#8A8F9C';
+                ctx.font = '500 9px sans-serif';
                 ctx.textAlign = 'right';
                 ctx.textBaseline = 'middle';
 
@@ -5283,7 +5304,7 @@ function getPlayerLastDelta(player) {
                     ctx.moveTo(paddingLeft, y);
                     ctx.lineTo(width - paddingRight, y);
                     ctx.stroke();
-                    ctx.fillText(Math.round(val), paddingLeft - 6, y);
+                    ctx.fillText(Math.round(val), paddingLeft - 8, y);
                 }
 
                 // Area
@@ -5296,27 +5317,29 @@ function getPlayerLastDelta(player) {
                     ctx.lineTo(getX(points.length - 1), paddingTop + chartHeight);
                     ctx.closePath();
                     const grad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
-                    grad.addColorStop(0, 'rgba(0, 122, 255, 0.2)');
-                    grad.addColorStop(1, 'rgba(0, 122, 255, 0.0)');
+                    grad.addColorStop(0, 'rgba(10, 132, 255, 0.15)');
+                    grad.addColorStop(1, 'rgba(10, 132, 255, 0.0)');
                     ctx.fillStyle = grad;
                     ctx.fill();
                 }
 
                 // Line
-                ctx.beginPath();
-                ctx.strokeStyle = '#007aff';
-                ctx.lineWidth = 2.5;
-                ctx.lineJoin = 'round';
-                for (let i = 0; i < points.length; i++) {
-                    const x = getX(i);
-                    const y = getY(points[i].rating);
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                if (points.length >= 2) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#0a84ff';
+                    ctx.lineWidth = 2.5;
+                    ctx.lineJoin = 'round';
+                    for (let i = 0; i < points.length; i++) {
+                        const x = getX(i);
+                        const y = getY(points[i].rating);
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
                 }
-                ctx.stroke();
 
                 // Dates X Axis
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.fillStyle = '#8A8F9C';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
                 if (points.length >= 2) {
@@ -5331,9 +5354,23 @@ function getPlayerLastDelta(player) {
                     const x = getX(idx);
                     const y = getY(p.rating);
 
+                    let pointColor = '#0a84ff';
+                    let radius = 3.5;
+
+                    if (p.rating === maxValReal) {
+                        pointColor = '#16a34a';
+                        radius = 4.5;
+                    } else if (p.rating === minValReal) {
+                        pointColor = '#dc2626';
+                        radius = 4.5;
+                    } else if (idx === points.length - 1) {
+                        pointColor = '#0a84ff';
+                        radius = 4.5;
+                    }
+
                     if (idx === hoverIdx) {
                         // Dash line
-                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
                         ctx.setLineDash([4, 4]);
                         ctx.beginPath();
                         ctx.moveTo(x, paddingTop);
@@ -5344,18 +5381,25 @@ function getPlayerLastDelta(player) {
                         // Glow
                         ctx.beginPath();
                         ctx.arc(x, y, 7, 0, 2 * Math.PI);
-                        ctx.fillStyle = 'rgba(0, 122, 255, 0.4)';
+                        ctx.fillStyle = 'rgba(10, 132, 255, 0.3)';
                         ctx.fill();
                     }
 
                     ctx.beginPath();
-                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
-                    ctx.fillStyle = '#007aff';
+                    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                    ctx.fillStyle = pointColor;
                     ctx.fill();
                     ctx.beginPath();
                     ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
                     ctx.fillStyle = '#ffffff';
                     ctx.fill();
+
+                    // Draw rating label above
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.fillStyle = pointColor;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(p.rating.toFixed(1), x, y - 6);
                 });
 
                 const tooltip = document.getElementById('chart-tooltip');
@@ -5409,19 +5453,20 @@ function getPlayerLastDelta(player) {
                 }
             };
 
-            canvas.onmousemove = (e) => handleXMove(e.clientX);
-            canvas.onmouseleave = () => redrawWithHover(-1);
-            canvas.ontouchstart = (e) => {
-                if (e.touches.length > 0) handleXMove(e.touches[0].clientX);
-            };
-            canvas.ontouchmove = (e) => {
-                if (e.touches.length > 0) handleXMove(e.touches[0].clientX);
-            };
-            canvas.ontouchend = () => redrawWithHover(-1);
-        }
+            canvas.addEventListener('mousemove', (e) => {
+                handleXMove(e.clientX);
+            });
 
-        // MODAL: OPEN PLAYER PROFILE
-        let currentProfilePlayer = null;
+            canvas.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    handleXMove(e.touches[0].clientX);
+                }
+            }, { passive: true });
+
+            canvas.addEventListener('mouseleave', () => {
+                redrawWithHover(-1);
+            });
+        }
 
         window.toggleProfileMenu = function(e) {
             e.stopPropagation();
@@ -5610,10 +5655,56 @@ function getPlayerLastDelta(player) {
             }
 
             // Rank & Status line
-            const sortedPlayers = [...clubData.players].sort((a, b) => b.rating - a.rating);
-            const rank = sortedPlayers.findIndex(p => p.id === player.id) + 1;
+            const sortedPlayers = [...clubData.players]
+                .filter(p => p.role !== 'coach')
+                .sort((a, b) => b.rating - a.rating);
+            const rank = player.role === 'coach' ? '—' : sortedPlayers.findIndex(p => p.id === player.id) + 1;
             const totalGames = player.wins + player.losses;
-            document.getElementById('modal-player-subtitle-stats').textContent = `#${rank} в клубе · ${totalGames} игр · ${player.tournamentsPlayed} турниров`;
+            
+            // Render chips
+            const chipsEl = document.getElementById('modal-player-chips');
+            if (chipsEl) {
+                if (player.role === 'coach') {
+                    chipsEl.innerHTML = `
+                        <span class="profile-hero-chip">👑 Тренер клуба</span>
+                        <span class="profile-hero-chip">${totalGames} игр</span>
+                        <span class="profile-hero-chip">${player.tournamentsPlayed} турниров</span>
+                    `;
+                } else {
+                    chipsEl.innerHTML = `
+                        <span class="profile-hero-chip">#${rank} в клубе</span>
+                        <span class="profile-hero-chip">${totalGames} игр</span>
+                        <span class="profile-hero-chip">${player.tournamentsPlayed} турниров</span>
+                    `;
+                }
+            }
+
+            // Avatar ring & badge styling based on rank
+            const avatarBadge = document.getElementById('modal-player-avatar-badge');
+            if (player.role === 'coach') {
+                avatarEl.style.boxShadow = '0 0 0 2.5px #0A84FF, 0 8px 20px rgba(10, 132, 255, 0.16)';
+                avatarBadge.textContent = '👑';
+                avatarBadge.style.background = '#0A84FF';
+                avatarBadge.style.display = 'flex';
+            } else if (rank === 1) {
+                avatarEl.style.boxShadow = '0 0 0 2.5px #F6B91E, 0 8px 20px rgba(246, 185, 30, 0.2)';
+                avatarBadge.textContent = '🏆';
+                avatarBadge.style.background = '#F6B91E';
+                avatarBadge.style.display = 'flex';
+            } else if (rank === 2) {
+                avatarEl.style.boxShadow = '0 0 0 2.5px #94A3B8, 0 8px 20px rgba(148, 163, 184, 0.2)';
+                avatarBadge.textContent = '🥈';
+                avatarBadge.style.background = '#94A3B8';
+                avatarBadge.style.display = 'flex';
+            } else if (rank === 3) {
+                avatarEl.style.boxShadow = '0 0 0 2.5px #D97706, 0 8px 20px rgba(217, 119, 6, 0.2)';
+                avatarBadge.textContent = '🥉';
+                avatarBadge.style.background = '#D97706';
+                avatarBadge.style.display = 'flex';
+            } else {
+                avatarEl.style.boxShadow = '0 0 0 2px #E2E8F0, 0 4px 12px rgba(15, 23, 42, 0.05)';
+                avatarBadge.style.display = 'none';
+            }
             
             // Status Badge logic
             const now = Date.now();
@@ -5623,14 +5714,18 @@ function getPlayerLastDelta(player) {
                 if (h.timestamp > lastPlayedTime) lastPlayedTime = h.timestamp;
             });
             const daysSinceLastPlay = lastPlayedTime ? (now - lastPlayedTime) / (1000 * 60 * 60 * 24) : 999;
-            if (daysSinceLastPlay <= 7) {
-                statusEl.textContent = 'В форме 🔥';
+            
+            if (player.role === 'coach') {
+                statusEl.innerHTML = '👑 Тренер';
+                statusEl.className = 'profile-hero-status';
+            } else if (daysSinceLastPlay <= 7) {
+                statusEl.innerHTML = '🔥 В форме';
                 statusEl.className = 'profile-hero-status active';
             } else if (daysSinceLastPlay <= 30) {
-                statusEl.textContent = 'Активный игрок';
+                statusEl.innerHTML = '👥 Активный';
                 statusEl.className = 'profile-hero-status';
             } else {
-                statusEl.textContent = 'Ветеран ⏳';
+                statusEl.innerHTML = '⏳ Ветеран';
                 statusEl.className = 'profile-hero-status';
             }
 
@@ -5644,10 +5739,10 @@ function getPlayerLastDelta(player) {
             });
             const growthEl = document.getElementById('modal-player-growth-badge');
             if (monthlyDelta >= 0) {
-                growthEl.textContent = `+${monthlyDelta.toFixed(1)} за месяц`;
+                growthEl.innerHTML = `📈 +${monthlyDelta.toFixed(1)} за месяц`;
                 growthEl.className = 'profile-hero-growth-badge';
             } else {
-                growthEl.textContent = `${monthlyDelta.toFixed(1)} за месяц`;
+                growthEl.innerHTML = `📉 ${monthlyDelta.toFixed(1)} за месяц`;
                 growthEl.className = 'profile-hero-growth-badge negative';
             }
 
@@ -5691,7 +5786,7 @@ function getPlayerLastDelta(player) {
             const allAchievements = calculateAchievements();
             const pAchievements = allAchievements[player.fullName.toLowerCase()] || {};
 
-            // Overview Awards counters
+            // Overview Awards counters (updated but hidden in v1.9.7)
             const badgesCounters = document.getElementById('profile-overview-badges-counters');
             badgesCounters.innerHTML = '';
             let countersHTML = '';
@@ -5714,85 +5809,107 @@ function getPlayerLastDelta(player) {
                     countersHTML += `<span class="profile-award-counter-badge">${t.icon} ${count}</span>`;
                 }
             });
-            badgesCounters.innerHTML = countersHTML || '<span style="font-size:12px; color:var(--text-secondary); font-weight:550; padding: 4px 0;">Наград пока нет</span>';
+            badgesCounters.innerHTML = countersHTML;
 
-            // Overview recent achievements (up to 3)
+            // Overview recent achievements list (Premium widgets)
             const recentAwardsEl = document.getElementById('profile-overview-awards-list');
             recentAwardsEl.innerHTML = '';
             let recentHTML = '';
-            let recentCount = 0;
+            let tilesCount = 0;
 
-            const achievementInfo = {
-                champion: { title: 'Серийный чемпион', desc: '3 золота подряд', iconKey: 'champion' },
-                slayer: { title: 'Гроза авторитетов', desc: 'Победа над топ-игроком (100+ разница)', iconKey: 'slayer' },
-                growth: { title: 'Взрывной рост', desc: '+50 рейтинга за 30 дней', iconKey: 'growth' },
-                iron: { title: 'Железный человек', desc: '50+ сыгранных турниров', iconKey: 'iron' },
-                invincible: { title: 'Неуязвимый', desc: 'Турнир без поражений (мин. 2 игры)', iconKey: 'invincible' },
-                grandmaster: { title: 'Гроссмейстер', desc: 'Рейтинг 350.0 очков и более', iconKey: 'grandmaster' }
-            };
+            // 1. Win Streak Card
+            if (bestStreak >= 3 && tilesCount < 3) {
+                const isCurrentActive = currentStreak === bestStreak;
+                recentHTML += `
+                    <div class="profile-achievement-tile">
+                        <div class="profile-achievement-icon-box" style="background: rgba(249, 115, 22, 0.08); color: #F97316;">🔥</div>
+                        <div class="profile-achievement-info">
+                            <span class="profile-achievement-title">${bestStreak} побед подряд</span>
+                            <span class="profile-achievement-desc">${isCurrentActive ? 'Текущая серия побед' : 'Рекордная серия побед'}</span>
+                        </div>
+                    </div>
+                `;
+                tilesCount++;
+            }
 
-            Object.keys(pAchievements).forEach(key => {
-                const count = pAchievements[key];
-                if (count > 0 && recentCount < 3) {
-                    const info = achievementInfo[key];
-                    if (info) {
-                        recentHTML += `
-                            <div class="profile-award-card">
-                                <div class="profile-award-card-icon">
-                                    ${getBadgeSvg(info.iconKey)}
-                                </div>
-                                <div class="profile-award-card-info">
-                                    <span class="profile-award-card-title">${info.title}</span>
-                                    <span class="profile-award-card-desc">${info.desc}</span>
-                                </div>
-                                <span class="profile-award-card-count">x${count}</span>
+            // 2. Growth Card
+            if (monthlyDelta > 0 && tilesCount < 3) {
+                recentHTML += `
+                    <div class="profile-achievement-tile">
+                        <div class="profile-achievement-icon-box" style="background: rgba(22, 163, 74, 0.08); color: #16A34A;">📈</div>
+                        <div class="profile-achievement-info">
+                            <span class="profile-achievement-title">+${monthlyDelta.toFixed(1)} рейтинга</span>
+                            <span class="profile-achievement-desc">Лучший рост за последние 30 дней</span>
+                        </div>
+                    </div>
+                `;
+                tilesCount++;
+            }
+
+            // 3. Gold Medals Card
+            if (player.goldMedals > 0 && tilesCount < 3) {
+                recentHTML += `
+                    <div class="profile-achievement-tile">
+                        <div class="profile-achievement-icon-box" style="background: rgba(254, 243, 199, 0.7); color: #D97706;">🏆</div>
+                        <div class="profile-achievement-info">
+                            <span class="profile-achievement-title">Победитель турнира</span>
+                            <span class="profile-achievement-desc">Первые места в клубе: x${player.goldMedals}</span>
+                        </div>
+                    </div>
+                `;
+                tilesCount++;
+            }
+
+            // 4. Special badges
+            const specialBadgeInfo = [
+                { key: 'grandmaster', title: 'Гроссмейстер', desc: 'Рейтинг 350.0 очков и более', icon: '💎', bg: 'rgba(6, 182, 212, 0.08)', color: '#0891B2' },
+                { key: 'slayer', title: 'Гроза авторитетов', desc: 'Победа над топ-игроком (100+ разница)', icon: '⚔️', bg: 'rgba(239, 68, 68, 0.08)', color: '#DC2626' },
+                { key: 'invincible', title: 'Неуязвимый', desc: 'Турнир без единого поражения', icon: '⚡', bg: 'rgba(234, 179, 8, 0.08)', color: '#CA8A04' }
+            ];
+
+            specialBadgeInfo.forEach(badge => {
+                const count = pAchievements[badge.key] || 0;
+                if (count > 0 && tilesCount < 3) {
+                    recentHTML += `
+                        <div class="profile-achievement-tile">
+                            <div class="profile-achievement-icon-box" style="background: ${badge.bg}; color: ${badge.color};">${badge.icon}</div>
+                            <div class="profile-achievement-info">
+                                <span class="profile-achievement-title">${badge.title}</span>
+                                <span class="profile-achievement-desc">${badge.desc} (x${count})</span>
                             </div>
-                        `;
-                        recentCount++;
-                    }
+                        </div>
+                    `;
+                    tilesCount++;
                 }
             });
 
-            if (recentCount < 3 && player.goldMedals > 0) {
+            // 5. Silver / Bronze Fallback
+            if (player.silverMedals > 0 && tilesCount < 3) {
                 recentHTML += `
-                    <div class="profile-award-card">
-                        <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥇</div>
-                        <div class="profile-award-card-info">
-                            <span class="profile-award-card-title">Золотые медали</span>
-                            <span class="profile-award-card-desc">1 место в турнирах клуба</span>
+                    <div class="profile-achievement-tile">
+                        <div class="profile-achievement-icon-box" style="background: #F1F5F9; color: #64748B;">🥈</div>
+                        <div class="profile-achievement-info">
+                            <span class="profile-achievement-title">Финалист турниров</span>
+                            <span class="profile-achievement-desc">Вторые места в клубе: x${player.silverMedals}</span>
                         </div>
-                        <span class="profile-award-card-count">x${player.goldMedals}</span>
                     </div>
                 `;
-                recentCount++;
+                tilesCount++;
             }
-            if (recentCount < 3 && player.silverMedals > 0) {
+            if (player.bronzeMedals > 0 && tilesCount < 3) {
                 recentHTML += `
-                    <div class="profile-award-card">
-                        <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥈</div>
-                        <div class="profile-award-card-info">
-                            <span class="profile-award-card-title">Серебряные медали</span>
-                            <span class="profile-award-card-desc">2 место в турнирах клуба</span>
+                    <div class="profile-achievement-tile">
+                        <div class="profile-achievement-icon-box" style="background: #FEF3C7; color: #B45309;">🥉</div>
+                        <div class="profile-achievement-info">
+                            <span class="profile-achievement-title">Призер турниров</span>
+                            <span class="profile-achievement-desc">Третьи места в клубе: x${player.bronzeMedals}</span>
                         </div>
-                        <span class="profile-award-card-count">x${player.silverMedals}</span>
                     </div>
                 `;
-                recentCount++;
+                tilesCount++;
             }
-            if (recentCount < 3 && player.bronzeMedals > 0) {
-                recentHTML += `
-                    <div class="profile-award-card">
-                        <div class="profile-award-card-icon" style="font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;">🥉</div>
-                        <div class="profile-award-card-info">
-                            <span class="profile-award-card-title">Бронзовые медали</span>
-                            <span class="profile-award-card-desc">3 место в турнирах клуба</span>
-                        </div>
-                        <span class="profile-award-card-count">x${player.bronzeMedals}</span>
-                    </div>
-                `;
-                recentCount++;
-            }
-            recentAwardsEl.innerHTML = recentHTML || '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:13px;">Достижения отсутствуют</div>';
+
+            recentAwardsEl.innerHTML = recentHTML || '<div style="text-align:center; padding:16px; color:#8A8F9C; font-size:12px;">Достижений пока нет</div>';
 
             // Calculate H2H
             const h2h = {};
@@ -5904,7 +6021,7 @@ function getPlayerLastDelta(player) {
                 `;
             });
             overviewTourneysEl.innerHTML = tourneysHTML || '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:13px;">Турниры отсутствуют</div>';
-
+            // Note: openPlayerModal does NOT end here, it continues into the toggleOverviewTourneyCard declaration
             window.toggleOverviewTourneyCard = function(idx) {
                 const card = document.getElementById(`overview-tourney-card-${idx}`);
                 if (card) {
