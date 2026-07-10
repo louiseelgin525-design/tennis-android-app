@@ -82,6 +82,7 @@
             margin-bottom: 8px;
             background: linear-gradient(135deg, var(--apple-blue), #5856d6);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -470,6 +471,7 @@
             word-wrap: break-word;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -591,6 +593,7 @@
             line-height: 1.15;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             word-wrap: break-word;
@@ -947,6 +950,7 @@
             word-wrap: break-word;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -4243,6 +4247,7 @@
         let activeScoreMatch = null; // { f, s, scoreKey, index }
         let activePlayoffMatchId = null;
         let selectedPlayerIdsForDraft = new Set();
+        window.draftSetupPlayersList = [];
         let editPlayerTarget = null; // player object
 
         // DEBUG LOG TO PANEL ON SCREEN
@@ -4910,7 +4915,7 @@ function getPlayerLastDelta(player) {
 
                 // Long press event for admins to manage coach role
                 if (isAdmin) {
-                    const duration = isCoachCard ? 10000 : 1200;
+                    const duration = 10000;
                     bindLongPress(card, (e) => {
                         openCoachActionSheet(player);
                     }, duration);
@@ -4965,14 +4970,7 @@ function getPlayerLastDelta(player) {
                                 card.style.transform = 'translateX(0)';
                                 swipeBg.style.opacity = '0';
                                 // Add to draft
-                                if (!selectedPlayerIdsForDraft.has(player.id)) {
-                                    selectedPlayerIdsForDraft.add(player.id);
-                                    syncDraftSelectedPlayersToFirebase();
-                                    renderDraftPlayersSelector();
-                                    showToast(`${player.fullName} добавлен в турнир`);
-                                } else {
-                                    showToast(`${player.fullName} уже добавлен`);
-                                }
+                                window.addPlayerToDraft(player.id);
                             }, 200);
                         } else {
                             card.style.transform = 'translateX(0)';
@@ -5237,6 +5235,112 @@ function getPlayerLastDelta(player) {
             promises.push(db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updated)));
             if (selectedEditAvatarBase64) {
                 promises.push(db.ref(`clubs/${activeClubId}/avatars/${editPlayerTarget.id}`).set(selectedEditAvatarBase64));
+            }
+
+            let historyChanged = false;
+            let updatedHistory = clubData.history;
+            if (name !== editPlayerTarget.fullName) {
+                const oldName = editPlayerTarget.fullName;
+                const newName = name;
+
+                updatedHistory = clubData.history.map(entry => {
+                    let changed = false;
+                    const newEntry = { ...entry };
+
+                    if (newEntry.winnerName === oldName) {
+                        newEntry.winnerName = newName;
+                        changed = true;
+                    }
+
+                    if (newEntry.structuredRatings) {
+                        const srRows = newEntry.structuredRatings.split(";;");
+                        let srChanged = false;
+                        const newSrRows = srRows.map(row => {
+                            const parts = row.split("::");
+                            if (parts.length >= 3 && decodeName(parts[0]) === oldName) {
+                                parts[0] = safe_encode(newName);
+                                srChanged = true;
+                                return parts.join("::");
+                            }
+                            return row;
+                        });
+                        if (srChanged) {
+                            newEntry.structuredRatings = newSrRows.join(";;");
+                            changed = true;
+                        }
+                    }
+
+                    if (newEntry.structuredMatches) {
+                        const smRows = newEntry.structuredMatches.split(";;");
+                        let smChanged = false;
+                        const newSmRows = smRows.map(row => {
+                            const parts = row.split("::");
+                            let rowChg = false;
+                            if (parts.length >= 3) {
+                                if (decodeName(parts[0]) === oldName) {
+                                    parts[0] = safe_encode(newName);
+                                    rowChg = true;
+                                }
+                                if (decodeName(parts[1]) === oldName) {
+                                    parts[1] = safe_encode(newName);
+                                    rowChg = true;
+                                }
+                            }
+                            if (rowChg) {
+                                smChanged = true;
+                                return parts.join("::");
+                            }
+                            return row;
+                        });
+                        if (smChanged) {
+                            newEntry.structuredMatches = newSmRows.join(";;");
+                            changed = true;
+                        }
+                    }
+
+                    if (newEntry.ratingText) {
+                        const lines = newEntry.ratingText.split("\n");
+                        let rChanged = false;
+                        const newLines = lines.map(line => {
+                            if (line.startsWith(oldName + ": ")) {
+                                rChanged = true;
+                                return newName + line.substring(oldName.length);
+                            }
+                            return line;
+                        });
+                        if (rChanged) {
+                            newEntry.ratingText = newLines.join("\n");
+                            changed = true;
+                        }
+                    }
+
+                    if (newEntry.standingsText) {
+                        const oldPattern = oldName + " — ";
+                        const newPattern = newName + " — ";
+                        // standingsText lines: "1. 🥇 Name — XX оч." 
+                        // So splitting and replacing is safest
+                        const lines = newEntry.standingsText.split("\n");
+                        let sChanged = false;
+                        const newLines = lines.map(line => {
+                            if (line.includes(oldPattern)) {
+                                sChanged = true;
+                                return line.replace(oldPattern, newPattern);
+                            }
+                            return line;
+                        });
+                        if (sChanged) {
+                            newEntry.standingsText = newLines.join("\n");
+                            changed = true;
+                        }
+                    }
+
+                    if (changed) historyChanged = true;
+                    return changed ? newEntry : entry;
+                });
+            }
+
+            if (historyChanged) {
+                promises.push(db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory)));
             }
 
             Promise.all(promises)
@@ -6593,18 +6697,29 @@ function getPlayerLastDelta(player) {
         }
 
         function syncDraftSelectedPlayersToFirebase() {
-            const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id))
-                .sort((a, b) => b.rating - a.rating);
+            selectedPlayerIdsForDraft.clear();
+            const playerFields = [];
+            let activeIdx = 0;
             
-            const playerFields = selectedPlayers.map((p, idx) => {
-                return {
-                    id: idx,
-                    name: safe_encode(p.fullName)
-                };
-            });
+            if (window.draftSetupPlayersList) {
+                window.draftSetupPlayersList.forEach((pid) => {
+                    if (pid !== null) {
+                        selectedPlayerIdsForDraft.add(pid);
+                        const p = clubData.players.find(pl => pl.id === pid);
+                        if (p) {
+                            playerFields.push({
+                                id: activeIdx++,
+                                name: safe_encode(p.fullName)
+                            });
+                        }
+                    }
+                });
+            }
             
-            db.ref(`clubs/${activeClubId}/draft/playerFieldsJson`).set(JSON.stringify(playerFields));
-            db.ref(`clubs/${activeClubId}/draft/playersCount`).set(selectedPlayers.length);
+            const updates = {};
+            updates[`clubs/${activeClubId}/draft/playerFieldsJson`] = JSON.stringify(playerFields);
+            updates[`clubs/${activeClubId}/draft/playersCount`] = window.draftSetup ? window.draftSetup.playersCount : 2;
+            db.ref().update(updates);
         }
 
         function updateDraftSetupPanelInputs() {
@@ -6617,7 +6732,7 @@ function getPlayerLastDelta(player) {
             }
             
             const playersVal = document.getElementById('draft-players-val');
-            if (playersVal) playersVal.textContent = draft.playersCount || 6;
+            if (playersVal) playersVal.textContent = draft.playersCount || 2;
             
             const tablesVal = document.getElementById('draft-tables-val');
             if (tablesVal) tablesVal.textContent = draft.tablesCount || 2;
@@ -6632,11 +6747,27 @@ function getPlayerLastDelta(player) {
             // Sync local selectedPlayerIdsForDraft set from firebase
             const fields = JSON.parse(draft.playerFieldsJson || "[]");
             selectedPlayerIdsForDraft.clear();
-            fields.forEach(f => {
+            
+            const count = draft.playersCount || 2;
+            if (!window.draftSetup) {
+                window.draftSetup = {
+                    playersCount: count,
+                    tablesCount: draft.tablesCount || 2,
+                    winsToWin: draft.winsToWin || 2
+                };
+            } else {
+                window.draftSetup.playersCount = count;
+            }
+            window.draftSetupPlayersList = Array(count).fill(null);
+            
+            fields.forEach((f, idx) => {
                 const decoded = decodeName(f.name).trim().toLowerCase();
                 const found = clubData.players.find(p => p.fullName.trim().toLowerCase() === decoded);
                 if (found) {
                     selectedPlayerIdsForDraft.add(found.id);
+                    if (idx < count) {
+                        window.draftSetupPlayersList[idx] = found.id;
+                    }
                 }
             });
             
@@ -6677,11 +6808,23 @@ function getPlayerLastDelta(player) {
                     if (!document.getElementById('draft-name-input')) {
                         const fields = JSON.parse(draft.playerFieldsJson || "[]");
                         selectedPlayerIdsForDraft.clear();
-                        fields.forEach(f => {
+                        const count = draft.playersCount || 2;
+                        window.draftSetup = window.draftSetup || {
+                            playersCount: count,
+                            tablesCount: draft.tablesCount || 2,
+                            winsToWin: draft.winsToWin || 2
+                        };
+                        window.draftSetup.playersCount = count;
+                        window.draftSetupPlayersList = Array(count).fill(null);
+                        
+                        fields.forEach((f, idx) => {
                             const decoded = decodeName(f.name).trim().toLowerCase();
                             const found = clubData.players.find(p => p.fullName.trim().toLowerCase() === decoded);
                             if (found) {
                                 selectedPlayerIdsForDraft.add(found.id);
+                                if (idx < count) {
+                                    window.draftSetupPlayersList[idx] = found.id;
+                                }
                             }
                         });
                         renderDraftSetupPanel(container);
@@ -7162,39 +7305,49 @@ function getPlayerLastDelta(player) {
                         </div>
                     </div>
                 </div>
-
-                <!-- SELECT PLAYERS HEADER -->
-                <h4 class="section-title" style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:15px; font-weight:700;">👥 Выберите участников из списка</span>
-                    <span id="draft-selected-count-badge" style="background:var(--apple-blue); color:white; font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px; margin-right:4px; transition: background-color 0.2s;">Выбрано: 0</span>
-                </h4>
-
-                <div id="draft-selected-players-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; margin-top:2px;"></div>
-                
-                <div class="search-bar" style="margin-bottom:8px; position:relative;">
-                    <svg class="svg-icon" viewBox="0 0 24 24" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); width:18px; height:18px;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    <input type="text" id="draft-player-search" class="login-input" placeholder="Поиск по имени" style="margin:0; height:44px; border-radius:10px; padding-left:40px; font-size:14px;" autocomplete="off" autocapitalize="words" oninput="renderDraftPlayersSelector()">
+ 
+                <!-- SELECT PLAYERS CARD -->
+                <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:18px; padding:16px; margin-top:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:14px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:4px;">👥 Игроки</span>
+                        <span id="draft-selected-count-badge" style="color:var(--apple-blue); font-size:15px; font-weight:700; margin-right:4px;">0</span>
+                    </div>
+                    
+                    <div id="draft-players-inputs-container" style="display:flex; flex-direction:column; gap:10px; margin-top:16px;"></div>
+                    
+                    <div style="text-align:center; margin-top:16px;">
+                        <button onclick="adjustDraftVal('players', 1)" style="background:none; border:none; color:var(--apple-blue); font-size:16px; font-weight:600; cursor:pointer;">+ Добавить игрока</button>
+                    </div>
                 </div>
-                
-                <div id="draft-players-list-selector" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-                    <!-- Rendered dynamically -->
-                </div>
-
+ 
                 <button onclick="submitCreateTournament()" class="login-btn" style="margin-top:16px; height:50px; border-radius:14px; background-color: var(--apple-blue); font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">
                     🏆 Создать турнир
                 </button>
             `;
-
+ 
             parentContainer.appendChild(card);
             
             // Initialize draft parameters from Firebase draft if available
             const firebaseDraft = clubData.draft || {};
             window.draftSetup = {
-                playersCount: firebaseDraft.playersCount || 6,
+                playersCount: firebaseDraft.playersCount || 2,
                 tablesCount: firebaseDraft.tablesCount || 2,
                 winsToWin: firebaseDraft.winsToWin || 2
             };
-
+            window.draftSetupPlayersList = Array(window.draftSetup.playersCount).fill(null);
+            const fields = JSON.parse(firebaseDraft.playerFieldsJson || "[]");
+            selectedPlayerIdsForDraft.clear();
+            fields.forEach((f, idx) => {
+                const decoded = decodeName(f.name).trim().toLowerCase();
+                const found = clubData.players.find(p => p.fullName.trim().toLowerCase() === decoded);
+                if (found) {
+                    selectedPlayerIdsForDraft.add(found.id);
+                    if (idx < window.draftSetup.playersCount) {
+                        window.draftSetupPlayersList[idx] = found.id;
+                    }
+                }
+            });
+ 
             setTimeout(() => {
                 const nameInput = document.getElementById('draft-name-input');
                 if (nameInput) {
@@ -7210,23 +7363,35 @@ function getPlayerLastDelta(player) {
                 
                 const tablesVal = document.getElementById('draft-tables-val');
                 if (tablesVal) tablesVal.textContent = window.draftSetup.tablesCount;
-
+ 
                 const simText = document.getElementById('draft-simultaneous-players-text');
                 if (simText) simText.textContent = `До ${window.draftSetup.tablesCount * 2} игроков одновременно`;
                 
                 selectDraftWins(window.draftSetup.winsToWin);
             }, 10);
-
+ 
             renderDraftPlayersSelector();
         }
-
+ 
         // ADJUST COUNTERS
         window.adjustDraftVal = function(type, delta) {
             if (!window.draftSetup) return;
             if (type === 'players') {
                 window.draftSetup.playersCount = Math.max(2, window.draftSetup.playersCount + delta);
                 document.getElementById('draft-players-val').textContent = window.draftSetup.playersCount;
-                db.ref(`clubs/${activeClubId}/draft/playersCount`).set(window.draftSetup.playersCount);
+                
+                // Resize window.draftSetupPlayersList
+                if (!window.draftSetupPlayersList) window.draftSetupPlayersList = [];
+                while (window.draftSetupPlayersList.length < window.draftSetup.playersCount) {
+                    window.draftSetupPlayersList.push(null);
+                }
+                while (window.draftSetupPlayersList.length > window.draftSetup.playersCount) {
+                    const removedId = window.draftSetupPlayersList.pop();
+                    if (removedId !== null) {
+                        selectedPlayerIdsForDraft.delete(removedId);
+                    }
+                }
+                syncDraftSelectedPlayersToFirebase();
             } else if (type === 'tables') {
                 window.draftSetup.tablesCount = Math.max(1, window.draftSetup.tablesCount + delta);
                 document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
@@ -7237,7 +7402,7 @@ function getPlayerLastDelta(player) {
             }
             renderDraftPlayersSelector();
         };
-
+ 
         // WINS COUNT SEGMENT SELECTOR
         window.selectDraftWins = function(wins) {
             if (!window.draftSetup) return;
@@ -7252,136 +7417,301 @@ function getPlayerLastDelta(player) {
 
         // RENDER CHECKBOX SELECTOR FOR DRAFT SETUP
         window.renderDraftPlayersSelector = function() {
-            const selectedContainer = document.getElementById('draft-selected-players-container');
-            if (selectedContainer) {
-                selectedContainer.innerHTML = '';
-                const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id));
-                
-                // Update selected count badge
-                const countBadge = document.getElementById('draft-selected-count-badge');
-                if (countBadge) {
-                    countBadge.textContent = `Выбрано: ${selectedPlayers.length}`;
-                    const limitVal = window.draftSetup ? window.draftSetup.playersCount : 6;
-                    if (selectedPlayers.length === limitVal) {
-                        countBadge.style.backgroundColor = 'var(--apple-green)';
-                    } else if (selectedPlayers.length > limitVal) {
-                        countBadge.style.backgroundColor = 'var(--apple-red)';
-                    } else {
-                        countBadge.style.backgroundColor = 'var(--apple-blue)';
-                    }
-                }
-                
-                selectedPlayers.forEach(p => {
-                    const chip = document.createElement('div');
-                    chip.className = 'selected-player-chip';
-                    chip.style.backgroundColor = 'rgba(0, 122, 255, 0.08)';
-                    chip.style.border = '1px solid rgba(0, 122, 255, 0.2)';
-                    chip.style.color = 'var(--apple-blue)';
-                    chip.style.padding = '4px 10px';
-                    chip.style.borderRadius = '20px';
-                    chip.style.fontSize = '12px';
-                    chip.style.fontWeight = '700';
-                    chip.style.display = 'flex';
-                    chip.style.alignItems = 'center';
-                    chip.style.gap = '6px';
-                    chip.style.cursor = 'pointer';
-                    chip.style.transition = 'all 0.15s';
-                    
-                    chip.innerHTML = `
-                        <span>${p.fullName} <span style="font-size:10px; opacity:0.75; font-weight:normal;">★${p.rating.toFixed(0)}</span></span>
-                        <span style="font-weight:900; font-size:14px; opacity:0.6; padding-left: 2px;">×</span>
-                    `;
-                    
-                    chip.addEventListener('click', () => {
-                        selectedPlayerIdsForDraft.delete(p.id);
-                        syncDraftSelectedPlayersToFirebase();
-                        renderDraftPlayersSelector();
-                    });
-                    
-                    selectedContainer.appendChild(chip);
-                });
-                
-                if (selectedPlayers.length === 0) {
-                    selectedContainer.style.display = 'none';
-                } else {
-                    selectedContainer.style.display = 'flex';
-                }
+            const container = document.getElementById('draft-players-inputs-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const count = window.draftSetup ? window.draftSetup.playersCount : 2;
+            if (!window.draftSetupPlayersList) {
+                window.draftSetupPlayersList = Array(count).fill(null);
             }
 
-            const listSelector = document.getElementById('draft-players-list-selector');
-            if (!listSelector) return;
-            listSelector.innerHTML = '';
+            // Update badge
+            const selectedPlayers = clubData.players.filter(p => selectedPlayerIdsForDraft.has(p.id));
+            const countBadge = document.getElementById('draft-selected-count-badge');
+            if (countBadge) {
+                countBadge.textContent = selectedPlayers.length;
+            }
 
-            const query = (document.getElementById('draft-player-search').value || '').trim().toLowerCase();
-            const sorted = [...clubData.players].sort((a, b) => b.rating - a.rating);
-
-            // Separate coaches and regular players
-            const coachList = sorted.filter(p => p.role === 'coach' && (!query || p.fullName.toLowerCase().includes(query)));
-            const playerList = sorted.filter(p => p.role !== 'coach' && (!query || p.fullName.toLowerCase().includes(query)));
-
-            function renderDraftItem(p, isCoach) {
-                const item = document.createElement('div');
-                const isSelected = selectedPlayerIdsForDraft.has(p.id);
-                item.className = `draft-player-item ${isSelected ? 'selected' : ''}`;
+            // Helper to render suggestion item
+            function showDropdownSuggestions(query, dropdown, rowIndex) {
+                dropdown.innerHTML = '';
+                const normalizedQuery = query.trim().toLowerCase();
                 
-                item.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:12px; color:var(--text-secondary); font-weight:700;">★${p.rating.toFixed(0)}</span>
-                        <span style="font-size:14px; font-weight:700;">${p.fullName} ${isCoach ? '<span style="background-color: #E8F2FF; color: #0A84FF; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; margin-left: 6px;">Тренер</span>' : ''}</span>
-                    </div>
-                    <div class="draft-player-checkbox">${SVG_ICONS.check}</div>
-                `;
-
-                item.addEventListener('click', () => {
-                    if (selectedPlayerIdsForDraft.has(p.id)) {
-                        selectedPlayerIdsForDraft.delete(p.id);
-                    } else {
-                        selectedPlayerIdsForDraft.add(p.id);
+                if (normalizedQuery.length < 3) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                let matches = clubData.players.filter(p => p.fullName.toLowerCase().includes(normalizedQuery));
+                
+                matches = [...matches].sort((a, b) => b.rating - a.rating);
+                
+                const limit = 15;
+                const itemsToShow = matches.slice(0, limit);
+                
+                if (itemsToShow.length === 0) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                
+                itemsToShow.forEach(p => {
+                    const item = document.createElement('div');
+                    item.style.padding = '10px 14px';
+                    item.style.fontSize = '13px';
+                    item.style.fontWeight = '700';
+                    item.style.cursor = 'pointer';
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+                    item.style.alignItems = 'center';
+                    item.style.borderBottom = '1px solid rgba(0,0,0,0.02)';
+                    
+                    const isAlreadySelected = selectedPlayerIdsForDraft.has(p.id) && window.draftSetupPlayersList[rowIndex] !== p.id;
+                    
+                    if (isAlreadySelected) {
+                        item.style.opacity = '0.5';
+                        item.style.cursor = 'default';
                     }
+                    
+                    item.innerHTML = `
+                        <span>${p.fullName}</span>
+                        <span style="font-size:11px; color:var(--text-secondary); font-weight:700;">★${p.rating.toFixed(0)}</span>
+                    `;
+                    
+                    if (!isAlreadySelected) {
+                        item.addEventListener('mouseenter', () => {
+                            item.style.background = 'rgba(0,122,255,0.06)';
+                            item.style.color = 'var(--apple-blue)';
+                        });
+                        item.addEventListener('mouseleave', () => {
+                            item.style.background = 'transparent';
+                            item.style.color = 'var(--text-main)';
+                        });
+                        item.addEventListener('click', () => {
+                            const oldId = window.draftSetupPlayersList[rowIndex];
+                            if (oldId !== null) {
+                                selectedPlayerIdsForDraft.delete(oldId);
+                            }
+                            
+                            window.draftSetupPlayersList[rowIndex] = p.id;
+                            selectedPlayerIdsForDraft.add(p.id);
+                            
+                            dropdown.style.display = 'none';
+                            syncDraftSelectedPlayersToFirebase();
+                            renderDraftPlayersSelector();
+                        });
+                    }
+                    
+                    dropdown.appendChild(item);
+                });
+                
+                dropdown.style.display = 'flex';
+            }
+
+            // Render each row
+            for (let i = 0; i < count; i++) {
+                const pid = window.draftSetupPlayersList[i];
+                const player = pid !== null ? clubData.players.find(p => p.id === pid) : null;
+
+                const rowDiv = document.createElement('div');
+                rowDiv.style.position = 'relative';
+                rowDiv.style.display = 'flex';
+                rowDiv.style.alignItems = 'center';
+                rowDiv.style.gap = '10px';
+                rowDiv.style.background = 'var(--bg-card)';
+                rowDiv.style.border = '1px solid var(--border-color)';
+                rowDiv.style.borderRadius = '12px';
+                rowDiv.style.padding = '8px 12px';
+                rowDiv.style.height = '48px';
+
+                // Number badge
+                const numSpan = document.createElement('span');
+                numSpan.style.fontSize = '14px';
+                numSpan.style.fontWeight = '800';
+                numSpan.style.color = 'var(--text-secondary)';
+                numSpan.style.minWidth = '20px';
+                numSpan.textContent = `${i + 1}`;
+                rowDiv.appendChild(numSpan);
+
+                // Input field
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `draft-player-input-${i}`;
+                input.className = 'login-input';
+                input.style.margin = '0';
+                input.style.border = 'none';
+                input.style.background = 'transparent';
+                input.style.padding = '0';
+                input.style.fontSize = '14px';
+                input.style.fontWeight = '700';
+                input.style.color = 'var(--text-main)';
+                input.style.flex = '1';
+                input.style.height = '100%';
+                input.placeholder = `Фамилия участника ${i + 1}`;
+                input.autocomplete = 'off';
+
+                if (player) {
+                    input.value = player.fullName;
+                } else {
+                    input.value = '';
+                }
+
+                rowDiv.appendChild(input);
+
+                // Rating badge if player is selected
+                if (player) {
+                    const ratingSpan = document.createElement('span');
+                    ratingSpan.style.fontSize = '11px';
+                    ratingSpan.style.fontWeight = '700';
+                    ratingSpan.style.color = 'var(--text-secondary)';
+                    ratingSpan.style.background = 'rgba(0,0,0,0.05)';
+                    ratingSpan.style.padding = '2px 6px';
+                    ratingSpan.style.borderRadius = '6px';
+                    ratingSpan.style.flexShrink = '0';
+                    ratingSpan.textContent = `★${player.rating.toFixed(0)}`;
+                    rowDiv.appendChild(ratingSpan);
+                }
+
+                // Clear/Delete button
+                const clearBtn = document.createElement('button');
+                clearBtn.style.background = 'none';
+                clearBtn.style.border = 'none';
+                clearBtn.style.fontSize = '18px';
+                clearBtn.style.fontWeight = '900';
+                clearBtn.style.color = 'var(--text-secondary)';
+                clearBtn.style.cursor = 'pointer';
+                clearBtn.style.padding = '4px';
+                clearBtn.style.display = 'flex';
+                clearBtn.style.alignItems = 'center';
+                clearBtn.style.justifyContent = 'center';
+                clearBtn.innerHTML = '×';
+
+                clearBtn.addEventListener('click', () => {
+                    const oldId = window.draftSetupPlayersList[i];
+                    if (oldId !== null) {
+                        selectedPlayerIdsForDraft.delete(oldId);
+                    }
+                    
+                    if (window.draftSetup.playersCount > 2) {
+                        window.draftSetup.playersCount -= 1;
+                        window.draftSetupPlayersList.splice(i, 1);
+                        const valEl = document.getElementById('draft-players-val');
+                        if (valEl) valEl.textContent = window.draftSetup.playersCount;
+                    } else {
+                        window.draftSetupPlayersList[i] = null;
+                    }
+                    
                     syncDraftSelectedPlayersToFirebase();
                     renderDraftPlayersSelector();
                 });
-                return item;
+                rowDiv.appendChild(clearBtn);
+
+                // Autocomplete dropdown container
+                const dropdown = document.createElement('div');
+                dropdown.id = `draft-player-dropdown-${i}`;
+                dropdown.style.position = 'absolute';
+                dropdown.style.top = '48px';
+                dropdown.style.left = '0';
+                dropdown.style.right = '0';
+                dropdown.style.background = 'var(--bg-card)';
+                dropdown.style.border = '1px solid var(--border-color)';
+                dropdown.style.borderRadius = '12px';
+                dropdown.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+                dropdown.style.maxHeight = '180px';
+                dropdown.style.overflowY = 'auto';
+                dropdown.style.zIndex = '1000';
+                dropdown.style.display = 'none';
+                dropdown.style.flexDirection = 'column';
+                dropdown.style.padding = '4px 0';
+                rowDiv.appendChild(dropdown);
+
+                // Input event listeners
+                input.addEventListener('focus', () => {
+                    for (let j = 0; j < count; j++) {
+                        if (j !== i) {
+                            const d = document.getElementById(`draft-player-dropdown-${j}`);
+                            if (d) d.style.display = 'none';
+                        }
+                    }
+                    showDropdownSuggestions(input.value, dropdown, i);
+                });
+
+                input.addEventListener('input', () => {
+                    showDropdownSuggestions(input.value, dropdown, i);
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const firstItem = dropdown.querySelector('div');
+                        if (firstItem && firstItem.style.opacity !== '0.5') {
+                            firstItem.click();
+                        }
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!rowDiv.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                });
+
+                container.appendChild(rowDiv);
             }
+        };
 
-            // 1. Render Coach Section
-            if (coachList.length > 0) {
-                const title = document.createElement('div');
-                title.style.fontSize = '12px';
-                title.style.fontWeight = '800';
-                title.style.color = '#8A8F9C';
-                title.style.margin = '10px 4px 6px 4px';
-                title.style.textTransform = 'uppercase';
-                title.style.letterSpacing = '0.5px';
-                title.textContent = 'Тренер клуба';
-                listSelector.appendChild(title);
-
-                coachList.forEach(p => {
-                    listSelector.appendChild(renderDraftItem(p, true));
+        // window.addPlayerToDraft helper for swiping
+        window.addPlayerToDraft = function(playerId) {
+            if (!window.draftSetup) {
+                const draft = clubData.draft || {};
+                window.draftSetup = {
+                    playersCount: draft.playersCount || 2,
+                    tablesCount: draft.tablesCount || 2,
+                    winsToWin: draft.winsToWin || 2
+                };
+            }
+            if (!window.draftSetupPlayersList || window.draftSetupPlayersList.length === 0) {
+                const draft = clubData.draft || {};
+                const count = window.draftSetup.playersCount;
+                window.draftSetupPlayersList = Array(count).fill(null);
+                const fields = JSON.parse(draft.playerFieldsJson || "[]");
+                fields.forEach((f, idx) => {
+                    if (idx < count) {
+                        const decoded = decodeName(f.name).trim().toLowerCase();
+                        const found = clubData.players.find(p => p.fullName.trim().toLowerCase() === decoded);
+                        if (found) {
+                            window.draftSetupPlayersList[idx] = found.id;
+                            selectedPlayerIdsForDraft.add(found.id);
+                        }
+                    }
                 });
             }
-
-            // 2. Render Regular Players Section
-            if (playerList.length > 0) {
-                if (coachList.length > 0) {
-                    const title = document.createElement('div');
-                    title.style.fontSize = '12px';
-                    title.style.fontWeight = '800';
-                    title.style.color = '#8A8F9C';
-                    title.style.margin = '16px 4px 6px 4px';
-                    title.style.textTransform = 'uppercase';
-                    title.style.letterSpacing = '0.5px';
-                    title.textContent = 'Игроки';
-                    listSelector.appendChild(title);
+            
+            if (selectedPlayerIdsForDraft.has(playerId)) {
+                showToast("Игрок уже добавлен!");
+                return;
+            }
+            
+            let emptyIdx = -1;
+            for (let i = 0; i < window.draftSetupPlayersList.length; i++) {
+                if (window.draftSetupPlayersList[i] === null) {
+                    emptyIdx = i;
+                    break;
                 }
-
-                playerList.forEach(p => {
-                    listSelector.appendChild(renderDraftItem(p, false));
-                });
             }
-
-            if (listSelector.children.length === 0) {
-                listSelector.innerHTML = '<div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:12px;">Игроки не найдены</div>';
+            
+            if (emptyIdx !== -1) {
+                window.draftSetupPlayersList[emptyIdx] = playerId;
+            } else {
+                window.draftSetup.playersCount += 1;
+                window.draftSetupPlayersList.push(playerId);
+            }
+            
+            selectedPlayerIdsForDraft.add(playerId);
+            syncDraftSelectedPlayersToFirebase();
+            renderDraftPlayersSelector();
+            
+            const p = clubData.players.find(pl => pl.id === playerId);
+            if (p) {
+                showToast(`${p.fullName} добавлен в турнир`);
             }
         };
 
@@ -7392,11 +7722,19 @@ function getPlayerLastDelta(player) {
                 showToast("Укажите название турнира!");
                 return;
             }
-            if (selectedPlayerIdsForDraft.size < 2) {
-                showToast("Выберите как минимум 2 участников!");
+            if (!window.draftSetupPlayersList || window.draftSetupPlayersList.length < 2) {
+                showToast("Укажите как минимум 2 участников!");
                 return;
             }
-
+            
+            // Check if all rows are filled
+            for (let i = 0; i < window.draftSetupPlayersList.length; i++) {
+                if (window.draftSetupPlayersList[i] === null) {
+                    showToast(`Заполните участника под номером ${i + 1}!`);
+                    return;
+                }
+            }
+            
             showLoader(true);
 
             // Fetch selected players profiles
@@ -8116,7 +8454,8 @@ function getPlayerLastDelta(player) {
                             baseDelta = (100.0 - diff) / 10.0;
                         }
 
-                        let matchDelta = 0.0;
+                        let winnerDelta = 0.0;
+                        let loserDelta = 0.0;
                         if (baseDelta > 0.0) {
                             let scoreCoeff = 1.0;
                             if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
@@ -8125,12 +8464,16 @@ function getPlayerLastDelta(player) {
                             else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
 
                             const winnerIsNovice = winner.tournamentsPlayed <= 5;
-                            matchDelta = winnerIsNovice ? baseDelta * 1.0 : baseDelta * K * scoreCoeff;
-                            matchDelta = Math.round(matchDelta * 100) / 100;
+                            const loserIsNovice = loser.tournamentsPlayed <= 5;
+                            
+                            winnerDelta = winnerIsNovice ? Math.round(baseDelta * 1.0 * 100) / 100 
+                                                         : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
+                            loserDelta = loserIsNovice ? Math.round(baseDelta * 0.5 * 100) / 100 
+                                                       : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
                         }
 
-                        const p1Delta = p1Won ? matchDelta : -matchDelta;
-                        const p2Delta = p1Won ? -matchDelta : matchDelta;
+                        const p1Delta = p1Won ? winnerDelta : -loserDelta;
+                        const p2Delta = p1Won ? -loserDelta : winnerDelta;
 
                         const p1DeltaStr = (p1Delta >= 0 ? '+' : '') + p1Delta.toFixed(2);
                         const p2DeltaStr = (p2Delta >= 0 ? '+' : '') + p2Delta.toFixed(2);
