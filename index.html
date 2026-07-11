@@ -4499,16 +4499,10 @@
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const raw = clubIdInput.value.trim();
-                debugLog("Форма отправлена. Сырой ввод: '" + raw + "'");
-                if (!raw) {
-                    debugLog("Ввод пуст, отмена.");
-                    return;
-                }
-                // Convert to lowercase, strip zero-width chars and spaces, normalize to NFC
+                if (!raw) return;
                 const clubId = raw.toLowerCase()
                                   .replace(/[\s\u200B-\u200D\uFEFF]+/g, '')
                                   .normalize('NFC');
-                debugLog("Сформатированный ID клуба: '" + clubId + "' (длина: " + clubId.length + ")");
                 attemptLogin(clubId);
             });
         }
@@ -4707,7 +4701,6 @@
 
         // ── attemptLogin: main login handler (async to support Firebase Auth) ──
         async function attemptLogin(clubId) {
-            debugLog("attemptLogin запущена для ID: '" + clubId + "'");
             if (!db) {
                 showToast("Ошибка: База данных не инициализирована!");
                 return;
@@ -4756,7 +4749,7 @@
                             return;
                         }
                         isAdmin = true;
-                        debugLog("Организатор авторизован: " + cred.user.email);
+                        debugLog("Организатор успешно авторизован");
                     } catch (authErr) {
                         showLoader(false);
                         const code = authErr.code || '';
