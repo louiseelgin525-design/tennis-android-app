@@ -16,6 +16,7 @@
     <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <style>
         :root {
@@ -3061,7 +3062,9 @@
             
             <input type="text" id="club-id-input" class="login-input" placeholder="Название клуба (например: сатурн)" autocomplete="off" autocapitalize="off">
             
-            <input type="password" id="admin-pin-input" class="login-input" placeholder="ПИН-код администратора" style="display:none; margin-top:8px;" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password">
+            <!-- Organizer auth fields (shown only in admin role) -->
+            <input type="email" id="admin-email-input" class="login-input" placeholder="Email организатора" style="display:none; margin-top:8px;" autocomplete="email" inputmode="email">
+            <input type="password" id="admin-password-input" class="login-input" placeholder="Пароль" style="display:none; margin-top:8px;" autocomplete="current-password">
 
             <button type="submit" id="login-submit-btn" class="login-btn" style="margin-top:12px;">
                 Войти <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
@@ -3275,14 +3278,6 @@
                 <div>
                     <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Название клуба</label>
                     <input type="text" id="create-club-name" class="login-input" style="margin:0;" placeholder="Например: Сатурн" autocomplete="off">
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">ПИН-код администратора</label>
-                    <input type="password" id="create-club-pin" class="login-input" style="margin:0;" placeholder="Для авторизации организатора" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password">
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Секретное слово</label>
-                    <input type="text" id="create-club-secret" class="login-input" style="margin:0;" placeholder="Например: теннис" autocomplete="off">
                 </div>
                 
                 <button onclick="submitCreateClub()" class="login-btn" style="margin-top:12px; background-color: var(--apple-blue);">
@@ -4236,7 +4231,8 @@
         });
 
         // FIREBASE CONFIGURATION
-        let db = null;
+        let db   = null;
+        let auth = null;  // must be declared before try block (TDZ safety)
         try {
             const firebaseConfig = {
                 apiKey: "AIzaSyCqwljuUFZHWcVJh6lKsbqDhVEq3wRsTNE",
@@ -4246,7 +4242,8 @@
             
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
-            debugLog("Firebase SDK успешно инициализирован.");
+            auth = firebase.auth();
+            debugLog("Firebase SDK (db + auth) успешно инициализирован.");
         } catch (e) {
             console.error("Firebase initialization failed:", e);
             debugLog("Ошибка инициализации Firebase: " + e.message);
@@ -4396,18 +4393,26 @@
             document.body.appendChild(errDiv);
         });
 
+        // ── Firebase Auth helper ──────────────────────────────────────────
+        // Check if a Firebase Auth uid has organizer rights in RTDB.
+        async function checkOrganizerAccess(uid) {
+            const snap = await db.ref(`admins/${uid}`).once('value');
+            return snap.val() === true;
+        }
+
         // ROLE SELECTOR TOGGLE
         function setRole(role) {
             selectedRole = role;
             const viewerBtn = document.getElementById('role-viewer-btn');
-            const adminBtn = document.getElementById('role-admin-btn');
+            const adminBtn  = document.getElementById('role-admin-btn');
             if (viewerBtn) viewerBtn.classList.toggle('active', role === 'viewer');
-            if (adminBtn) adminBtn.classList.toggle('active', role === 'admin');
-            
-            const pinInput = document.getElementById('admin-pin-input');
-            if (pinInput) {
-                pinInput.style.display = role === 'admin' ? 'block' : 'none';
-            }
+            if (adminBtn)  adminBtn.classList.toggle('active',  role === 'admin');
+
+            const emailInput    = document.getElementById('admin-email-input');
+            const passwordInput = document.getElementById('admin-password-input');
+            const show = role === 'admin';
+            if (emailInput)    emailInput.style.display    = show ? 'block' : 'none';
+            if (passwordInput) passwordInput.style.display = show ? 'block' : 'none';
             debugLog("Роль переключена на: " + role);
         }
         window.setRole = setRole;
@@ -4426,25 +4431,58 @@
         // SAFE APP INITIALIZATION
         function initApp() {
             debugLog("Инициализация приложения...");
-            
+
             // Attach event listeners directly to selector buttons
             const viewerBtn = document.getElementById('role-viewer-btn');
-            const adminBtn = document.getElementById('role-admin-btn');
+            const adminBtn  = document.getElementById('role-admin-btn');
             if (viewerBtn) viewerBtn.onclick = () => setRole('viewer');
-            if (adminBtn) adminBtn.onclick = () => setRole('admin');
+            if (adminBtn)  adminBtn.onclick  = () => setRole('admin');
 
             const cachedId = safeStorage.getItem('tennis_club_id');
-            const adminMode = safeStorage.getItem('tennis_admin_mode') === 'true';
             debugLog("Кэшированный ID клуба: " + (cachedId || "отсутствует"));
-            
-            if (adminMode) {
-                selectedRole = 'admin';
-                setRole('admin');
+
+            // ── Firebase Auth session restore ────────────────────────────────
+            // onAuthStateChanged fires once on page load with the current user (or null).
+            // We use a flag to avoid double-loading the club if loadClubAsViewer already ran.
+            let _authRestoredOnce = false;
+            if (auth) {
+                auth.onAuthStateChanged(async (user) => {
+                    if (_authRestoredOnce) return; // ignore subsequent fires (e.g. after viewer signOut)
+                    _authRestoredOnce = true;
+
+                    if (user) {
+                        debugLog("Восстановление сессии Firebase Auth: " + user.email);
+                        try {
+                            const ok = await checkOrganizerAccess(user.uid);
+                            if (ok) {
+                                isAdmin = true;
+                                debugLog("Права организатора подтверждены при восстановлении сессии.");
+                                if (activeClubId) {
+                                    // Club already loaded by loadClubAsViewer — just upgrade the header
+                                    const hcn = document.getElementById('header-club-name');
+                                    if (hcn) hcn.innerHTML = `${activeClubDisplayName} <span class="admin-badge">${SVG_ICONS.crown} Админ</span>`;
+                                    const roleEl = document.getElementById('header-club-role');
+                                    if (roleEl) roleEl.innerHTML = SVG_ICONS.crown + ' Режим организатора (iOS)';
+                                    const analyticsBtn = document.getElementById('analytics-header-btn');
+                                    if (analyticsBtn) analyticsBtn.style.display = 'block';
+                                }
+                            } else {
+                                // Auth user exists but no admins/{uid} — sign them out silently
+                                debugLog("Auth user без admins/{uid} — выполняется signOut.");
+                                try { await auth.signOut(); } catch(e) {}
+                                isAdmin = false;
+                            }
+                        } catch (e) {
+                            debugLog("Ошибка проверки прав при восстановлении: " + e.message);
+                        }
+                    }
+                });
             }
 
+            // Viewer auto-load: restore last club without Auth
             if (cachedId) {
-                debugLog("Попытка авто-входа в: " + cachedId);
-                attemptLogin(cachedId, safeStorage.getItem('tennis_admin_pin') || '');
+                debugLog("Авто-загрузка клуба (режим просмотра): " + cachedId);
+                loadClubAsViewer(cachedId);
             } else {
                 if (loginScreen) loginScreen.style.display = 'flex';
             }
@@ -4461,7 +4499,6 @@
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const raw = clubIdInput.value.trim();
-                const pin = document.getElementById('admin-pin-input').value.trim();
                 debugLog("Форма отправлена. Сырой ввод: '" + raw + "'");
                 if (!raw) {
                     debugLog("Ввод пуст, отмена.");
@@ -4472,14 +4509,20 @@
                                   .replace(/[\s\u200B-\u200D\uFEFF]+/g, '')
                                   .normalize('NFC');
                 debugLog("Сформатированный ID клуба: '" + clubId + "' (длина: " + clubId.length + ")");
-                attemptLogin(clubId, pin);
+                attemptLogin(clubId);
             });
         }
 
         // LOGOUT CLICK
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.addEventListener('click', async () => {
             showLoader(true);
-            // Remove Firebase listeners (existing)
+            // Always sign out from Firebase Auth (regardless of isAdmin)
+            try {
+                if (auth) await auth.signOut();
+            } catch (e) {
+                debugLog("auth.signOut ошибка: " + e.message);
+            }
+            // Remove Firebase RTDB listeners
             if (activeClubId) {
                 db.ref(`clubs/${activeClubId}/players`).off();
                 db.ref(`clubs/${activeClubId}/history`).off();
@@ -4496,13 +4539,11 @@
             activeSeasonStats = {}; selectedSeason = null; selectedSeasonStats = {};
 
             safeStorage.removeItem('tennis_club_id');
-            safeStorage.removeItem('tennis_admin_mode');
-            safeStorage.removeItem('tennis_admin_pin');
             activeClubId = null;
             isAdmin = false;
             const analyticsBtn = document.getElementById('analytics-header-btn');
             if (analyticsBtn) analyticsBtn.style.display = 'none';
-            
+
             // Switch views
             appContainer.style.display = 'none';
             loginScreen.style.display = 'flex';
@@ -4526,9 +4567,11 @@
 
         // CLUB CREATION DIALOGS & ACTION
         window.openCreateClubModal = function() {
+            if (!isAdmin) {
+                showToast("Создание клуба доступно только организатору!");
+                return;
+            }
             document.getElementById('create-club-name').value = '';
-            document.getElementById('create-club-pin').value = '';
-            document.getElementById('create-club-secret').value = '';
             document.getElementById('create-club-modal').style.display = 'flex';
             debugLog("Модальное окно создания клуба открыто.");
         };
@@ -4538,17 +4581,18 @@
             debugLog("Модальное окно создания клуба закрыто.");
         };
 
-        window.submitCreateClub = function() {
-            const nameRaw = document.getElementById('create-club-name').value.trim();
-            const pinRaw = document.getElementById('create-club-pin').value.trim();
-            const secretRaw = document.getElementById('create-club-secret').value.trim();
-
-            if (!nameRaw || !pinRaw || !secretRaw) {
-                showToast("Заполните все поля!");
+        window.submitCreateClub = async function() {
+            if (!isAdmin) {
+                showToast("Создание клуба доступно только организатору!");
                 return;
             }
 
-            // Convert to lowercase and strip whitespace (equivalent to Kotlin replace("\\s+".toRegex(), ""))
+            const nameRaw = document.getElementById('create-club-name').value.trim();
+            if (!nameRaw) {
+                showToast("Введите название клуба!");
+                return;
+            }
+
             const formattedId = nameRaw.toLowerCase().replace(/[\s\u200B-\u200D\uFEFF]+/g, '').normalize('NFC');
             if (!formattedId) {
                 showToast("Недопустимое название!");
@@ -4569,17 +4613,14 @@
                     showToast("Такой клуб уже существует в базе!");
                     debugLog("Ошибка создания: Клуб '" + formattedId + "' уже зарегистрирован.");
                 } else {
+                    // Only store public data — no adminPin, no secretWord
                     const newConfig = {
                         clubId: formattedId,
-                        displayName: nameRaw,
-                        adminPin: pinRaw,
-                        secretWord: secretRaw
+                        displayName: nameRaw
                     };
 
-                    const jsonString = JSON.stringify(newConfig);
-
                     const updates = {};
-                    updates[`clubConfigs/${formattedId}`] = jsonString;
+                    updates[`clubConfigs/${formattedId}`] = JSON.stringify(newConfig);
                     updates[`clubs/${formattedId}/players`] = "[]";
                     updates[`clubs/${formattedId}/history`] = "[]";
                     updates[`clubs/${formattedId}/draft`] = null;
@@ -4590,14 +4631,9 @@
                             showLoader(false);
                             closeCreateClubModal();
                             showToast("Клуб успешно создан!");
-                            debugLog("Клуб '" + formattedId + "' успешно зарегистрирован. Выполняется авто-вход...");
-                            
-                            // Automate admin login
-                            selectedRole = 'admin';
-                            if (document.getElementById('role-admin-btn')) {
-                                setRole('admin');
-                            }
-                            attemptLogin(formattedId, pinRaw);
+                            debugLog("Клуб '" + formattedId + "' успешно зарегистрирован.");
+                            // Load club in current admin session (no re-auth needed)
+                            loadClubData(formattedId, nameRaw);
                         })
                         .catch(err => {
                             showLoader(false);
@@ -4612,76 +4648,143 @@
             });
         };
 
-        // LOGIN ATTEMPT
-        function attemptLogin(clubId, pin) {
+        // ── loadClubData: detach old listeners, set header, start new listeners ──
+        function loadClubData(clubId, displayName) {
+            // Detach any existing RTDB listeners before attaching new ones
+            if (activeClubId) {
+                db.ref(`clubs/${activeClubId}/players`).off();
+                db.ref(`clubs/${activeClubId}/history`).off();
+                db.ref(`clubs/${activeClubId}/draft`).off();
+                db.ref(`clubs/${activeClubId}/avatars`).off();
+            }
+            if (_allSeasonsListenerRef)      { _allSeasonsListenerRef.off();      _allSeasonsListenerRef = null; }
+            if (_activeSeasonIdListenerRef)  { _activeSeasonIdListenerRef.off();  _activeSeasonIdListenerRef = null; }
+            if (_activeSeasonStatsListenerRef) { _activeSeasonStatsListenerRef.off(); _activeSeasonStatsListenerRef = null; }
+
+            activeClubId = clubId;
+            activeClubDisplayName = displayName;
+            safeStorage.setItem('tennis_club_id', clubId);
+
+            headerClubName.innerHTML = `${displayName} ${isAdmin ? '<span class="admin-badge">' + SVG_ICONS.crown + ' Админ</span>' : ''}`;
+            const roleEl = document.getElementById('header-club-role');
+            if (roleEl) roleEl.innerHTML = isAdmin
+                ? SVG_ICONS.crown + ' Режим организатора (iOS)'
+                : SVG_ICONS.eye  + ' Режим просмотра (iOS)';
+            const analyticsBtn = document.getElementById('analytics-header-btn');
+            if (analyticsBtn) analyticsBtn.style.display = isAdmin ? 'block' : 'none';
+
+            initDatabaseListeners(clubId);
+            logAnalyticsEvent('load');
+        }
+
+        // ── loadClubAsViewer: used by initApp() to restore a cached club without Auth ──
+        // Supports both JSON-string values and plain Firebase object values in clubConfigs.
+        function loadClubAsViewer(clubId) {
+            if (!db) { if (loginScreen) loginScreen.style.display = 'flex'; return; }
+            showLoader(true);
+            db.ref("clubConfigs").child(clubId).once('value', (snap) => {
+                if (snap.exists()) {
+                    let cfg = {};
+                    const raw = snap.val();
+                    if (typeof raw === 'string') {
+                        try { cfg = JSON.parse(raw); } catch(e) {}
+                    } else if (raw && typeof raw === 'object') {
+                        cfg = raw; // native Firebase object (no JSON wrapper)
+                    }
+                    const name = cfg.displayName || (clubId.charAt(0).toUpperCase() + clubId.slice(1));
+                    isAdmin = false;
+                    loadClubData(clubId, name);
+                } else {
+                    safeStorage.removeItem('tennis_club_id');
+                    showLoader(false);
+                    if (loginScreen) loginScreen.style.display = 'flex';
+                }
+            }, () => {
+                showLoader(false);
+                if (loginScreen) loginScreen.style.display = 'flex';
+            });
+        }
+
+        // ── attemptLogin: main login handler (async to support Firebase Auth) ──
+        async function attemptLogin(clubId) {
             debugLog("attemptLogin запущена для ID: '" + clubId + "'");
             if (!db) {
-                showLoader(false);
                 showToast("Ошибка: База данных не инициализирована!");
-                debugLog("Ошибка: db === null. База не готова.");
                 return;
             }
             showLoader(true);
             try {
-                debugLog("Отправка запроса проверки существования clubConfigs/" + clubId + "...");
-                // Validate clubConfig exists (using .child() for unicode key safety)
-                db.ref("clubConfigs").child(clubId).once('value', (snapshot) => {
-                    debugLog("Ответ от Firebase получен.");
-                    if (snapshot.exists()) {
-                        const config = JSON.parse(snapshot.val());
-                        
-                        if (selectedRole === 'admin') {
-                            if (config.adminPin === pin) {
-                                debugLog("Администратор успешно авторизован по ПИН-коду.");
-                                isAdmin = true;
-                                safeStorage.setItem('tennis_admin_mode', 'true');
-                                safeStorage.setItem('tennis_admin_pin', pin);
-                            } else {
-                                debugLog("Ошибка: Неверный ПИН-код администратора.");
-                                showLoader(false);
-                                showToast("Неверный ПИН-код администратора!");
-                                return;
-                            }
-                        } else {
-                            isAdmin = false;
-                            safeStorage.setItem('tennis_admin_mode', 'false');
-                        }
-
-                        // Save to local storage
-                        safeStorage.setItem('tennis_club_id', clubId);
-                        activeClubId = clubId;
-                        
-                        // Set header
-                        const displayClubName = config.displayName || (clubId.charAt(0).toUpperCase() + clubId.slice(1));
-                        activeClubDisplayName = displayClubName;
-                        headerClubName.innerHTML = `${displayClubName} ${isAdmin ? '<span class="admin-badge">' + SVG_ICONS.crown + ' Админ</span>' : ''}`;
-                        
-                        const roleEl = document.getElementById('header-club-role');
-                        if (roleEl) {
-                            roleEl.innerHTML = isAdmin ? SVG_ICONS.crown + ' Режим организатора (iOS)' : SVG_ICONS.eye + ' Режим просмотра (iOS)';
-                        }
-                        
-                        const analyticsBtn = document.getElementById('analytics-header-btn');
-                        if (analyticsBtn) analyticsBtn.style.display = isAdmin ? 'block' : 'none';
-                        
-                        // Load and listen to data
-                        initDatabaseListeners(clubId);
-                        logAnalyticsEvent('load');
-                    } else {
-                        debugLog("Ошибка: Клуб '" + clubId + "' не найден в db path 'clubConfigs'.");
-                        showLoader(false);
-                        showToast("Клуб не найден в базе данных!");
-                        safeStorage.removeItem('tennis_club_id');
-                    }
-                }, (error) => {
-                    debugLog("Firebase error: " + error.message);
+                // 1. Verify club exists in RTDB
+                const snap = await db.ref("clubConfigs").child(clubId).once('value');
+                if (!snap.exists()) {
                     showLoader(false);
-                    showToast("Ошибка соединения с интернетом!");
-                });
+                    showToast("Клуб не найден в базе данных!");
+                    safeStorage.removeItem('tennis_club_id');
+                    debugLog("Клуб '" + clubId + "' не найден в clubConfigs.");
+                    return;
+                }
+
+                let cfg = {};
+                try { cfg = JSON.parse(snap.val()); } catch(e) {}
+                const displayName = cfg.displayName || (clubId.charAt(0).toUpperCase() + clubId.slice(1));
+
+                if (selectedRole === 'admin') {
+                    // 2a. Organizer flow — Firebase Email+Password Auth
+                    if (!auth) {
+                        showLoader(false);
+                        showToast("Ошибка: Firebase Auth не инициализирован!");
+                        return;
+                    }
+                    const email    = (document.getElementById('admin-email-input')?.value    || '').trim();
+                    const password = (document.getElementById('admin-password-input')?.value || ''); // no trim — passwords may have leading/trailing chars
+                    if (!email || !password) {
+                        showLoader(false);
+                        showToast("Введите email и пароль организатора!");
+                        return;
+                    }
+
+                    try {
+                        // Use SESSION persistence — Firebase manages the token, no manual storage
+                        await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                        const cred = await auth.signInWithEmailAndPassword(email, password);
+                        const hasAccess = await checkOrganizerAccess(cred.user.uid);
+                        if (!hasAccess) {
+                            await auth.signOut();
+                            showLoader(false);
+                            showToast("У этого аккаунта нет прав организатора!");
+                            debugLog("Вход отклонён: uid " + cred.user.uid + " не найден в admins/.");
+                            return;
+                        }
+                        isAdmin = true;
+                        debugLog("Организатор авторизован: " + cred.user.email);
+                    } catch (authErr) {
+                        showLoader(false);
+                        const code = authErr.code || '';
+                        if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+                            showToast("Неверный email или пароль!");
+                        } else if (code === 'auth/too-many-requests') {
+                            showToast("Слишком много попыток. Повторите позже.");
+                        } else {
+                            showToast("Ошибка входа: " + authErr.message);
+                        }
+                        debugLog("Ошибка Firebase Auth: " + authErr.message);
+                        return;
+                    }
+                } else {
+                    // 2b. Viewer flow — sign out any existing Auth session, then load as viewer
+                    isAdmin = false;
+                    if (auth && auth.currentUser) {
+                        try { await auth.signOut(); } catch(e) {}
+                    }
+                    debugLog("Участник вошёл без авторизации.");
+                }
+
+                loadClubData(clubId, displayName);
+
             } catch (err) {
-                debugLog("Исключение в attemptLogin: " + err.message);
                 showLoader(false);
-                showToast("Ошибка запуска: " + err.message);
+                showToast("Ошибка соединения с интернетом!");
+                debugLog("Исключение в attemptLogin: " + err.message);
             }
         }
 
