@@ -1163,7 +1163,11 @@
             vertical-align: middle;
         }
 
+        /* [hidden] utility — overrides any inline display style */
+        [hidden] { display: none !important; }
+
         #add-player-header-btn {
+            display: none; /* shown only in admin mode via updateAdminUI() */
             width: 40px !important;
             height: 40px !important;
             border-radius: 50% !important;
@@ -1173,7 +1177,6 @@
             font-size: 22px !important;
             font-weight: 700 !important;
             cursor: pointer !important;
-            display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3) !important;
@@ -1181,6 +1184,9 @@
             flex-shrink: 0 !important;
             padding: 0 !important;
             gap: 0 !important;
+        }
+        #add-player-header-btn.admin-visible {
+            display: flex !important; /* JS adds this class when isAdmin */
         }
         #add-player-header-btn:hover {
             transform: scale(1.05) !important;
@@ -4463,8 +4469,7 @@
                                     if (hcn) hcn.innerHTML = `${activeClubDisplayName} <span class="admin-badge">${SVG_ICONS.crown} Админ</span>`;
                                     const roleEl = document.getElementById('header-club-role');
                                     if (roleEl) roleEl.innerHTML = SVG_ICONS.crown + ' Режим организатора (iOS)';
-                                    const analyticsBtn = document.getElementById('analytics-header-btn');
-                                    if (analyticsBtn) analyticsBtn.style.display = 'block';
+                                    updateAdminUI();
                                 }
                             } else {
                                 // Auth user exists but no admins/{uid} — sign them out silently
@@ -4543,6 +4548,7 @@
             loginScreen.style.display = 'flex';
             showLoader(false);
             debugLog("Вышли из системы. Кэш сброшен.");
+            updateAdminUI();
         });
 
         // LOADER UTILS
@@ -4642,6 +4648,19 @@
             });
         };
 
+        // ── updateAdminUI: show/hide all admin-only controls based on isAdmin ──
+        function updateAdminUI() {
+            // Rating tab: add-player button
+            const addBtn = document.getElementById('add-player-header-btn');
+            if (addBtn) {
+                addBtn.hidden = !isAdmin;
+                addBtn.classList.toggle('admin-visible', isAdmin);
+            }
+            // Analytics header button
+            const analyticsBtn = document.getElementById('analytics-header-btn');
+            if (analyticsBtn) analyticsBtn.style.display = isAdmin ? 'block' : 'none';
+        }
+
         // ── loadClubData: detach old listeners, set header, start new listeners ──
         function loadClubData(clubId, displayName) {
             // Detach any existing RTDB listeners before attaching new ones
@@ -4669,6 +4688,7 @@
 
             initDatabaseListeners(clubId);
             logAnalyticsEvent('load');
+            updateAdminUI();
         }
 
         // ── loadClubAsViewer: used by initApp() to restore a cached club without Auth ──
@@ -5004,9 +5024,8 @@ function getPlayerLastDelta(player) {
 
             const achievements = calculateAchievements();
 
-            // Update Header items
-            const addBtn = document.getElementById('add-player-header-btn');
-            if (addBtn) addBtn.style.display = isAdmin ? 'flex' : 'none';
+            // Update Header items — use updateAdminUI() for consistency
+            updateAdminUI();
 
             const subtitle = document.getElementById('players-subtitle');
             if (subtitle) {
@@ -5420,6 +5439,10 @@ function getPlayerLastDelta(player) {
         });
 
         function openPlayerAddModal() {
+            if (!isAdmin || !firebase.auth().currentUser) {
+                showToast('Добавление игроков доступно только организатору');
+                return;
+            }
             document.getElementById('add-player-name').value = '';
             document.getElementById('add-player-rating').value = '';
             document.getElementById('add-player-tournaments').value = '0';
@@ -5441,6 +5464,10 @@ function getPlayerLastDelta(player) {
             document.getElementById('player-add-modal').style.display = 'none';
         }
         function submitAddPlayer() {
+            if (!isAdmin || !firebase.auth().currentUser) {
+                showToast('Добавление игроков доступно только организатору');
+                return;
+            }
             const name = capitalizeName(document.getElementById('add-player-name').value);
             const ratingVal = parseFloat(document.getElementById('add-player-rating').value);
             if (!name || isNaN(ratingVal)) {
@@ -5682,6 +5709,10 @@ function getPlayerLastDelta(player) {
                 });
         }
         function submitDeletePlayer() {
+            if (!isAdmin || !firebase.auth().currentUser) {
+                showToast('Удаление игроков доступно только организатору');
+                return;
+            }
             if (!editPlayerTarget) return;
             if (!confirm(`Вы действительно хотите безвозвратно удалить игрока "${editPlayerTarget.fullName}"?`)) {
                 return;
@@ -8046,6 +8077,10 @@ function getPlayerLastDelta(player) {
 
         // SUBMIT CREATE TOURNAMENT AND SYNC DRAFT TO FIREBASE
         window.submitCreateTournament = function() {
+            if (!isAdmin || !firebase.auth().currentUser) {
+                showToast('Создание турниров доступно только организатору');
+                return;
+            }
             const name = document.getElementById('draft-name-input').value.trim();
             if (!name) {
                 showToast("Укажите название турнира!");
@@ -9515,8 +9550,10 @@ function getPlayerLastDelta(player) {
         };
 
         // VISITOR ANALYTICS WRITER
+        // Writes only for non-admin sessions.
+        // Errors are suppressed silently to avoid Console noise (Firebase Rules may deny writes).
         function logAnalyticsEvent(type, detail) {
-            if (isAdmin) return; // Don't log admin events
+            if (isAdmin) return; // skip admin sessions
             const sessionId = safeStorage.getItem('tennis_session_id') || Math.random().toString(36).substring(2, 10);
             safeStorage.setItem('tennis_session_id', sessionId);
             const event = {
@@ -9526,7 +9563,7 @@ function getPlayerLastDelta(player) {
                 sessionId: sessionId
             };
             if (db && activeClubId) {
-                db.ref(`clubs/${activeClubId}/analytics/events`).push(event).catch(err => console.error("Analytics error:", err));
+                db.ref(`clubs/${activeClubId}/analytics/events`).push(event).catch(() => {}); // silent
             }
         }
 
