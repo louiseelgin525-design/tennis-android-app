@@ -3167,11 +3167,14 @@
                 <!-- HEADER -->
                 <div class="records-header-row">
                     <div class="records-header-left">
-                        <h2 class="records-title">Рекорды клуба</h2>
+                        <h2 class="records-title">Клуб</h2>
                         <span class="records-subtitle">🕒 Обновляется после турнира</span>
                     </div>
                     <button class="records-all-awards-btn" onclick="openBadgeLegendSheet()">Все награды</button>
                 </div>
+
+                <!-- SEASON BLOCK: position controlled by renderSeasonBlock() -->
+                <div id="hall-season-container"></div>
 
                 <!-- MAIN CARD: PLAYER OF THE WEEK -->
                 <div id="hall-potw-container">
@@ -3206,7 +3209,16 @@
                     </div>
                     <span style="font-size:16px; color:var(--text-secondary); font-weight:bold;">›</span>
                 </div>
+                <!-- ADMIN: start season button (shown only to admin when no season) -->
+                <div id="hall-admin-season-btn" style="display:none;"></div>
+
             </section>
+
+            <!-- TAB 4b: SEASON SCREEN (sub-view of 'hall') -->
+            <section id="view-season" class="view" style="display:none; flex-direction:column; gap:16px;">
+                <!-- Dynamic content rendered by renderSeasonScreen() -->
+            </section>
+
         </main>
 
         <!-- BOTTOM TAB NAV BAR -->
@@ -3243,7 +3255,7 @@
                     <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
                     <path d="M3 20h18" />
                 </svg>
-                Рекорды
+                Клуб
             </button>
         </nav>
     </div>
@@ -3280,7 +3292,52 @@
         </div>
     </div>
 
+    <!-- MODAL: CREATE SEASON (Admin only) -->
+    <div id="create-season-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width: 400px; width: 100%;">
+            <button class="modal-close-btn" onclick="closeCreateSeasonModal()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:36px; margin-bottom:8px;">🏆</div>
+                <h3 class="modal-title">Новый сезон</h3>
+                <span class="modal-subtitle">Создайте сезонный турнир клуба</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Название сезона</label>
+                    <input type="text" id="season-name-input" class="login-input" style="margin:0;" placeholder="Например: Сезон 2026" autocomplete="off">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Начало (МСК)</label>
+                        <input type="date" id="season-start-input" class="login-input" style="margin:0;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Последний день (МСК)</label>
+                        <input type="date" id="season-end-input" class="login-input" style="margin:0;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Стартовый рейтинг для всех</label>
+                    <input type="number" id="season-base-input" class="login-input" style="margin:0;" placeholder="100" min="1" max="9999" inputmode="decimal">
+                </div>
+
+                <div style="background:rgba(255,149,0,0.08); border:1px solid rgba(255,149,0,0.25); border-radius:12px; padding:12px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
+                    ⚠️ После создания сезона все игроки получат указанный стартовый рейтинг. Каждый завершённый турнир будет обновлять сезонный рейтинг независимо от общего.
+                </div>
+
+                <button onclick="submitStartSeason()" class="login-btn" style="margin-top:8px; background:linear-gradient(135deg,#0d1b2a,#1a3a4a);">
+                    ✨ Создать сезон
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: PLAYER DETAIL -->
+
     <div id="player-modal" class="modal-overlay" onclick="closePlayerModalOutside(event)">
         <div class="modal-card profile-modal-card" style="max-width: 600px; width: 100%;">
             <!-- Header Block -->
@@ -3372,6 +3429,9 @@
                         <div class="profile-stat-icon">📈</div>
                     </div>
                 </div>
+
+                <!-- Season block in profile (filled by renderProfileSeasonBlock) -->
+                <div id="profile-season-block" style="display:none; margin: 0 20px 12px 20px;"></div>
 
                 <!-- Tabs Section -->
                 <div class="profile-tabs">
@@ -4243,6 +4303,20 @@
         };
         let listeners = {};
 
+        // SEASON STATE (added as independent layer)
+        let activeSeason = null;          // seasons/{id} where status=active AND Date.now()>=startAt
+        let scheduledSeason = null;       // seasons/{id} where status=active AND Date.now()<startAt
+        let completedSeasons = [];        // all seasons with status=completed, sorted by completedAt desc
+        let activeSeasonStats = {};       // seasonStats/{activeSeasonId} — live listener data
+        let selectedSeason = null;        // season currently displayed in view-season
+        let selectedSeasonStats = {};     // seasonStats for selectedSeason (loaded on demand)
+        let _seasonStartTimer = null;     // setTimeout id for auto-refresh at startAt
+
+        // Season listener refs (kept separately for clean detachment)
+        let _allSeasonsListenerRef = null;
+        let _activeSeasonIdListenerRef = null;
+        let _activeSeasonStatsListenerRef = null;
+
         // DOM ELEMENTS FOR ADMIN MODALS
         let activeScoreMatch = null; // { f, s, scoreKey, index }
         let activePlayoffMatchId = null;
@@ -4250,10 +4324,57 @@
         window.draftSetupPlayersList = [];
         let editPlayerTarget = null; // player object
 
-        // DEBUG LOG TO PANEL ON SCREEN
-        function debugLog(msg) {
-            console.log(msg);
+
+        // ── DATE UTILITIES (Europe/Moscow) ────────────────────────────────────
+        // Convert input[type=date] value "YYYY-MM-DD" to UTC timestamp in ms,
+        // interpreted as Moscow local time. endOfDay=true → last second of that day.
+        // Moscow offset = UTC+3 = -3 hours from UTC perspective when constructing.
+        function moscowDateToTimestamp(dateStr, endOfDay) {
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return NaN;
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1; // 0-based month
+            const d = parseInt(parts[2], 10);
+            // Moscow is UTC+3, so local midnight MSK = 21:00 UTC previous day
+            // We use Date.UTC with adjusted hours: 0h MSK = -3h UTC (= 21h UTC prev day)
+            const mskOffsetMs = 3 * 60 * 60 * 1000;
+            if (endOfDay) {
+                // Midnight of NEXT day MSK = that day's 21:00 UTC
+                return Date.UTC(y, m, d + 1, 0, 0, 0, 0) - mskOffsetMs;
+            } else {
+                // Midnight of this day MSK
+                return Date.UTC(y, m, d, 0, 0, 0, 0) - mskOffsetMs;
+            }
         }
+
+        // Format a timestamp for display in Moscow timezone, Russian locale.
+        // format: 'long'  → "1 сентября 2026"
+        //         'short' → "01.09.2026"
+        //         'datetime' → "01.09.2026, 21:00"
+        function formatMoscowDate(ts, format) {
+            if (!ts || isNaN(ts)) return '—';
+            const d = new Date(ts);
+            const base = { timeZone: 'Europe/Moscow' };
+            if (format === 'short') {
+                return d.toLocaleDateString('ru-RU', { ...base, day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+            if (format === 'datetime') {
+                return d.toLocaleString('ru-RU', { ...base, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+            // long (default)
+            return d.toLocaleDateString('ru-RU', { ...base, day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        // Returns a safe human-readable countdown. Never negative.
+        function countdownDays(targetTs) {
+            const diff = targetTs - Date.now();
+            if (diff <= 0) return '0 дней';
+            const days = Math.ceil(diff / (24 * 3600 * 1000));
+            if (days === 1) return '1 день';
+            if (days >= 2 && days <= 4) return `${days} дня`;
+            return `${days} дней`;
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         // GLOBAL ERROR HANDLER TO SHOW ERRORS DIRECTLY ON PHONE SCREEN
         window.addEventListener('error', function(e) {
@@ -4358,13 +4479,22 @@
         // LOGOUT CLICK
         logoutBtn.addEventListener('click', () => {
             showLoader(true);
-            // Remove Firebase listeners
+            // Remove Firebase listeners (existing)
             if (activeClubId) {
                 db.ref(`clubs/${activeClubId}/players`).off();
                 db.ref(`clubs/${activeClubId}/history`).off();
                 db.ref(`clubs/${activeClubId}/draft`).off();
                 db.ref(`clubs/${activeClubId}/avatars`).off();
             }
+            // Detach season listeners
+            if (_allSeasonsListenerRef) { _allSeasonsListenerRef.off(); _allSeasonsListenerRef = null; }
+            if (_activeSeasonIdListenerRef) { _activeSeasonIdListenerRef.off(); _activeSeasonIdListenerRef = null; }
+            if (_activeSeasonStatsListenerRef) { _activeSeasonStatsListenerRef.off(); _activeSeasonStatsListenerRef = null; }
+            if (_seasonStartTimer) { clearTimeout(_seasonStartTimer); _seasonStartTimer = null; }
+            // Reset season state
+            activeSeason = null; scheduledSeason = null; completedSeasons = [];
+            activeSeasonStats = {}; selectedSeason = null; selectedSeasonStats = {};
+
             safeStorage.removeItem('tennis_club_id');
             safeStorage.removeItem('tennis_admin_mode');
             safeStorage.removeItem('tennis_admin_pin');
@@ -4608,6 +4738,39 @@
                 renderPlayers();
             });
 
+            // 5. All Seasons Listener (tracks all seasons for the club)
+            _allSeasonsListenerRef = db.ref(`clubs/${clubId}/seasons`);
+            _allSeasonsListenerRef.on('value', (snapshot) => {
+                const raw = snapshot.val() || {};
+                const allSeasons = Object.values(raw);
+                completedSeasons = allSeasons
+                    .filter(s => s.status === 'completed')
+                    .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+                recomputeSeasonState(allSeasons);
+                renderHall();
+            });
+
+            // 6. activeSeasonId Listener → manages the stats sub-listener
+            _activeSeasonIdListenerRef = db.ref(`clubs/${clubId}/activeSeasonId`);
+            _activeSeasonIdListenerRef.on('value', (snapshot) => {
+                const seasonId = snapshot.val();
+                // Detach old stats listener
+                if (_activeSeasonStatsListenerRef) {
+                    _activeSeasonStatsListenerRef.off();
+                    _activeSeasonStatsListenerRef = null;
+                }
+                activeSeasonStats = {};
+                if (seasonId) {
+                    _activeSeasonStatsListenerRef = db.ref(`clubs/${clubId}/seasonStats/${seasonId}`);
+                    _activeSeasonStatsListenerRef.on('value', (s) => {
+                        activeSeasonStats = s.val() || {};
+                        renderHall();
+                    });
+                } else {
+                    renderHall();
+                }
+            });
+
             // Hide Login and Show App
             loginScreen.style.display = 'none';
             appContainer.style.display = 'flex';
@@ -4615,6 +4778,46 @@
             // Go to default tab
             switchTab('ratings');
             showLoader(false);
+        }
+
+        // Recompute activeSeason / scheduledSeason from all seasons array.
+        // Called on every seasons listener update AND on every renderHall().
+        function recomputeSeasonState(allSeasons) {
+            const now = Date.now();
+            activeSeason = null;
+            scheduledSeason = null;
+            for (const s of allSeasons) {
+                if (s.status === 'active') {
+                    if (now >= s.startAt) {
+                        activeSeason = s;
+                    } else {
+                        scheduledSeason = s;
+                    }
+                }
+            }
+            scheduleSeasonStartTimer();
+        }
+
+        // Set/reset a timer that fires exactly when scheduledSeason.startAt arrives,
+        // so the UI flips from 'scheduled' to 'active' without a Firebase event.
+        function scheduleSeasonStartTimer() {
+            if (_seasonStartTimer) {
+                clearTimeout(_seasonStartTimer);
+                _seasonStartTimer = null;
+            }
+            if (!scheduledSeason) return;
+            const delay = scheduledSeason.startAt - Date.now();
+            if (delay <= 0) return; // already started
+            // Cap at 24 h to avoid 32-bit overflow; listener will fire again naturally
+            const safeDelay = Math.min(delay, 24 * 3600 * 1000);
+            _seasonStartTimer = setTimeout(() => {
+                // Move from scheduled → active in local state
+                if (scheduledSeason && Date.now() >= scheduledSeason.startAt) {
+                    activeSeason = scheduledSeason;
+                    scheduledSeason = null;
+                }
+                renderHall();
+            }, safeDelay);
         }
 
         // NAVIGATION TABS CLICK
@@ -4642,6 +4845,21 @@
 
             if (tabId === 'hall') {
                 renderHall();
+            }
+
+            // view-season is a sub-view of 'hall': keep 'hall' nav active
+            if (tabId === 'season') {
+                // Override: show view-season but keep hall nav-item active
+                document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+                const sv = document.getElementById('view-season');
+                if (sv) sv.style.display = 'flex';
+                // Restore 'hall' as active nav item
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.toggle('active', item.getAttribute('data-view') === 'hall');
+                });
+                renderSeasonScreen();
+                logAnalyticsEvent('tab_switch', 'season');
+                return;
             }
 
             logAnalyticsEvent('tab_switch', tabId);
@@ -5155,6 +5373,19 @@ function getPlayerLastDelta(player) {
             promises.push(db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updated)));
             if (selectedAddAvatarBase64) {
                 promises.push(db.ref(`clubs/${activeClubId}/avatars/${nextId}`).set(selectedAddAvatarBase64));
+            }
+
+            // Create seasonStats entry for any active or scheduled season
+            // so this player starts with baseRating when the season begins.
+            const seasonForNewPlayer = activeSeason || scheduledSeason;
+            if (seasonForNewPlayer) {
+                const initStat = {
+                    rating: seasonForNewPlayer.baseRating,
+                    matchesCount: 0, winsCount: 0, lossesCount: 0, tournamentsCount: 0
+                };
+                promises.push(
+                    db.ref(`clubs/${activeClubId}/seasonStats/${seasonForNewPlayer.id}/${nextId}`).set(initStat)
+                );
             }
 
             Promise.all(promises)
@@ -6689,6 +6920,8 @@ function getPlayerLastDelta(player) {
             fullAwardsEl.appendChild(awardsContainer);
 
             switchProfileTab('overview');
+            // Populate season block in profile
+            renderProfileSeasonBlock(player);
             modal.style.display = 'flex';
         }
 
@@ -8372,7 +8605,7 @@ function getPlayerLastDelta(player) {
         });
 
         // APPLY RATINGS AND SAVE TOURNAMENT TO HISTORY (FINALIZE)
-        window.submitFinalizeTournament = function() {
+        window.submitFinalizeTournament = async function() {
             if (!window.calculatedResult) return;
             showLoader(true);
 
@@ -8381,6 +8614,8 @@ function getPlayerLastDelta(player) {
             const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
             const playerNames = playerFields.map(f => decodeName(f.name).trim());
             const K = draft.fixedK || 0.20;
+            const scores = draft.matchScores || {};
+            const applyPlaceBonuses = document.getElementById('finish-bonuses-checkbox')?.checked || false;
 
             // 1. Update player ratings, wins, losses, tournaments count, and medals in player base
             const updatedPlayers = clubData.players.map(p => {
@@ -8426,7 +8661,7 @@ function getPlayerLastDelta(player) {
 
             // 3. Format structuredMatches string: p1::p2::score::p1Delta::p2Delta
             const smRows = [];
-            const scores = draft.matchScores || {};
+            // scores already declared above (used also for updateSeasonAfterTournament)
             for (let f = 0; f < playerNames.length; f++) {
                 for (let s = f + 1; s < playerNames.length; s++) {
                     const scoreKey = `${f}_${s}`;
@@ -8503,38 +8738,70 @@ function getPlayerLastDelta(player) {
             }).join("\n");
 
             const winnerName = playerNames[result.standings[0].index];
+
+            // Build name→id map at save time (draft still alive at this point)
+            const _playerIds = {};
+            playerNames.forEach(name => {
+                const pl = clubData.players.find(p => p.fullName.toLowerCase() === name.toLowerCase());
+                if (pl) _playerIds[name] = String(pl.id);
+            });
+
+            // Determine whether this tournament falls inside the active season window.
+            // seasonId is stored only when the tournament genuinely belongs to the season;
+            // otherwise it is null so retrySeasonUpdate never credits the wrong season.
+            const _tournamentTs = Date.now();
+            const _inSeason = activeSeason &&
+                activeSeason.status === 'active' &&
+                _tournamentTs >= activeSeason.startAt &&
+                _tournamentTs <  activeSeason.endAt;
+            const _seasonId = _inSeason ? activeSeason.id : null;
+
             const historyEntry = {
-                id: Date.now(),
+                id: _tournamentTs,
                 name: draft.name || "Вечерний турнир",
-                dateText: new Date().toLocaleDateString('ru-RU') + " " + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                dateText: new Date(_tournamentTs).toLocaleDateString('ru-RU') + " " + new Date(_tournamentTs).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
                 playersCount: playerNames.length,
                 winnerName: winnerName,
                 standingsText: standingsText,
                 ratingText: ratingText,
                 structuredRatings: structuredRatings,
-                structuredMatches: structuredMatches
+                structuredMatches: structuredMatches,
+                // Technical field for safe season retry — not shown to users
+                seasonCalculationSource: {
+                    seasonId: _seasonId,
+                    matchScores: scores,
+                    playerNames: playerNames,
+                    playerIds: _playerIds,
+                    K: K,
+                    applyPlaceBonuses: applyPlaceBonuses
+                }
             };
 
             const updatedHistory = [historyEntry, ...clubData.history];
 
             // 5. Save all to Firebase and clear draft
-            db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers))
-                .then(() => {
-                    return db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory));
-                })
-                .then(() => {
-                    // Reset/remove draft
-                    return db.ref(`clubs/${activeClubId}/draft`).remove();
-                })
-                .then(() => {
-                    closeTournamentFinishModal();
-                    showLoader(false);
-                    showToast("Турнир успешно сохранен в историю!");
-                })
-                .catch(e => {
-                    showLoader(false);
-                    showToast("Ошибка сохранения: " + e.message);
-                });
+            try {
+                await db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers));
+                await db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory));
+                await db.ref(`clubs/${activeClubId}/draft`).remove();
+
+                // 6. Update season stats (non-blocking — errors are caught internally)
+                if (activeSeason) {
+                    try {
+                        await updateSeasonAfterTournament(historyEntry, scores, playerNames, K, applyPlaceBonuses);
+                    } catch (seasonErr) {
+                        debugLog('Season update failed (non-critical): ' + seasonErr.message);
+                        showToast('Турнир сохранён. Сезонный рейтинг обновится при следующей синхронизации.');
+                    }
+                }
+
+                closeTournamentFinishModal();
+                showLoader(false);
+                showToast("Турнир успешно сохранен в историю!");
+            } catch (e) {
+                showLoader(false);
+                showToast("Ошибка сохранения: " + e.message);
+            }
         };
 
         // RENDER HISTORY
@@ -9374,6 +9641,23 @@ function getPlayerLastDelta(player) {
         }
 
         // RENDER HALL OF FAME LEADERBOARD
+        function renderHall() {
+            // Recompute season state based on current time (Date.now() may have changed)
+            if (completedSeasons.length > 0 || activeSeason || scheduledSeason) {
+                const all = [...completedSeasons];
+                if (activeSeason) all.push(activeSeason);
+                if (scheduledSeason) all.push(scheduledSeason);
+                recomputeSeasonState(all);
+            }
+            renderSeasonBlock();
+
+            const potw = calculatePlayerOfTheWeek();
+            renderPotw(potw);
+            const records = calculateTopRecords();
+            renderRecordsGrid(records);
+            renderHallList();
+        }
+
         let hallShowAll = false;
         window.toggleHallShowAll = function() {
             hallShowAll = !hallShowAll;
@@ -9384,133 +9668,168 @@ function getPlayerLastDelta(player) {
             renderHall();
         };
 
+
         window.openPlayerModalByName = function(fullName) {
             const player = clubData.players.find(p => p.fullName.toLowerCase() === fullName.toLowerCase());
             if (player) openPlayerModal(player);
         };
 
+        // ─── Moscow calendar-week helpers ─────────────────────────────────────
+        // Returns the UTC timestamp (ms) of Monday 00:00 MSK for the week that
+        // contains the given UTC timestamp. MSK = UTC+3 always (no DST).
+        function getMoscowWeekStart(utcMs) {
+            const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
+            // Shift to "fake UTC" representing MSK local time
+            const mskDate = new Date(utcMs + MSK_OFFSET_MS);
+            // Day of week: 0=Sun … 6=Sat; days since Monday (Mon=0)
+            const dow = mskDate.getUTCDay();
+            const daysSinceMon = (dow === 0 ? 6 : dow - 1);
+            // Truncate to midnight of that Monday in MSK, then shift back to UTC
+            return Date.UTC(
+                mskDate.getUTCFullYear(),
+                mskDate.getUTCMonth(),
+                mskDate.getUTCDate() - daysSinceMon
+            ) - MSK_OFFSET_MS;
+        }
+
+        // Format a UTC timestamp as "D MMMM" in Moscow time, Russian locale
+        function formatMoscowDayMonth(utcMs) {
+            return new Date(utcMs).toLocaleDateString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                day: 'numeric',
+                month: 'long'
+            });
+        }
+
+        // Returns "6–12 июля" style label for the week [weekStart, weekStart+7d)
+        function formatMoscowWeekLabel(weekStart) {
+            const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
+            const weekEnd = weekStart + 7 * 24 * 60 * 60 * 1000;
+            const startD  = new Date(weekStart + MSK_OFFSET_MS);
+            const endD    = new Date(weekEnd   - 24 * 60 * 60 * 1000 + MSK_OFFSET_MS); // last day (Sun)
+            const months  = ['января','февраля','марта','апреля','мая','июня',
+                             'июля','августа','сентября','октября','ноября','декабря'];
+            const startDay = startD.getUTCDate();
+            const endDay   = endD.getUTCDate();
+            const startMon = months[startD.getUTCMonth()];
+            const endMon   = months[endD.getUTCMonth()];
+            if (startMon === endMon) {
+                return `${startDay}–${endDay} ${endMon}`;
+            }
+            return `${startDay} ${startMon} – ${endDay} ${endMon}`;
+        }
+
         function calculatePlayerOfTheWeek() {
-            let sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-            let growthMap = {};
-            let tourneyCount = {};
+            // ── Determine the PREVIOUS completed calendar week (Mon 00:00 MSK) ──
+            const now = Date.now();
+            const currentWeekStart = getMoscowWeekStart(now);  // Mon 00:00 MSK this week
+            const prevWeekStart    = currentWeekStart - 7 * 24 * 60 * 60 * 1000;
+            const prevWeekEnd      = currentWeekStart;         // exclusive upper bound
 
-            // 1. Try 7 days
-            let recentEvents = clubData.history.filter(e => e.id >= sevenDaysAgo);
-            if (recentEvents.length === 0) {
-                // Fallback to 30 days
-                let thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-                recentEvents = clubData.history.filter(e => e.id >= thirtyDaysAgo);
-            }
-            if (recentEvents.length === 0 && clubData.history.length > 0) {
-                // Fallback to the most recent single tournament
-                const sortedByDate = [...clubData.history].sort((a, b) => b.id - a.id);
-                recentEvents = [sortedByDate[0]];
+            // State 1: no history at all
+            if (clubData.history.length === 0) return null;
+
+            // ── Filter tournaments that finished inside the previous full week ──
+            // Use Number() explicitly so string ids from Firebase are coerced safely.
+            const weekEvents = clubData.history.filter(e => {
+                const tournamentTs = Number(e.id);
+                return Number.isFinite(tournamentTs)
+                    && tournamentTs >= prevWeekStart
+                    && tournamentTs <  prevWeekEnd;
+            });
+
+            // State 2: previous week had no tournaments
+            if (weekEvents.length === 0) {
+                return {
+                    player:        null,
+                    gain:          0,
+                    tournaments:   0,
+                    streak:        0,
+                    weekLabel:     formatMoscowWeekLabel(prevWeekStart),
+                    noTournaments: true
+                };
             }
 
-            if (recentEvents.length === 0) {
-                return null; // No history at all
-            }
-
-            // Calculate stats on the selected events
-            recentEvents.forEach(entry => {
-                const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
+            // ── Aggregate rating growth and tournament count per player ──────
+            const growthMap  = {};
+            const tourneyMap = {};
+            weekEvents.forEach(entry => {
+                const ratings = entry.structuredRatings
+                    ? entry.structuredRatings.split(";;")
+                    : [];
                 ratings.forEach(rStr => {
                     const p = rStr.split("::");
                     if (p.length >= 4) {
-                        const name = decodeName(p[0]).toLowerCase();
+                        const name  = decodeName(p[0]).toLowerCase();
                         const delta = parseFloat(p[3] || "0");
-                        growthMap[name] = (growthMap[name] || 0) + delta;
-                        tourneyCount[name] = (tourneyCount[name] || 0) + 1;
+                        growthMap[name]  = (growthMap[name]  || 0) + delta;
+                        tourneyMap[name] = (tourneyMap[name] || 0) + 1;
                     }
                 });
             });
 
-            // Find the best player
+            // ── Find player with maximum positive gain ───────────────────────
             let bestName = "";
-            let maxGain = -999;
+            let maxGain  = -Infinity;
             Object.keys(growthMap).forEach(name => {
                 if (growthMap[name] > maxGain) {
-                    maxGain = growthMap[name];
+                    maxGain  = growthMap[name];
                     bestName = name;
                 }
             });
 
-            // If the highest gain is <= 0, we can just find the player with the highest rating delta in the last active tournament
+            // All players had negative or zero gain → no meaningful winner
             if (!bestName || maxGain <= 0) {
-                // Fallback to highest positive rating change in history
-                let highestDelta = 0;
-                let highestName = "";
-                clubData.history.forEach(entry => {
-                    const ratings = entry.structuredRatings ? entry.structuredRatings.split(";;") : [];
-                    ratings.forEach(rStr => {
-                        const p = rStr.split("::");
-                        if (p.length >= 4) {
-                            const name = decodeName(p[0]).toLowerCase();
-                            const delta = parseFloat(p[3] || "0");
-                            if (delta > highestDelta) {
-                                highestDelta = delta;
-                                highestName = name;
-                            }
-                        }
-                    });
-                });
-                if (highestName) {
-                    bestName = highestName;
-                    maxGain = highestDelta;
-                    tourneyCount[bestName] = 1;
-                }
+                return {
+                    player: null,
+                    gain: 0,
+                    tournaments: weekEvents.length,
+                    streak: 0,
+                    weekLabel: formatMoscowWeekLabel(prevWeekStart),
+                    noTournaments: true
+                };
             }
 
-            if (!bestName) return null;
-
-            // Resolve back to the actual player object in clubData.players
-            const playerObj = clubData.players.find(p => p.fullName.toLowerCase() === bestName);
+            const playerObj = clubData.players.find(
+                p => p.fullName.toLowerCase() === bestName
+            );
             if (!playerObj) return null;
 
-            // Now let's calculate match win streak (overall consecutive match wins from chronological match history)
+            // ── Current consecutive match-win streak (full history) ──────────
             let currentStreak = 0;
             const sortedHistory = [...clubData.history].sort((a, b) => a.id - b.id);
-            
-            // Loop through history to build streak
             sortedHistory.forEach(entry => {
-                const matches = entry.structuredMatches ? entry.structuredMatches.split(";;") : [];
+                const matches = entry.structuredMatches
+                    ? entry.structuredMatches.split(";;")
+                    : [];
                 matches.forEach(matchStr => {
                     const p = matchStr.split("::");
                     if (p.length >= 3) {
-                        const p1 = decodeName(p[0]).toLowerCase();
-                        const p2 = decodeName(p[1]).toLowerCase();
+                        const p1    = decodeName(p[0]).toLowerCase();
+                        const p2    = decodeName(p[1]).toLowerCase();
                         const score = p[2];
-
-                        const scoreParts = score.split(":");
-                        let p1Won = false;
-                        if (score === 'W') p1Won = true;
-                        else if (score === 'L') p1Won = false;
-                        else if (scoreParts.length === 2) {
-                            p1Won = parseInt(scoreParts[0]) > parseInt(scoreParts[1]);
-                        }
+                        const parts = score.split(":");
+                        let p1Won   = false;
+                        if (score === 'W')           p1Won = true;
+                        else if (score === 'L')      p1Won = false;
+                        else if (parts.length === 2) p1Won = parseInt(parts[0]) > parseInt(parts[1]);
 
                         if (p1 === bestName) {
-                            if (p1Won) {
-                                currentStreak++;
-                            } else {
-                                currentStreak = 0;
-                            }
+                            currentStreak = p1Won ? currentStreak + 1 : 0;
                         } else if (p2 === bestName) {
-                            if (!p1Won) {
-                                currentStreak++;
-                            } else {
-                                currentStreak = 0;
-                            }
+                            currentStreak = !p1Won ? currentStreak + 1 : 0;
                         }
                     }
                 });
             });
 
             return {
-                player: playerObj,
-                gain: maxGain,
-                tournaments: tourneyCount[bestName] || 0,
-                streak: currentStreak
+                player:      playerObj,
+                gain:        maxGain,
+                tournaments: tourneyMap[bestName] || 0,
+                streak:      currentStreak,
+                weekLabel:   formatMoscowWeekLabel(prevWeekStart),
+                noTournaments: false
             };
         }
 
@@ -9657,6 +9976,7 @@ function getPlayerLastDelta(player) {
             const container = document.getElementById('hall-potw-container');
             if (!container) return;
 
+            // State 1: no history at all
             if (!potw) {
                 container.innerHTML = `
                     <div class="potw-card" style="align-items: center; justify-content: center; text-align: center; padding: 32px 20px; height: 180px;">
@@ -9668,6 +9988,21 @@ function getPlayerLastDelta(player) {
                 return;
             }
 
+            // State 2: previous week had no tournaments
+            if (potw.noTournaments) {
+                container.innerHTML = `
+                    <div class="potw-card" style="align-items: center; justify-content: center; text-align: center; padding: 28px 20px;">
+                        <div style="font-size: 28px;">📅</div>
+                        <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:0.5px; margin-top:8px; text-transform:uppercase;">ИГРОК НЕДЕЛИ</div>
+                        <div style="font-size:12px; color:rgba(255,255,255,0.5); margin-top:2px;">${potw.weekLabel}</div>
+                        <h4 style="font-size:13px; font-weight:700; margin-top:10px; color:#FFFFFF;">На прошлой неделе турниров не было</h4>
+                        <p style="font-size:11px; color:rgba(255,255,255,0.5); margin-top:4px;">Лидер появится по итогам следующей недели</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // State 3: winner of the previous calendar week
             const p = potw.player;
             const cloudAvatar = clubData.avatars[p.id];
             let avatarHtml = '';
@@ -9678,11 +10013,9 @@ function getPlayerLastDelta(player) {
                 avatarHtml = `<div class="potw-avatar"><span>${initial}</span></div>`;
             }
 
-            const streakCount = potw.streak > 0 ? potw.streak : 3;
-            const tourneysCount = potw.tournaments > 0 ? potw.tournaments : 2;
-
-            // Split name into first and last name so it wraps beautifully on 2 lines on small screens
-            const displayName = p.fullName.trim().replace(/\s+/, '<br>');
+            const streakCount   = potw.streak     > 0 ? potw.streak     : 0;
+            const tourneysCount = potw.tournaments > 0 ? potw.tournaments : 1;
+            const displayName   = p.fullName.trim().replace(/\s+/, '<br>');
 
             container.innerHTML = `
                 <div class="potw-card" onclick="openPlayerModalByName('${p.fullName}')" style="cursor: pointer;">
@@ -9691,25 +10024,25 @@ function getPlayerLastDelta(player) {
                     </div>
 
                     <div class="potw-header"><span>★</span> ИГРОК НЕДЕЛИ</div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.5); margin:-4px 0 8px 0; padding-left:2px;">${potw.weekLabel}</div>
 
                     <div class="potw-main-row">
                         ${avatarHtml}
 
                         <div class="potw-player-info">
                             <div class="potw-name">${displayName}</div>
-                            <div class="potw-change">
-                                +${potw.gain.toFixed(1)} <span>↗</span>
-                            </div>
+                            <div class="potw-change">+${potw.gain.toFixed(1)} <span>↗</span></div>
                             <div class="potw-delta-label">лучший прогресс</div>
                         </div>
                     </div>
 
                     <div class="potw-metrics">
+                        ${streakCount > 0 ? `
                         <div class="potw-metric-chip">
                             <span class="potw-metric-icon">🏆</span>
                             <strong>${streakCount}</strong>
                             <small>${getPluralNoun(streakCount, 'победа', 'победы', 'побед')} подряд</small>
-                        </div>
+                        </div>` : ''}
                         <div class="potw-metric-chip">
                             <span class="potw-metric-icon">📅</span>
                             <strong>${tourneysCount}</strong>
@@ -9760,19 +10093,12 @@ function getPlayerLastDelta(player) {
             `;
         }
 
-        function renderHall() {
+        function renderHallList() {
             const listEl = document.getElementById('hall-list-el');
             if (!listEl) return;
             listEl.innerHTML = '';
 
             const achievements = calculateAchievements();
-            
-            // Calculate PotW and Top Records
-            const potw = calculatePlayerOfTheWeek();
-            const records = calculateTopRecords();
-
-            renderPotw(potw);
-            renderRecordsGrid(records);
 
             const heroes = [];
             clubData.players.forEach(p => {
@@ -9943,6 +10269,846 @@ function getPlayerLastDelta(player) {
             });
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // SEASON BLOCK RENDERING
+        // ─────────────────────────────────────────────────────────────────────
+
+        // Builds the 4-state season block and physically moves it in the DOM.
+        // States: none | scheduled | active | awaitingCompletion | completed
+        function renderSeasonBlock() {
+            const container = document.getElementById('hall-season-container');
+            const potwEl = document.getElementById('hall-potw-container');
+            const adminBtn = document.getElementById('hall-admin-season-btn');
+            if (!container || !potwEl) return;
+
+            const now = Date.now();
+            const latestCompleted = completedSeasons.length > 0 ? completedSeasons[0] : null;
+
+            // Determine state
+            let state = 'none';
+            let displaySeason = null;
+            if (activeSeason) {
+                state = now >= activeSeason.endAt ? 'awaitingCompletion' : 'active';
+                displaySeason = activeSeason;
+            } else if (scheduledSeason) {
+                state = 'scheduled';
+                displaySeason = scheduledSeason;
+            } else if (latestCompleted) {
+                state = 'completed';
+                displaySeason = latestCompleted;
+            }
+
+            // Physically reposition container:
+            // active/awaitingCompletion → before POTW
+            // scheduled/completed → after POTW (default position in HTML)
+            const parentEl = potwEl.parentElement;
+            if (parentEl) {
+                if (state === 'active' || state === 'awaitingCompletion') {
+                    // Move season block before POTW
+                    if (container.nextElementSibling !== potwEl) {
+                        parentEl.insertBefore(container, potwEl);
+                    }
+                } else {
+                    // Move season block after POTW
+                    if (potwEl.nextElementSibling !== container) {
+                        potwEl.insertAdjacentElement('afterend', container);
+                    }
+                }
+            }
+
+            let html = '';
+            let adminHtml = '';
+
+            if (state === 'none') {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                if (isAdmin) {
+                    adminHtml = `<button onclick="openCreateSeasonModal()" style="
+                        display:block; width:100%; padding:14px; background:rgba(10,132,255,0.08);
+                        border:1.5px dashed rgba(10,132,255,0.4); border-radius:16px;
+                        color:var(--apple-blue); font-size:14px; font-weight:700;
+                        cursor:pointer; text-align:center;">
+                        ＋ Начать сезон
+                    </button>`;
+                }
+
+            } else if (state === 'scheduled') {
+                container.style.display = '';
+                const daysLeft = countdownDays(displaySeason.startAt);
+                html = `
+                    <div onclick="openSeasonScreen('${displaySeason.id}')" style="
+                        background:linear-gradient(135deg,#1a1a2e,#16213e);
+                        border-radius:18px; padding:14px 16px; cursor:pointer;
+                        display:flex; align-items:center; justify-content:space-between; gap:12px;
+                        box-shadow:0 4px 16px rgba(0,0,0,0.18);">
+                        <div>
+                            <div style="font-size:11px; font-weight:700; color:#FFC947; letter-spacing:0.5px; text-transform:uppercase;">Анонс сезона</div>
+                            <div style="font-size:15px; font-weight:800; color:#FFFFFF; margin:3px 0 6px;">${displaySeason.name}</div>
+                            <div style="font-size:12px; color:rgba(255,255,255,0.65);">
+                                Старт: ${formatMoscowDate(displaySeason.startAt, 'long')}<br>
+                                Все игроки начнут с рейтинга ${displaySeason.baseRating.toFixed(1)}
+                            </div>
+                            <div style="font-size:12px; color:#FFC947; margin-top:6px; font-weight:700;">⏳ До старта: ${daysLeft}</div>
+                        </div>
+                        <span style="color:rgba(255,255,255,0.4); font-size:20px; flex-shrink:0;">›</span>
+                    </div>`;
+
+            } else if (state === 'active') {
+                container.style.display = '';
+                // Build top-3 from activeSeasonStats
+                const statsEntries = Object.entries(activeSeasonStats)
+                    .map(([pid, stat]) => {
+                        const player = clubData.players.find(p => String(p.id) === String(pid));
+                        return { pid, stat, player };
+                    })
+                    .filter(e => e.player)
+                    .sort((a, b) => b.stat.rating - a.stat.rating);
+
+                // True only when at least one player has played a tournament in this season
+                const anyTournamentPlayed = statsEntries.some(e => (e.stat.tournamentsCount || 0) > 0);
+
+                const top3html = anyTournamentPlayed
+                    ? statsEntries.slice(0, 3).map((e, idx) => {
+                        const medals = ['🥇', '🥈', '🥉'];
+                        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
+                            <span style="width:20px;text-align:center;">${medals[idx]}</span>
+                            <span style="flex:1;color:#fff;font-size:13px;font-weight:600;">${e.player.fullName}</span>
+                            <span style="color:#FFC947;font-weight:700;font-size:13px;">${e.stat.rating.toFixed(1)}</span>
+                        </div>`;
+                    }).join('')
+                    : `<div style="padding:12px 0;text-align:center;">
+                        <div style="font-size:15px;font-weight:700;color:#FFFFFF;margin-bottom:4px;">Сезон только начался</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.5);">Первый лидер появится после турнира</div>
+                        <div style="font-size:12px;color:rgba(255,201,71,0.75);margin-top:6px;">Все игроки начинают со ${(displaySeason.baseRating || 100).toFixed(1)}</div>
+                    </div>`;
+
+                const daysLeft = countdownDays(displaySeason.endAt);
+
+                html = `
+                    <div style="background:linear-gradient(135deg,#0d1b2a,#1a3a4a);border-radius:20px;
+                        padding:18px; box-shadow:0 6px 24px rgba(0,0,0,0.22);">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                            <div>
+                                <div style="font-size:11px;font-weight:700;color:#FFC947;letter-spacing:0.5px;text-transform:uppercase;">Идёт сезон</div>
+                                <div style="font-size:17px;font-weight:800;color:#FFFFFF;margin-top:3px;">${displaySeason.name}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:11px;color:rgba(255,255,255,0.5);">До конца</div>
+                                <div style="font-size:13px;font-weight:700;color:#FFC947;">${daysLeft}</div>
+                            </div>
+                        </div>
+                        ${statsEntries.length === 0
+                            ? `<div style="padding:12px 0;text-align:center;">
+                                <div style="font-size:15px;font-weight:700;color:#FFFFFF;margin-bottom:4px;">Сезон только начался</div>
+                                <div style="font-size:12px;color:rgba(255,255,255,0.5);">Первый лидер появится после турнира</div>
+                              </div>`
+                            : top3html}
+                        <button onclick="openSeasonScreen('${displaySeason.id}')" style="
+                            width:100%;margin-top:14px;padding:11px;background:rgba(255,255,255,0.1);
+                            border:1px solid rgba(255,255,255,0.15);border-radius:12px;
+                            color:#FFFFFF;font-size:14px;font-weight:700;cursor:pointer;">
+                            Открыть сезон →
+                        </button>
+                        ${isAdmin ? `<button onclick="confirmCompleteSeason()" style="
+                            width:100%;margin-top:8px;padding:10px;background:rgba(255,59,48,0.15);
+                            border:1px solid rgba(255,59,48,0.3);border-radius:12px;
+                            color:#FF3B30;font-size:13px;font-weight:700;cursor:pointer;">
+                            Завершить сезон
+                        </button>` : ''}
+                    </div>`;
+
+            } else if (state === 'awaitingCompletion') {
+                container.style.display = '';
+                html = `
+                    <div style="background:linear-gradient(135deg,#2a1a0d,#3a1a0d);border-radius:18px;
+                        padding:16px;box-shadow:0 4px 16px rgba(0,0,0,0.18);">
+                        <div style="font-size:11px;font-weight:700;color:#FF9500;letter-spacing:0.5px;text-transform:uppercase;">Сезон завершён</div>
+                        <div style="font-size:15px;font-weight:800;color:#FFFFFF;margin:4px 0 8px;">${displaySeason.name}</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.6);">Ожидает подведения итогов администратором.</div>
+                        ${isAdmin ? `<button onclick="confirmCompleteSeason()" style="
+                            width:100%;margin-top:12px;padding:11px;background:rgba(255,149,0,0.15);
+                            border:1px solid rgba(255,149,0,0.3);border-radius:12px;
+                            color:#FF9500;font-size:14px;font-weight:700;cursor:pointer;">
+                            Подвести итоги сезона
+                        </button>` : ''}
+                    </div>`;
+
+            } else if (state === 'completed') {
+                container.style.display = '';
+                const champion = displaySeason.championPlayerId
+                    ? clubData.players.find(p => String(p.id) === String(displaySeason.championPlayerId))
+                    : null;
+                const championName = champion ? champion.fullName : (displaySeason.finalStandings?.[0]?.playerNameSnapshot || '—');
+                html = `
+                    <div onclick="openSeasonScreen('${displaySeason.id}')" style="
+                        background:#FFFFFF;border:1px solid rgba(229,229,234,0.7);border-radius:18px;
+                        padding:14px 16px;cursor:pointer;
+                        display:flex;align-items:center;justify-content:space-between;">
+                        <div>
+                            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:0.5px;text-transform:uppercase;">Прошедший сезон</div>
+                            <div style="font-size:15px;font-weight:800;color:var(--text-main);margin:2px 0 4px;">${displaySeason.name}</div>
+                            <div style="font-size:12px;color:var(--text-secondary);">🏆 Чемпион: <strong>${championName}</strong></div>
+                        </div>
+                        <span style="color:var(--text-secondary);font-size:20px;">›</span>
+                    </div>
+                    ${isAdmin ? `<button onclick="openCreateSeasonModal()" style="
+                        display:block;width:100%;margin-top:10px;padding:13px;
+                        background:rgba(10,132,255,0.08);border:1.5px dashed rgba(10,132,255,0.4);
+                        border-radius:14px;color:var(--apple-blue);font-size:14px;
+                        font-weight:700;cursor:pointer;text-align:center;">
+                        ＋ Начать новый сезон
+                    </button>` : ''}`;
+            }
+
+            container.innerHTML = html;
+            if (adminBtn) {
+                adminBtn.innerHTML = adminHtml;
+                adminBtn.style.display = adminHtml ? 'block' : 'none';
+            }
+        }
+
+        // ─── Open season screen (any season by id) ───────────────────────────
+        window.openSeasonScreen = async function(seasonId) {
+            showLoader(true);
+            try {
+                const snap = await db.ref(`clubs/${activeClubId}/seasons/${seasonId}`).once('value');
+                selectedSeason = snap.val();
+                if (!selectedSeason) { showLoader(false); return; }
+
+                if (selectedSeason.status === 'completed' && selectedSeason.finalStandings) {
+                    selectedSeasonStats = {};
+                } else {
+                    const statsSnap = await db.ref(`clubs/${activeClubId}/seasonStats/${seasonId}`).once('value');
+                    selectedSeasonStats = statsSnap.val() || {};
+                }
+            } catch (e) {
+                debugLog('openSeasonScreen error: ' + e.message);
+                showLoader(false);
+                return;
+            }
+            showLoader(false);
+            switchTab('season');
+        };
+
+        // ─── Render season screen ─────────────────────────────────────────────
+        function renderSeasonScreen() {
+            const sv = document.getElementById('view-season');
+            if (!sv || !selectedSeason) return;
+
+            const now = Date.now();
+            const isCompleted = selectedSeason.status === 'completed';
+            const isScheduled = !isCompleted && now < selectedSeason.startAt;
+            const season = selectedSeason;
+
+            let standings = [];
+            if (isCompleted && season.finalStandings) {
+                standings = season.finalStandings;
+            } else if (!isScheduled) {
+                standings = Object.entries(selectedSeasonStats)
+                    .map(([pid, stat]) => {
+                        const player = clubData.players.find(p => String(p.id) === String(pid));
+                        return { playerId: pid, playerNameSnapshot: player?.fullName || pid,
+                                 finalSeasonRating: stat.rating, tournamentsCount: stat.tournamentsCount || 0 };
+                    })
+                    .filter(e => e.playerNameSnapshot)
+                    .sort((a, b) => b.finalSeasonRating - a.finalSeasonRating)
+                    .map((item, idx) => ({ ...item, place: idx + 1 }));
+            }
+
+            // Build header
+            const backBtn = `<button onclick="switchTab('hall')" style="
+                display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+                background:rgba(10,132,255,0.08);border:none;border-radius:12px;
+                color:var(--apple-blue);font-size:14px;font-weight:700;cursor:pointer;">
+                ← Клуб
+            </button>`;
+
+            let statusBadge = '';
+            if (isCompleted) statusBadge = `<span style="background:#34C759;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">ЗАВЕРШЁН</span>`;
+            else if (isScheduled) statusBadge = `<span style="background:#FF9500;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">АНОНС</span>`;
+            else statusBadge = `<span style="background:#0A84FF;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">ИДЁТ</span>`;
+
+            // If scheduled: only info screen
+            if (isScheduled) {
+                const daysLeft = countdownDays(season.startAt);
+                sv.innerHTML = `
+                    <div style="padding:0 0 8px;">${backBtn}</div>
+                    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:24px;">
+                        <div style="margin-bottom:8px;">${statusBadge}</div>
+                        <div style="font-size:20px;font-weight:800;color:#FFFFFF;margin-bottom:16px;">${season.name}</div>
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.7);font-size:13px;">
+                                <span>Начало</span><strong style="color:#fff;">${formatMoscowDate(season.startAt, 'long')}</strong>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.7);font-size:13px;">
+                                <span>Окончание</span><strong style="color:#fff;">${formatMoscowDate(season.endAt, 'long')}</strong>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.7);font-size:13px;">
+                                <span>Стартовый рейтинг</span><strong style="color:#FFC947;">${season.baseRating.toFixed(1)}</strong>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.7);font-size:13px;">
+                                <span>До старта</span><strong style="color:#FFC947;">⏳ ${daysLeft}</strong>
+                            </div>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            // Active or completed: full screen
+            const leaderHtml = standings.length > 0 ? (() => {
+                const l = standings[0];
+                const player = clubData.players.find(p => String(p.id) === String(l.playerId));
+                const avatarData = player ? clubData.avatars[player.id] : null;
+                const initials = (l.playerNameSnapshot || '?').charAt(0).toUpperCase();
+                const avatarHtml = avatarData
+                    ? `<div style="width:64px;height:64px;border-radius:50%;background:url('${avatarData}') center/cover;"></div>`
+                    : `<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,199,71,0.15);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#FFC947;">${initials}</div>`;
+                return `
+                    <div style="background:linear-gradient(135deg,#0d1b2a,#1a3a4a);border-radius:20px;padding:20px;text-align:center;">
+                        <div style="font-size:11px;font-weight:700;color:#FFC947;letter-spacing:0.5px;margin-bottom:12px;">🏆 ЛИДЕР СЕЗОНА</div>
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                            ${avatarHtml}
+                            <div style="font-size:17px;font-weight:800;color:#FFFFFF;">${l.playerNameSnapshot}</div>
+                            <div style="font-size:22px;font-weight:800;color:#FFC947;">${l.finalSeasonRating.toFixed(1)}</div>
+                            <div style="font-size:12px;color:rgba(255,255,255,0.55);">сезонный рейтинг</div>
+                        </div>
+                    </div>`;
+            })() : '';
+
+            const tableHtml = standings.length > 0 ? `
+                <div style="background:#FFFFFF;border-radius:18px;overflow:hidden;border:1px solid rgba(229,229,234,0.7);">
+                    <div style="padding:14px 16px;border-bottom:1px solid rgba(229,229,234,0.7);">
+                        <h3 style="font-size:15px;font-weight:800;color:var(--text-main);margin:0;">Таблица сезона</h3>
+                    </div>
+                    ${standings.map((item, idx) => {
+                        const medals = ['🥇','🥈','🥉'];
+                        const medal = idx < 3 ? medals[idx] : `${idx+1}.`;
+                        return `<div style="display:flex;align-items:center;padding:12px 16px;border-bottom:${idx < standings.length-1 ? '1px solid rgba(229,229,234,0.5)' : 'none'};">
+                            <span style="width:28px;font-size:${idx<3?'18px':'14px'};text-align:center;">${medal}</span>
+                            <span style="flex:1;font-size:14px;font-weight:600;color:var(--text-main);padding:0 8px;">${item.playerNameSnapshot}</span>
+                            <span style="font-size:14px;font-weight:800;color:${idx===0?'#FFC947':'var(--text-main)'};">${item.finalSeasonRating.toFixed(1)}</span>
+                        </div>`;
+                    }).join('')}
+                </div>` : '<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:14px;">Турниры сезона ещё не проведены</div>';
+
+            // Completed: finalAwards
+            let awardsHtml = '';
+            if (isCompleted && season.finalAwards) {
+                const fa = season.finalAwards;
+                const awardsItems = [];
+                if (fa.mostActive?.playerNameSnapshot) {
+                    awardsItems.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+                        <div><div style="font-size:12px;color:var(--text-secondary);">Самый активный</div>
+                        <div style="font-size:14px;font-weight:700;color:var(--text-main);">${fa.mostActive.playerNameSnapshot}</div></div>
+                        <span style="font-size:22px;">🏃</span></div>`);
+                }
+                if (awardsItems.length > 0) {
+                    awardsHtml = `<div style="background:#FFFFFF;border-radius:18px;padding:16px;border:1px solid rgba(229,229,234,0.7);">
+                        <h3 style="font-size:15px;font-weight:800;color:var(--text-main);margin:0 0 8px;">Награды сезона</h3>
+                        ${awardsItems.join('<hr style="border:none;border-top:1px solid rgba(229,229,234,0.5);margin:0;">')}
+                    </div>`;
+                }
+            }
+
+            // Weekly progress: hidden for completed seasons (phase 2)
+            const weeklyHtml = isCompleted ? '' : `<div id="season-weekly-progress" style="background:#FFFFFF;border-radius:18px;padding:16px;border:1px solid rgba(229,229,234,0.7);">
+                <h3 style="font-size:15px;font-weight:800;color:var(--text-main);margin:0 0 4px;">Прогресс за 7 дней</h3>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Загрузка...</div>
+            </div>`;
+
+            sv.innerHTML = `
+                <div style="padding:0 0 8px;">${backBtn}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:0.5px;text-transform:uppercase;">Сезон</div>
+                        <div style="font-size:20px;font-weight:800;color:var(--text-main);">${season.name}</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+                            ${formatMoscowDate(season.startAt, 'long')} — ${formatMoscowDate(isCompleted ? season.completedAt : season.endAt, 'long')}
+                        </div>
+                    </div>
+                    ${statusBadge}
+                </div>
+                ${leaderHtml}
+                ${tableHtml}
+                ${weeklyHtml}
+                ${awardsHtml}
+            `;
+
+            // Load weekly progress asynchronously (active only)
+            if (!isCompleted) {
+                loadWeeklyProgress(season.id, standings);
+            }
+        }
+
+        // Load weekly rating progress from seasonRatingHistory
+        async function loadWeeklyProgress(seasonId, standings) {
+            const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+            try {
+                const histSnap = await db.ref(`clubs/${activeClubId}/seasonRatingHistory/${seasonId}`).once('value');
+                const hist = histSnap.val() || {};
+                const weeklyData = standings.map(item => {
+                    const playerHist = hist[item.playerId] || {};
+                    const delta = Object.values(playerHist)
+                        .filter(e => e.ts >= weekAgo)
+                        .reduce((sum, e) => sum + e.delta, 0);
+                    return { name: item.playerNameSnapshot, delta };
+                }).filter(e => e.delta !== 0)
+                  .sort((a, b) => b.delta - a.delta);
+
+                const el = document.getElementById('season-weekly-progress');
+                if (!el || weeklyData.length === 0) {
+                    if (el) el.style.display = 'none';
+                    return;
+                }
+
+                const rows = weeklyData.map(e => `
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(229,229,234,0.4);">
+                        <span style="font-size:13px;color:var(--text-main);">${e.name}</span>
+                        <span style="font-size:13px;font-weight:700;color:${e.delta>0?'var(--apple-green)':'var(--apple-red)'};">
+                            ${e.delta>0?'+':''}${e.delta.toFixed(2)}
+                        </span>
+                    </div>`).join('');
+
+                el.innerHTML = `
+                    <h3 style="font-size:15px;font-weight:800;color:var(--text-main);margin:0 0 10px;">Прогресс за 7 дней</h3>
+                    ${rows}`;
+            } catch (e) {
+                debugLog('loadWeeklyProgress error: ' + e.message);
+            }
+        }
+
+        // ─── buildSeasonPlayersList: reuse calculateDeltas with season ratings ─
+        function buildSeasonPlayersList(playerNames) {
+            return playerNames.map(name => {
+                const realPlayer = clubData.players.find(
+                    p => p.fullName.toLowerCase() === name.toLowerCase()
+                ) || { id: null, fullName: name, tournamentsPlayed: 0, rating: 200.0 };
+                const pid = realPlayer.id;
+                const stat = pid ? activeSeasonStats[pid] : null;
+                return {
+                    ...realPlayer,
+                    rating: stat ? stat.rating : (activeSeason?.baseRating ?? 100.0),
+                    tournamentsPlayed: stat ? (stat.tournamentsCount || 0) : 0
+                };
+            });
+        }
+
+        // ─── updateSeasonAfterTournament ────────────────────────────────────
+        // Called by submitFinalizeTournament (season = activeSeason, the default)
+        // and by retrySeasonUpdate (season = fresh snapshot from Firebase, explicit).
+        // Passing season explicitly prevents retrySeasonUpdate from accidentally
+        // crediting a new active season if the club started a new one after the
+        // original tournament.
+        async function updateSeasonAfterTournament(historyEntry, scores, playerNames, K, applyPlaceBonuses, season) {
+            // Default to global activeSeason for the normal (non-retry) path
+            if (season === undefined) season = activeSeason;
+            if (!season || season.status !== 'active') return;
+
+
+            const tournamentId = String(historyEntry.id);
+            const completedAt = historyEntry.id; // Date.now() timestamp from historyEntry
+
+            // 1. Check temporal boundary: startAt <= completedAt < endAt
+            if (completedAt < season.startAt || completedAt >= season.endAt) {
+                debugLog('Season: tournament outside season window, skipping');
+                return;
+            }
+
+            // 2. Transaction-based idempotency with processing marker + startedAt
+            const processedRef = db.ref(
+                `clubs/${activeClubId}/seasonProcessedTournaments/${season.id}/${tournamentId}`
+            );
+
+            let shouldProcess = false;
+            const PROCESSING_TIMEOUT_MS = 30 * 1000; // 30 seconds
+
+            const txResult = await processedRef.transaction((current) => {
+                if (current === 'done') return; // abort — already done
+                if (current && current !== null && typeof current === 'object') {
+                    // In 'processing' state: check startedAt timeout for recovery
+                    if (current.state === 'processing') {
+                        const elapsed = Date.now() - (current.startedAt || 0);
+                        if (elapsed < PROCESSING_TIMEOUT_MS) return; // abort — still processing
+                        // Timeout: allow retry
+                    }
+                }
+                // Not processed or error or timed-out processing: claim it
+                return { state: 'processing', startedAt: Date.now() };
+            });
+
+            if (!txResult.committed) {
+                debugLog('Season: tournament already processed or being processed');
+                return;
+            }
+            shouldProcess = true;
+
+            if (!shouldProcess) return;
+
+            try {
+                // 3. Load FRESH seasonStats (not cached activeSeasonStats)
+                const freshStatsSnap = await db.ref(
+                    `clubs/${activeClubId}/seasonStats/${season.id}`
+                ).once('value');
+                const freshStats = freshStatsSnap.val() || {};
+
+                // 4. Build name→id map for Firebase path construction
+                const nameToId = {};
+                clubData.players.forEach(p => { nameToId[p.fullName.toLowerCase()] = String(p.id); });
+
+                // 5. Build temporary playersList with seasonal ratings
+                const seasonPlayersList = buildSeasonPlayersList(playerNames);
+
+                // 6. Calculate seasonal deltas using existing calculateDeltas (unchanged)
+                const seasonResult = calculateDeltas(playerNames, scores, K, applyPlaceBonuses, seasonPlayersList);
+                // seasonResult.deltas / .wins / .losses — all keyed by fullName.toLowerCase()
+
+                // 7. Prepare atomic update
+                const updates = {};
+                const now = Date.now();
+
+                playerNames.forEach(name => {
+                    const nameKey = name.toLowerCase();
+                    const pid = nameToId[nameKey];
+                    if (!pid) return;
+
+                    const delta = seasonResult.deltas[nameKey] || 0;
+                    const winsInc = seasonResult.wins[nameKey] || 0;
+                    const lossesInc = seasonResult.losses[nameKey] || 0;
+                    const currentStat = freshStats[pid] || {
+                        rating: season.baseRating, matchesCount: 0, winsCount: 0,
+                        lossesCount: 0, tournamentsCount: 0
+                    };
+
+                    const ratingBefore = currentStat.rating;
+                    const ratingAfter = Math.max(0, ratingBefore + delta);
+
+                    const statPath = `clubs/${activeClubId}/seasonStats/${season.id}/${pid}`;
+                    updates[`${statPath}/rating`] = ratingAfter;
+                    updates[`${statPath}/matchesCount`] = (currentStat.matchesCount || 0) + winsInc + lossesInc;
+                    updates[`${statPath}/winsCount`] = (currentStat.winsCount || 0) + winsInc;
+                    updates[`${statPath}/lossesCount`] = (currentStat.lossesCount || 0) + lossesInc;
+                    updates[`${statPath}/tournamentsCount`] = (currentStat.tournamentsCount || 0) + 1;
+
+                    // ts = completedAt (not Date.now()) for correct weekly window calculation on retry
+                    const histPath = `clubs/${activeClubId}/seasonRatingHistory/${season.id}/${pid}/${tournamentId}`;
+                    updates[histPath] = { ratingBefore, ratingAfter, delta, ts: completedAt };
+                });
+
+                // 8. Mark as done (same atomic update)
+                updates[`clubs/${activeClubId}/seasonProcessedTournaments/${season.id}/${tournamentId}`] = 'done';
+
+                await db.ref().update(updates);
+                debugLog('Season update complete for tournament ' + tournamentId);
+
+            } catch (err) {
+                // Mark as error to allow retry
+                await processedRef.set({ state: 'error', errorAt: Date.now(), message: err.message });
+                throw err;
+            }
+        }
+
+        // ─── Admin: Retry season update for a history entry ───────────────────
+        // Uses historyEntry.seasonCalculationSource — does not depend on draft
+        // or the current global activeSeason. The seasonId saved at tournament
+        // finalization time determines which season receives the update, so
+        // retrySeasonUpdate can never accidentally credit a later active season.
+        window.retrySeasonUpdate = async function(historyEntry) {
+            if (!isAdmin) { showToast('Только администратор может выполнить повтор.'); return; }
+
+            const src = historyEntry?.seasonCalculationSource;
+            if (!src) {
+                showToast('Нет данных для повтора: seasonCalculationSource отсутствует.');
+                return;
+            }
+
+            // 1. Validate that a seasonId was recorded at finalization time
+            const seasonId = src.seasonId;
+            if (!seasonId) {
+                showToast('Этот турнир не входит ни в один сезон (seasonId: null). Повтор невозможен.');
+                return;
+            }
+
+            // 2. Load the SPECIFIC season from Firebase — never use global activeSeason
+            let targetSeason;
+            try {
+                const seasonSnap = await db.ref(`clubs/${activeClubId}/seasons/${seasonId}`).once('value');
+                targetSeason = seasonSnap.val();
+            } catch (loadErr) {
+                showToast('Ошибка загрузки сезона: ' + loadErr.message);
+                return;
+            }
+            if (!targetSeason) {
+                showToast('Сезон ' + seasonId + ' не найден в базе данных.');
+                return;
+            }
+            if (targetSeason.status !== 'active') {
+                showToast('Сезон ' + (targetSeason.name || seasonId) + ' уже не активен (status: ' + targetSeason.status + ').');
+                return;
+            }
+
+            // 3. Verify temporal boundary using the LOADED season — not any global state
+            const tournamentTs = historyEntry.id; // Date.now() at finalization
+            if (tournamentTs < targetSeason.startAt || tournamentTs >= targetSeason.endAt) {
+                showToast('Турнир не входит в границы сезона ' + (targetSeason.name || seasonId) + '.');
+                return;
+            }
+
+            const tournamentId = String(historyEntry.id);
+            const processedRef = db.ref(
+                `clubs/${activeClubId}/seasonProcessedTournaments/${seasonId}/${tournamentId}`
+            );
+
+            // 4. Read current marker; enforce strict state machine
+            const markerSnap = await processedRef.once('value');
+            const markerVal  = markerSnap.val();
+
+            // 'done' — string sentinel: never retry
+            if (markerVal === 'done') {
+                showToast('Сезонный расчёт уже выполнен успешно для этого турнира.');
+                return;
+            }
+            // {state:'processing'} — object: another client is working
+            if (markerVal && typeof markerVal === 'object' && markerVal.state === 'processing') {
+                showToast('Расчёт уже выполняется. Подождите.');
+                return;
+            }
+            // Allowed states for retry: null (never ran) or {state:'error'} (object or string)
+            const isErrorState =
+                markerVal === null ||
+                (typeof markerVal === 'object' && markerVal !== null && markerVal.state === 'error') ||
+                (typeof markerVal === 'string'  && markerVal.startsWith('error'));
+            if (!isErrorState) {
+                showToast('Повтор невозможен: неожиданное состояние маркера: ' + JSON.stringify(markerVal));
+                return;
+            }
+
+            // 5. Reset the error marker (set to null) so the transaction inside
+            //    updateSeasonAfterTournament can claim 'processing' atomically
+            await processedRef.set(null);
+
+            showLoader(true);
+            try {
+                // 6. Call updateSeasonAfterTournament with the LOADED season (not activeSeason)
+                //    ts inside the function is historyEntry.id (original tournament timestamp)
+                await updateSeasonAfterTournament(
+                    historyEntry,
+                    src.matchScores,
+                    src.playerNames,
+                    src.K,
+                    src.applyPlaceBonuses,
+                    targetSeason         // explicit season — bypasses global activeSeason
+                );
+                showLoader(false);
+                showToast('✅ Сезонный расчёт повторно выполнен.');
+            } catch (e) {
+                showLoader(false);
+                showToast('Ошибка повтора: ' + e.message);
+                debugLog('retrySeasonUpdate error: ' + e.message);
+            }
+        };
+
+        // ─── Admin: Create / Start season ─────────────────────────────────────
+        function openCreateSeasonModal() {
+            if (!isAdmin) { showToast("Только администратор может управлять сезоном"); return; }
+            const modal = document.getElementById('create-season-modal');
+            if (!modal) { showToast("Модальное окно создания сезона не найдено"); return; }
+            document.getElementById('season-name-input').value = '';
+            document.getElementById('season-start-input').value = '';
+            document.getElementById('season-end-input').value = '';
+            document.getElementById('season-base-input').value = '100';
+            modal.style.display = 'flex';
+        }
+        window.openCreateSeasonModal = openCreateSeasonModal;
+
+        window.closeCreateSeasonModal = function() {
+            const modal = document.getElementById('create-season-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.submitStartSeason = async function() {
+            if (!isAdmin) { showToast("Только администратор может запустить сезон"); return; }
+            const name = document.getElementById('season-name-input').value.trim();
+            const startStr = document.getElementById('season-start-input').value;
+            const endStr = document.getElementById('season-end-input').value;
+            const baseRating = parseFloat(document.getElementById('season-base-input').value) || 100.0;
+
+            if (!name || !startStr || !endStr) { showToast("Заполните все поля"); return; }
+
+            // Convert dates in Moscow timezone
+            const startAt = moscowDateToTimestamp(startStr, false);
+            // endAt = start of next day after last day (exclusive boundary)
+            const endAt = moscowDateToTimestamp(endStr, false) + 24 * 3600 * 1000;
+
+            if (isNaN(startAt) || isNaN(endAt)) { showToast("Неверный формат даты"); return; }
+            if (endAt <= startAt) { showToast("Последний день сезона должен быть после даты начала"); return; }
+
+            const seasonId = String(Date.now());
+            const updates = {};
+
+            updates[`clubs/${activeClubId}/seasons/${seasonId}`] = {
+                id: seasonId, name, startAt, endAt, baseRating,
+                status: 'active', createdAt: Date.now(),
+                completedAt: null, championPlayerId: null,
+                finalStandings: null, finalAwards: null
+            };
+
+            // Init seasonStats for ALL current players
+            clubData.players.forEach(p => {
+                updates[`clubs/${activeClubId}/seasonStats/${seasonId}/${p.id}`] = {
+                    rating: baseRating, matchesCount: 0, winsCount: 0,
+                    lossesCount: 0, tournamentsCount: 0
+                };
+            });
+
+            updates[`clubs/${activeClubId}/activeSeasonId`] = seasonId;
+
+            showLoader(true);
+            try {
+                await db.ref().update(updates);
+                window.closeCreateSeasonModal();
+                showToast("Сезон создан! " + (Date.now() < startAt ? "Старт: " + formatMoscowDate(startAt, 'long') : "Уже идёт."));
+            } catch (e) {
+                showToast("Ошибка: " + e.message);
+            }
+            showLoader(false);
+        };
+
+        // ─── Admin: Complete season ────────────────────────────────────────────
+        window.confirmCompleteSeason = function() {
+            if (!isAdmin) return;
+            if (!activeSeason) return;
+            if (!confirm(`Завершить сезон "${activeSeason.name}"? Рейтинги будут зафиксированы навсегда.`)) return;
+            submitCompleteSeason();
+        };
+
+        async function submitCompleteSeason() {
+            if (!isAdmin) { showToast("Только администратор может завершить сезон"); return; }
+            if (!activeSeason) return;
+
+            showLoader(true);
+            try {
+                // Load fresh stats
+                const freshSnap = await db.ref(`clubs/${activeClubId}/seasonStats/${activeSeason.id}`).once('value');
+                const freshStats = freshSnap.val() || {};
+
+                const standings = Object.entries(freshStats)
+                    .map(([pid, stat]) => {
+                        const player = clubData.players.find(p => String(p.id) === String(pid));
+                        return {
+                            playerId: pid,
+                            playerNameSnapshot: player?.fullName || String(pid),
+                            finalSeasonRating: stat.rating
+                        };
+                    })
+                    .sort((a, b) => b.finalSeasonRating - a.finalSeasonRating)
+                    .map((item, idx) => ({ ...item, place: idx + 1 }));
+
+                const mostActiveEntry = Object.entries(freshStats)
+                    .map(([pid, s]) => ({ pid, count: s.matchesCount || 0 }))
+                    .sort((a, b) => b.count - a.count)[0];
+                const mostActivePlayer = mostActiveEntry
+                    ? clubData.players.find(p => String(p.id) === String(mostActiveEntry.pid))
+                    : null;
+
+                const finalAwards = {
+                    mostActive: mostActiveEntry && mostActivePlayer ? {
+                        playerId: mostActiveEntry.pid,
+                        playerNameSnapshot: mostActivePlayer.fullName,
+                        value: mostActiveEntry.count
+                    } : null,
+                    bestStreak: null // phase 2
+                };
+
+                const updates = {};
+                const sid = activeSeason.id;
+                updates[`clubs/${activeClubId}/seasons/${sid}/status`] = 'completed';
+                updates[`clubs/${activeClubId}/seasons/${sid}/completedAt`] = Date.now();
+                updates[`clubs/${activeClubId}/seasons/${sid}/championPlayerId`] = standings[0]?.playerId || null;
+                updates[`clubs/${activeClubId}/seasons/${sid}/finalStandings`] = standings;
+                updates[`clubs/${activeClubId}/seasons/${sid}/finalAwards`] = finalAwards;
+                updates[`clubs/${activeClubId}/activeSeasonId`] = null;
+
+                await db.ref().update(updates);
+                showToast("Сезон завершён!");
+            } catch (e) {
+                showToast("Ошибка: " + e.message);
+            }
+            showLoader(false);
+        }
+
+        // ─── Profile season block ──────────────────────────────────────────────
+        function renderProfileSeasonBlock(player) {
+            const el = document.getElementById('profile-season-block');
+            if (!el) return;
+
+            const season = activeSeason || scheduledSeason;
+            if (!season) { el.style.display = 'none'; return; }
+
+            const now = Date.now();
+            const isScheduled = now < season.startAt;
+            const stat = !isScheduled && player ? activeSeasonStats[String(player.id)] : null;
+
+            if (!stat && !isScheduled) { el.style.display = 'none'; return; }
+
+            el.style.display = 'block';
+
+            if (isScheduled) {
+                // Season announced but not yet started
+                el.innerHTML = `
+                    <div style="background:rgba(10,132,255,0.06);border:1px solid rgba(10,132,255,0.15);
+                        border-radius:14px;padding:12px 16px;">
+                        <div style="font-size:11px;font-weight:700;color:var(--apple-blue);margin-bottom:4px;">СЕЗОН</div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text-main);">${season.name}</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Старт: ${formatMoscowDate(season.startAt, 'long')}</div>
+                    </div>`;
+            } else {
+                // Season is active — check whether any tournaments have been played
+                const anyTournamentPlayed = Object.values(activeSeasonStats)
+                    .some(s => (s.tournamentsCount || 0) > 0);
+
+                if (!anyTournamentPlayed) {
+                    // No tournaments yet — show neutral «season just started» message,
+                    // no rank and no misleading leader badge
+                    el.innerHTML = `
+                        <div onclick="openSeasonScreen('${season.id}')" style="background:rgba(10,132,255,0.06);
+                            border:1px solid rgba(10,132,255,0.15);border-radius:14px;padding:12px 16px;cursor:pointer;
+                            display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <div style="font-size:11px;font-weight:700;color:var(--apple-blue);margin-bottom:2px;">СЕЗОН</div>
+                                <div style="font-size:13px;font-weight:600;color:var(--text-main);">${season.name}</div>
+                                <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Сезон только начался</div>
+                            </div>
+                            <span style="color:var(--text-secondary);font-size:18px;">›</span>
+                        </div>`;
+                } else {
+                    // At least one tournament played — show rank and leader badge
+                    const sortedStats = Object.entries(activeSeasonStats)
+                        .map(([pid, s]) => ({ pid, rating: s.rating }))
+                        .sort((a, b) => b.rating - a.rating);
+                    const rank = sortedStats.findIndex(e => String(e.pid) === String(player.id)) + 1;
+                    const isLeader = rank === 1;
+
+                    el.innerHTML = `
+                        <div onclick="openSeasonScreen('${season.id}')" style="background:rgba(10,132,255,0.06);
+                            border:1px solid rgba(10,132,255,0.15);border-radius:14px;padding:12px 16px;cursor:pointer;
+                            display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <div style="font-size:11px;font-weight:700;color:var(--apple-blue);margin-bottom:2px;">
+                                    СЕЗОН ${isLeader ? '🏆' : ''}
+                                </div>
+                                <div style="font-size:13px;font-weight:600;color:var(--text-main);">${season.name}</div>
+                                <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+                                    Рейтинг: <strong>${stat.rating.toFixed(1)}</strong> · Место: <strong>#${rank}</strong>
+                                </div>
+                            </div>
+                            <span style="color:var(--text-secondary);font-size:18px;">›</span>
+                        </div>`;
+                }
+            }
+        }
+        window.renderProfileSeasonBlock = renderProfileSeasonBlock;
+
+        // ─────────────────────────────────────────────────────────────────────
         // BOTTOM SHEET OPEN / CLOSE
         window.openBadgeLegendSheet = function() {
             const overlay = document.getElementById('badge-legend-sheet');
@@ -9986,7 +11152,9 @@ function getPlayerLastDelta(player) {
             if (e.target === tournamentFinishModal) closeTournamentFinishModal();
             if (e.target === analyticsModal) closeAnalyticsModal();
             if (e.target === badgeSheet) closeBadgeLegendSheet();
+            const createSeasonModal = document.getElementById('create-season-modal');
+            if (e.target === createSeasonModal) closeCreateSeasonModal();
         });
         </script>
-</body>
+    </body>
 </html>

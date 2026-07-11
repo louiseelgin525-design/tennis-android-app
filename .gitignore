@@ -13,3 +13,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# --- Temporary verification / debug files ------------------------------------
+node_modules/
+package.json
+package-lock.json
+_cdp_check.js
+_cdp_full_check.js
+_check_dups.js
+_syntax_check.js
+_screenshot_app.png
+_ss_*.png
+scratch/
