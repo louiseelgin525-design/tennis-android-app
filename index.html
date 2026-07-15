@@ -1469,11 +1469,17 @@
             color: #FF3B30 !important;
         }
         .rr-grid .score-cell.active {
-            background-color: rgba(0, 122, 255, 0.08) !important;
+            background-color: rgba(0, 122, 255, 0.15) !important;
             color: var(--apple-blue) !important;
-            border: 1.5px solid var(--apple-blue) !important;
-            font-size: 11px;
+            border: 2px solid var(--apple-blue) !important;
+            font-size: 19px;
             font-weight: 800;
+            min-width: 34px;
+            min-height: 34px;
+            line-height: 1;
+            text-align: center;
+            vertical-align: middle;
+            padding: 0 !important;
         }
         .rr-grid tbody tr:hover {
             background-color: rgba(0, 122, 255, 0.02) !important;
@@ -7504,7 +7510,7 @@ function getPlayerLastDelta(player) {
                                 const tableIdx = activeMatches.indexOf(scoreKey);
                                 const isActive = tableIdx >= 0;
                                 if (isActive) {
-                                    displayScore = `С${tableIdx + 1}`;
+                                    displayScore = `${tableIdx + 1}`; // show only digit, not С1/С2
                                     cellClass = "active";
                                 }
                             }
