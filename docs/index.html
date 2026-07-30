@@ -7143,9 +7143,19 @@ function getPlayerLastDelta(player) {
         // RENDER ACTIVE TOURNAMENT OR DRAFT SETUP PANEL (IF ADMIN)
         function updateActiveTournament() {
             const container = document.getElementById('active-tournament-container');
+
+            // FIX: если панель настройки уже есть в DOM и мы ещё в фазе setup —
+            // только обновляем поля, не перестраиваем форму.
+            // Это сохраняет фокус и позицию курсора (иначе Backspace работал только по 1 букве).
+            const draft = clubData.draft;
+            if (draft && !draft.isListGenerated && isAdmin && document.getElementById('draft-name-input')) {
+                updateDraftSetupPanelInputs();
+                renderDraftPlayersSelector();
+                return;
+            }
+
             container.innerHTML = '';
 
-            const draft = clubData.draft;
 
             // Empty state check
             if (!draft || (!draft.isListGenerated && !draft.name)) {
