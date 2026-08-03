@@ -7104,7 +7104,7 @@ function getPlayerLastDelta(player) {
             if (playersVal) playersVal.textContent = draft.playersCount || 2;
             
             const tablesVal = document.getElementById('draft-tables-val');
-            if (tablesVal) tablesVal.textContent = draft.tablesCount || 2;
+            if (tablesVal) tablesVal.textContent = draft.tablesCount ?? 0;
             
             const wins = draft.winsToWin || 2;
             document.querySelectorAll('.wins-segment-btn').forEach(btn => {
@@ -7121,7 +7121,7 @@ function getPlayerLastDelta(player) {
             if (!window.draftSetup) {
                 window.draftSetup = {
                     playersCount: count,
-                    tablesCount: draft.tablesCount || 2,
+                    tablesCount: draft.tablesCount ?? 0,
                     winsToWin: draft.winsToWin || 2
                 };
             } else {
@@ -7190,7 +7190,7 @@ function getPlayerLastDelta(player) {
                         const count = draft.playersCount || 2;
                         window.draftSetup = window.draftSetup || {
                             playersCount: count,
-                            tablesCount: draft.tablesCount || 2,
+                            tablesCount: draft.tablesCount ?? 0,
                             winsToWin: draft.winsToWin || 2
                         };
                         window.draftSetup.playersCount = count;
@@ -7662,10 +7662,10 @@ function getPlayerLastDelta(player) {
                         <div style="display:flex; align-items:center; width:100%;">
                             <div class="counter-controls" style="width:100%; max-width:130px; flex-shrink:0;">
                                 <button class="counter-btn" onclick="adjustDraftVal('tables', -1)">—</button>
-                                <span class="counter-val" id="draft-tables-val" style="flex:1;">2</span>
+                                <span class="counter-val" id="draft-tables-val" style="flex:1;">0</span>
                                 <button class="counter-btn" onclick="adjustDraftVal('tables', 1)">+</button>
                             </div>
-                            <span id="draft-simultaneous-players-text" style="font-size:13px; color:var(--text-secondary); margin-left:14px; line-height:1.2;">До 4 игроков одновременно</span>
+                            <span id="draft-simultaneous-players-text" style="font-size:13px; color:var(--text-secondary); margin-left:14px; line-height:1.2;">До 0 игроков одновременно</span>
                         </div>
                     </div>
 
@@ -7710,7 +7710,7 @@ function getPlayerLastDelta(player) {
             const firebaseDraft = clubData.draft || {};
             window.draftSetup = {
                 playersCount: firebaseDraft.playersCount || 2,
-                tablesCount: firebaseDraft.tablesCount || 2,
+                tablesCount: firebaseDraft.tablesCount ?? 0,
                 winsToWin: firebaseDraft.winsToWin || 2
             };
             window.draftSetupPlayersList = Array(window.draftSetup.playersCount).fill(null);
@@ -7772,7 +7772,7 @@ function getPlayerLastDelta(player) {
                 }
                 syncDraftSelectedPlayersToFirebase();
             } else if (type === 'tables') {
-                window.draftSetup.tablesCount = Math.max(1, window.draftSetup.tablesCount + delta);
+                window.draftSetup.tablesCount = Math.max(0, window.draftSetup.tablesCount + delta);
                 document.getElementById('draft-tables-val').textContent = window.draftSetup.tablesCount;
                 db.ref(`clubs/${activeClubId}/draft/tablesCount`).set(window.draftSetup.tablesCount);
                 
@@ -8043,7 +8043,7 @@ function getPlayerLastDelta(player) {
                 const draft = clubData.draft || {};
                 window.draftSetup = {
                     playersCount: draft.playersCount || 2,
-                    tablesCount: draft.tablesCount || 2,
+                    tablesCount: draft.tablesCount ?? 0,
                     winsToWin: draft.winsToWin || 2
                 };
             }
@@ -8103,6 +8103,10 @@ function getPlayerLastDelta(player) {
             const name = document.getElementById('draft-name-input').value.trim();
             if (!name) {
                 showToast("Укажите название турнира!");
+                return;
+            }
+            if (!window.draftSetup || window.draftSetup.tablesCount < 1) {
+                showToast("Укажите количество столов!");
                 return;
             }
             if (!window.draftSetupPlayersList || window.draftSetupPlayersList.length < 2) {
