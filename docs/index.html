@@ -4001,7 +4001,22 @@
         </div>
     </div>
 
+    <!-- FORMAT SELECTION BOTTOM SHEET (11-16 players) -->
+    <div id="format-select-sheet" onclick="closeFormatSelectSheet()" style="display:none; align-items:flex-end; justify-content:center; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:9999;">
+        <div onclick="event.stopPropagation()" style="background:#FFFFFF; border-top-left-radius:24px; border-top-right-radius:24px; width:100%; max-width:430px; box-sizing:border-box; padding:20px; transition:transform 0.3s ease-out; transform:translateY(100%);">
+            <div style="width:36px; height:5px; background:#E2E8F0; border-radius:3px; margin:0 auto 16px auto;"></div>
+            <h3 style="font-size:20px; font-weight:800; color:#0D182A; margin:0 0 4px 0;">Выберите формат</h3>
+            <p id="format-sheet-desc" style="font-size:14px; color:#64748B; margin:0 0 20px 0; line-height:1.4; font-weight:500;"></p>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button onclick="selectTournamentFormat('rr')" style="background:var(--apple-blue); color:#fff; border:none; border-radius:14px; height:52px; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">🔄 Сетка (каждый с каждым)</button>
+                <button onclick="selectTournamentFormat('playoff')" style="background:rgba(0,122,255,0.08); color:var(--apple-blue); border:1px solid rgba(0,122,255,0.2); border-radius:14px; height:52px; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">🏆 Плейофф</button>
+                <button onclick="closeFormatSelectSheet()" style="background:none; border:none; color:#64748B; font-size:15px; font-weight:600; cursor:pointer; padding:8px;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <!-- COACH ACTION BOTTOM SHEET -->
+
     <div id="coach-action-sheet" class="bottom-sheet-overlay" onclick="onCoachActionSheetBackdropClick(event)" style="display: none; align-items: flex-end; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 9999;">
         <div class="bottom-sheet" onclick="event.stopPropagation()" style="background: #FFFFFF; border-top-left-radius: 24px; border-top-right-radius: 24px; width: 100%; max-width: 430px; box-sizing: border-box; padding: 20px; transition: transform 0.3s ease-out; transform: translateY(100%);">
             <div class="bottom-sheet-handle" style="width: 36px; height: 5px; background: #E2E8F0; border-radius: 3px; margin: 0 auto 16px auto;"></div>
@@ -8156,14 +8171,33 @@ function getPlayerLastDelta(player) {
                 activeRoundRobinMatches: []
             };
 
-            // Run scheduling for round robin
+            // Format decision
             if (selectedPlayers.length <= 10) {
+                // Round robin — без вопросов
                 refreshActiveRoundRobinMatches(draftObj, selectedPlayers.length, window.draftSetup.tablesCount);
+                window._saveDraftToFirebase(draftObj);
+            } else if (selectedPlayers.length <= 16) {
+                // Спросить: сетка или плейофф
+                showLoader(false);
+                window._pendingDraftObj = draftObj;
+                const descEl = document.getElementById('format-sheet-desc');
+                if (descEl) descEl.textContent = `${selectedPlayers.length} участников — выберите формат`;
+                const overlay = document.getElementById('format-select-sheet');
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                    setTimeout(() => {
+                        overlay.querySelector('div').style.transform = 'translateY(0)';
+                    }, 10);
+                }
             } else {
-                // Initialize playoff empty scores map
+                // 17+ — плейофф автоматически
                 draftObj.playoffScores = {};
+                window._saveDraftToFirebase(draftObj);
             }
+        };
 
+        // EXTRACTED SAVE HELPER
+        window._saveDraftToFirebase = function(draftObj) {
             db.ref(`clubs/${activeClubId}/draft`).set(draftObj)
                 .then(() => {
                     selectedPlayerIdsForDraft.clear();
@@ -8175,6 +8209,33 @@ function getPlayerLastDelta(player) {
                     showToast("Ошибка создания: " + e.message);
                 });
         };
+
+        // CLOSE FORMAT SHEET
+        window.closeFormatSelectSheet = function() {
+            const overlay = document.getElementById('format-select-sheet');
+            if (!overlay) return;
+            overlay.querySelector('div').style.transform = 'translateY(100%)';
+            setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        };
+
+        // SELECT FORMAT AND LAUNCH
+        window.selectTournamentFormat = function(format) {
+            const draftObj = window._pendingDraftObj;
+            if (!draftObj) return;
+            window.closeFormatSelectSheet();
+            showLoader(true);
+            if (format === 'rr') {
+                delete draftObj.playoffScores;
+                refreshActiveRoundRobinMatches(draftObj, draftObj.playersCount, window.draftSetup.tablesCount);
+            } else {
+                draftObj.activeRoundRobinMatches = [];
+                draftObj.playoffScores = {};
+            }
+            window._saveDraftToFirebase(draftObj);
+            window._pendingDraftObj = null;
+        };
+
+
 
         // ROUND ROBIN MATCH SCHEDULING (ported from Kotlin)
         function refreshActiveRoundRobinMatches(draft, playerCount, tablesCount) {
