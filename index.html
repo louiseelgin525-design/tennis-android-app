@@ -5264,7 +5264,7 @@ function getPlayerLastDelta(player) {
                 }
 
                 // Touch Swipe gesture to quickly add to tournament draft (only for admins)
-                if (isAdmin && !isCoachCard) {
+                if (isAdmin) {
                     swipeBg.className = 'player-card-swipe-bg';
                     swipeBg.innerHTML = `${SVG_ICONS.plus} <span style="margin-left: 8px; font-weight:700;">Добавить в турнир</span>`;
 
@@ -7097,7 +7097,7 @@ function getPlayerLastDelta(player) {
             
             const nameInput = document.getElementById('draft-name-input');
             if (nameInput && document.activeElement !== nameInput) {
-                nameInput.value = draft.name || "";
+                nameInput.value = draft.name || nameInput.value;
             }
             
             const playersVal = document.getElementById('draft-players-val');
