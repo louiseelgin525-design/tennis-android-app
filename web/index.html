@@ -8437,39 +8437,159 @@ function getPlayerLastDelta(player) {
             return null;
         }
 
-        function calculateRoundRobinStandings(playerCount, scores) {
-            const wins = new Array(playerCount).fill(0);
-            
-            for (let f = 0; f < playerCount; f++) {
-                for (let s = f + 1; s < playerCount; s++) {
-                    const scoreKey = `${f}_${s}`;
-                    const score = scores[scoreKey];
-                    if (score) {
-                        if (score === 'W') {
-                            wins[f]++;
-                        } else if (score === 'L') {
-                            wins[s]++;
-                        } else if (score.includes(":")) {
-                            const parts = score.split(":");
-                            const p1 = parseInt(parts[0]);
-                            const p2 = parseInt(parts[1]);
-                            if (p1 > p2) wins[f]++;
-                            else if (p2 > p1) wins[s]++;
-                        }
+        function getRoundRobinScore(playerA, playerB, scores) {
+            const first = Math.min(playerA, playerB);
+            const second = Math.max(playerA, playerB);
+            const raw = scores[`${first}_${second}`];
+            if (!raw) return null;
+
+            if (raw === 'W' || raw === 'L') {
+                const firstWon = raw === 'W';
+                const aIsFirst = playerA === first;
+                return {
+                    aWon: aIsFirst ? firstWon : !firstWon,
+                    aGames: null,
+                    bGames: null,
+                    technical: true
+                };
+            }
+
+            const match = String(raw).match(/^\s*(\d+)\s*:\s*(\d+)\s*$/);
+            if (!match) return null;
+
+            const firstGames = Number(match[1]);
+            const secondGames = Number(match[2]);
+            if (firstGames === secondGames) return null;
+
+            const aIsFirst = playerA === first;
+            return {
+                aWon: aIsFirst ? firstGames > secondGames : secondGames > firstGames,
+                aGames: aIsFirst ? firstGames : secondGames,
+                bGames: aIsFirst ? secondGames : firstGames,
+                technical: false
+            };
+        }
+
+        function compareRoundRobinGameRatios(a, b) {
+            const aInfinity = a.gamesLost === 0 && a.gamesWon > 0;
+            const bInfinity = b.gamesLost === 0 && b.gamesWon > 0;
+
+            if (aInfinity || bInfinity) {
+                if (aInfinity && bInfinity) return 0;
+                return aInfinity ? -1 : 1;
+            }
+
+            const aZero = a.gamesLost === 0 && a.gamesWon === 0;
+            const bZero = b.gamesLost === 0 && b.gamesWon === 0;
+
+            if (aZero || bZero) {
+                if (aZero && bZero) return 0;
+                return aZero ? 1 : -1;
+            }
+
+            const left = a.gamesWon * b.gamesLost;
+            const right = b.gamesWon * a.gamesLost;
+            if (left === right) return 0;
+            return left > right ? -1 : 1;
+        }
+
+        function rankRoundRobinTie(indices, scores, depth = 0) {
+            if (indices.length <= 1) return [...indices];
+
+            const stats = indices.map(index => ({
+                index,
+                miniWins: 0,
+                gamesWon: 0,
+                gamesLost: 0
+            }));
+            const byIndex = new Map(stats.map(item => [item.index, item]));
+
+            for (let i = 0; i < indices.length; i++) {
+                for (let j = i + 1; j < indices.length; j++) {
+                    const first = indices[i];
+                    const second = indices[j];
+                    const result = getRoundRobinScore(first, second, scores);
+                    if (!result) continue;
+
+                    if (result.aWon) byIndex.get(first).miniWins++;
+                    else byIndex.get(second).miniWins++;
+
+                    if (!result.technical) {
+                        byIndex.get(first).gamesWon += result.aGames;
+                        byIndex.get(first).gamesLost += result.bGames;
+                        byIndex.get(second).gamesWon += result.bGames;
+                        byIndex.get(second).gamesLost += result.aGames;
                     }
                 }
             }
 
-            const list = [];
-            for (let i = 0; i < playerCount; i++) {
-                list.push({ index: i, points: wins[i] });
+            stats.sort((a, b) => {
+                if (a.miniWins !== b.miniWins) return b.miniWins - a.miniWins;
+
+                const ratioOrder = compareRoundRobinGameRatios(a, b);
+                if (ratioOrder !== 0) return ratioOrder;
+
+                return a.index - b.index;
+            });
+
+            const buckets = [];
+            stats.forEach(item => {
+                const previous = buckets[buckets.length - 1];
+                const sameMetrics = previous &&
+                    previous[0].miniWins === item.miniWins &&
+                    compareRoundRobinGameRatios(previous[0], item) === 0;
+
+                if (sameMetrics) previous.push(item);
+                else buckets.push([item]);
+            });
+
+            if (buckets.length === 1 && buckets[0].length === indices.length) {
+                debugLog(`Round-robin tie remains unresolved for indices: ${indices.join(', ')}`);
+                return [...indices].sort((a, b) => a - b);
             }
 
-            // Sort by points descending
-            list.sort((a, b) => b.points - a.points);
-            return list;
+            const ranked = [];
+            buckets.forEach(bucket => {
+                const members = bucket.map(item => item.index);
+                if (members.length === 1) ranked.push(members[0]);
+                else ranked.push(...rankRoundRobinTie(members, scores, depth + 1));
+            });
+            return ranked;
         }
 
+        function calculateRoundRobinStandings(playerCount, scores) {
+            const wins = new Array(playerCount).fill(0);
+
+            for (let first = 0; first < playerCount; first++) {
+                for (let second = first + 1; second < playerCount; second++) {
+                    const result = getRoundRobinScore(first, second, scores);
+                    if (!result) continue;
+                    wins[result.aWon ? first : second]++;
+                }
+            }
+
+            const groupsByWins = new Map();
+
+            for (let index = 0; index < playerCount; index++) {
+                const points = wins[index];
+                if (!groupsByWins.has(points)) groupsByWins.set(points, []);
+                groupsByWins.get(points).push(index);
+            }
+
+            const standings = [];
+            const pointValues = [...groupsByWins.keys()].sort((a, b) => b - a);
+
+            pointValues.forEach(points => {
+                const tiedIndices = groupsByWins.get(points);
+                const rankedIndices = tiedIndices.length > 1
+                    ? rankRoundRobinTie(tiedIndices, scores)
+                    : tiedIndices;
+
+                rankedIndices.forEach(index => standings.push({ index, points }));
+            });
+
+            return standings;
+        }
         // ADMIN MATCH SCORING CONTROLLERS
         function openAdminScoreDialog(fIdx, sIdx, scoreKey, tableIndex = null) {
             const playerFields = JSON.parse(clubData.draft.playerFieldsJson || "[]");
