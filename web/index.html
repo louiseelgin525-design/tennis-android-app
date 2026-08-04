@@ -3774,6 +3774,32 @@
         </div>
     </div>
 
+
+    <!-- MODAL: UNRESOLVED ROUND-ROBIN PLACES -->
+    <div id="tie-break-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 570px; width: 100%; max-height: 88vh; overflow-y: auto;">
+            <button class="modal-close-btn" onclick="closeTieBreakModal()"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+            <h3 class="modal-title">⚠️ Не удалось определить места</h3>
+            <span class="modal-subtitle">У спорных игроков совпали все автоматические показатели</span>
+
+            <div id="tie-break-summary" style="display:flex; flex-direction:column; gap:12px; margin-top:18px;"></div>
+
+            <div id="tie-break-manual-panel" style="display:none; flex-direction:column; gap:14px; margin-top:18px;"></div>
+
+            <div id="tie-break-main-actions" style="display:flex; flex-direction:column; gap:10px; margin-top:22px;">
+                <button id="create-tie-break-matches-btn" onclick="createTieBreakMatches()" class="login-btn" style="margin:0; background-color:var(--apple-blue);">
+                    Создать дополнительные матчи
+                </button>
+                <button onclick="showManualTieOrderEditor()" class="login-btn" style="margin:0; background-color:var(--apple-green);">
+                    Указать места вручную
+                </button>
+                <button onclick="closeTieBreakModal()" class="login-btn" style="margin:0; background-color:var(--bg-card); color:var(--text-main); border:1px solid var(--border-color);">
+                    Продолжить турнир
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: HISTORY TOURNAMENT DETAIL -->
     <div id="history-modal" class="modal-overlay">
         <div class="modal-card" style="max-width: 480px; width:100%; border-radius: 24px; padding: 20px; background-color: var(--bg-main); box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: none;">
@@ -7487,11 +7513,19 @@ function getPlayerLastDelta(player) {
 
                 // Standings calculation
                 const scoresMap = draft.matchScores || {};
-                const standings = calculateRoundRobinStandings(playerNames.length, scoresMap);
+                const standingsResolution = calculateResolvedRoundRobinStandings(playerNames.length, scoresMap, draft);
+                const standings = standingsResolution.standings;
                 const placesByPlayer = standings.reduce((map, stat, idx) => {
                     map[stat.index] = idx + 1;
                     return map;
                 }, {});
+                const unresolvedPlaceLabels = {};
+                standingsResolution.unresolvedGroups.forEach(group => {
+                    const label = group.startPlace === group.endPlace
+                        ? String(group.startPlace)
+                        : `${group.startPlace}–${group.endPlace}`;
+                    group.indices.forEach(index => { unresolvedPlaceLabels[index] = label; });
+                });
 
                 for (let f = 0; f < playerNames.length; f++) {
                     const tr = document.createElement('tr');
@@ -7548,7 +7582,7 @@ function getPlayerLastDelta(player) {
                     }
 
                     const points = standings.find(x => x.index === f).points;
-                    const place = placesByPlayer[f] || "-";
+                    const place = unresolvedPlaceLabels[f] || placesByPlayer[f] || "-";
 
                     rowHTML += `<td style="font-weight: 800; color: var(--apple-blue);">${points}</td><td>${place}</td>`;
                     tr.innerHTML = rowHTML;
@@ -7570,6 +7604,60 @@ function getPlayerLastDelta(player) {
                 }
                 wrapper.appendChild(table);
                 container.appendChild(wrapper);
+
+                const tieBreakMatches = normalizeTieBreakMatches(draft)
+                    .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
+
+                if (tieBreakMatches.length > 0) {
+                    const extraHeader = document.createElement('h4');
+                    extraHeader.className = 'section-title';
+                    extraHeader.style.marginTop = '20px';
+                    extraHeader.textContent = 'Дополнительные матчи';
+                    container.appendChild(extraHeader);
+
+                    const extraList = document.createElement('div');
+                    extraList.style.display = 'flex';
+                    extraList.style.flexDirection = 'column';
+                    extraList.style.gap = '8px';
+                    extraList.style.backgroundColor = 'var(--bg-card)';
+                    extraList.style.border = '1px solid var(--border-color)';
+                    extraList.style.borderRadius = '16px';
+                    extraList.style.padding = '12px';
+
+                    tieBreakMatches.forEach((match, index) => {
+                        const p1Index = Number(match.p1);
+                        const p2Index = Number(match.p2);
+                        const name1 = playerNamesWithFallback[p1Index] || `Игрок ${p1Index + 1}`;
+                        const name2 = playerNamesWithFallback[p2Index] || `Игрок ${p2Index + 1}`;
+                        const played = isValidPlayedScore(match.score);
+
+                        const row = document.createElement('div');
+                        row.style.display = 'grid';
+                        row.style.gridTemplateColumns = '30px minmax(0, 1fr) auto';
+                        row.style.alignItems = 'center';
+                        row.style.gap = '10px';
+                        row.style.padding = '10px';
+                        row.style.border = '1px solid var(--border-color)';
+                        row.style.borderRadius = '12px';
+                        row.style.backgroundColor = 'var(--bg-main)';
+                        row.innerHTML = `
+                            <span style="font-size:12px; color:var(--text-secondary); font-weight:800;">${index + 1}</span>
+                            <span style="font-size:13px; font-weight:700; min-width:0;">${name1} — ${name2}</span>
+                            <span style="font-size:13px; font-weight:800; color:${played ? 'var(--apple-blue)' : 'var(--text-secondary)'}; white-space:nowrap;">
+                                ${played ? match.score : (isAdmin ? 'Ввести счёт' : 'Ожидается')}
+                            </span>
+                        `;
+
+                        if (isAdmin) {
+                            row.style.cursor = 'pointer';
+                            row.addEventListener('click', () => openAdminTieBreakScoreDialog(match.id));
+                        }
+
+                        extraList.appendChild(row);
+                    });
+
+                    container.appendChild(extraList);
+                }
 
                 // Check if tournament is finished (all matches scored)
                 if (isAdmin) {
@@ -8470,6 +8558,35 @@ function getPlayerLastDelta(player) {
             };
         }
 
+        function parseRoundRobinScoreForOrderedPlayers(playerA, playerB, storedPlayer1, storedPlayer2, rawScore) {
+            const match = String(rawScore || '').match(/^\s*(\d+)\s*:\s*(\d+)\s*$/);
+            if (!match) return null;
+
+            const player1Games = Number(match[1]);
+            const player2Games = Number(match[2]);
+            if (player1Games === player2Games) return null;
+
+            if (playerA === storedPlayer1 && playerB === storedPlayer2) {
+                return {
+                    aWon: player1Games > player2Games,
+                    aGames: player1Games,
+                    bGames: player2Games,
+                    technical: false
+                };
+            }
+
+            if (playerA === storedPlayer2 && playerB === storedPlayer1) {
+                return {
+                    aWon: player2Games > player1Games,
+                    aGames: player2Games,
+                    bGames: player1Games,
+                    technical: false
+                };
+            }
+
+            return null;
+        }
+
         function compareRoundRobinGameRatios(a, b) {
             const aInfinity = a.gamesLost === 0 && a.gamesWon > 0;
             const bInfinity = b.gamesLost === 0 && b.gamesWon > 0;
@@ -8493,8 +8610,26 @@ function getPlayerLastDelta(player) {
             return left > right ? -1 : 1;
         }
 
-        function rankRoundRobinTie(indices, scores, depth = 0) {
-            if (indices.length <= 1) return [...indices];
+        function roundRobinGroupKey(indices) {
+            return [...indices].sort((a, b) => a - b).join('-');
+        }
+
+        function normalizeTieBreakMatches(draft) {
+            const raw = draft?.tieBreakMatches;
+            if (Array.isArray(raw)) return raw.filter(Boolean);
+            if (raw && typeof raw === 'object') return Object.values(raw).filter(Boolean);
+            return [];
+        }
+
+        function isValidPlayedScore(score) {
+            const match = String(score || '').match(/^\s*(\d+)\s*:\s*(\d+)\s*$/);
+            return !!match && Number(match[1]) !== Number(match[2]);
+        }
+
+        function rankRoundRobinTieDetailed(indices, getResult) {
+            if (indices.length <= 1) {
+                return { ordered: [...indices], unresolvedGroups: [] };
+            }
 
             const stats = indices.map(index => ({
                 index,
@@ -8508,7 +8643,7 @@ function getPlayerLastDelta(player) {
                 for (let j = i + 1; j < indices.length; j++) {
                     const first = indices[i];
                     const second = indices[j];
-                    const result = getRoundRobinScore(first, second, scores);
+                    const result = getResult(first, second);
                     if (!result) continue;
 
                     if (result.aWon) byIndex.get(first).miniWins++;
@@ -8525,10 +8660,8 @@ function getPlayerLastDelta(player) {
 
             stats.sort((a, b) => {
                 if (a.miniWins !== b.miniWins) return b.miniWins - a.miniWins;
-
                 const ratioOrder = compareRoundRobinGameRatios(a, b);
                 if (ratioOrder !== 0) return ratioOrder;
-
                 return a.index - b.index;
             });
 
@@ -8544,51 +8677,271 @@ function getPlayerLastDelta(player) {
             });
 
             if (buckets.length === 1 && buckets[0].length === indices.length) {
-                debugLog(`Round-robin tie remains unresolved for indices: ${indices.join(', ')}`);
-                return [...indices].sort((a, b) => a - b);
+                const fallback = [...indices].sort((a, b) => a - b);
+                return {
+                    ordered: fallback,
+                    unresolvedGroups: [fallback]
+                };
             }
 
-            const ranked = [];
+            const ordered = [];
+            const unresolvedGroups = [];
+
             buckets.forEach(bucket => {
                 const members = bucket.map(item => item.index);
-                if (members.length === 1) ranked.push(members[0]);
-                else ranked.push(...rankRoundRobinTie(members, scores, depth + 1));
+                if (members.length === 1) {
+                    ordered.push(members[0]);
+                    return;
+                }
+
+                const nested = rankRoundRobinTieDetailed(members, getResult);
+                ordered.push(...nested.ordered);
+                unresolvedGroups.push(...nested.unresolvedGroups);
             });
-            return ranked;
+
+            return { ordered, unresolvedGroups };
         }
 
-        function calculateRoundRobinStandings(playerCount, scores) {
-            const wins = new Array(playerCount).fill(0);
+        function calculateStandingsForIndicesDetailed(indices, getResult) {
+            const wins = new Map(indices.map(index => [index, 0]));
 
-            for (let first = 0; first < playerCount; first++) {
-                for (let second = first + 1; second < playerCount; second++) {
-                    const result = getRoundRobinScore(first, second, scores);
+            for (let i = 0; i < indices.length; i++) {
+                for (let j = i + 1; j < indices.length; j++) {
+                    const first = indices[i];
+                    const second = indices[j];
+                    const result = getResult(first, second);
                     if (!result) continue;
-                    wins[result.aWon ? first : second]++;
+                    const winnerIndex = result.aWon ? first : second;
+                    wins.set(winnerIndex, (wins.get(winnerIndex) || 0) + 1);
                 }
             }
 
             const groupsByWins = new Map();
-
-            for (let index = 0; index < playerCount; index++) {
-                const points = wins[index];
+            indices.forEach(index => {
+                const points = wins.get(index) || 0;
                 if (!groupsByWins.has(points)) groupsByWins.set(points, []);
                 groupsByWins.get(points).push(index);
-            }
+            });
 
-            const standings = [];
+            const ordered = [];
+            const unresolvedGroups = [];
             const pointValues = [...groupsByWins.keys()].sort((a, b) => b - a);
 
             pointValues.forEach(points => {
                 const tiedIndices = groupsByWins.get(points);
-                const rankedIndices = tiedIndices.length > 1
-                    ? rankRoundRobinTie(tiedIndices, scores)
-                    : tiedIndices;
+                if (tiedIndices.length === 1) {
+                    ordered.push(tiedIndices[0]);
+                    return;
+                }
 
-                rankedIndices.forEach(index => standings.push({ index, points }));
+                const ranked = rankRoundRobinTieDetailed(tiedIndices, getResult);
+                ordered.push(...ranked.ordered);
+                unresolvedGroups.push(...ranked.unresolvedGroups);
             });
 
-            return standings;
+            return { ordered, unresolvedGroups, wins };
+        }
+
+        function calculateRoundRobinStandingsDetailed(playerCount, scores) {
+            const indices = Array.from({ length: playerCount }, (_, index) => index);
+            const result = calculateStandingsForIndicesDetailed(
+                indices,
+                (playerA, playerB) => getRoundRobinScore(playerA, playerB, scores)
+            );
+
+            return {
+                standings: result.ordered.map(index => ({
+                    index,
+                    points: result.wins.get(index) || 0
+                })),
+                unresolvedGroups: result.unresolvedGroups.map(group => ({ indices: [...group] }))
+            };
+        }
+
+        function getManualTieOrder(draft, indices) {
+            const key = roundRobinGroupKey(indices);
+            const raw = draft?.manualTieOrders?.[key];
+            if (!Array.isArray(raw) || raw.length !== indices.length) return null;
+
+            const expected = [...indices].sort((a, b) => a - b);
+            const actual = raw.map(Number).sort((a, b) => a - b);
+            if (expected.some((value, index) => value !== actual[index])) return null;
+            return raw.map(Number);
+        }
+
+        function getLatestTieBreakRound(draft, indices) {
+            const key = roundRobinGroupKey(indices);
+            const matches = normalizeTieBreakMatches(draft).filter(match => match.groupKey === key);
+            if (!matches.length) return null;
+
+            const latestRound = Math.max(...matches.map(match => Number(match.round) || 1));
+            const roundMatches = matches.filter(match => (Number(match.round) || 1) === latestRound);
+            return { key, latestRound, roundMatches };
+        }
+
+        function replaceUnresolvedSubgroups(parentOrdered, subgroupArrays, resolver, parentIndices) {
+            const subgroupByMember = new Map();
+            subgroupArrays.forEach(group => {
+                group.forEach(index => subgroupByMember.set(index, group));
+            });
+
+            const handledKeys = new Set();
+            const ordered = [];
+            const unresolvedGroups = [];
+            const parentKey = roundRobinGroupKey(parentIndices);
+
+            parentOrdered.forEach(index => {
+                const group = subgroupByMember.get(index);
+                if (!group) {
+                    ordered.push(index);
+                    return;
+                }
+
+                const key = roundRobinGroupKey(group);
+                if (handledKeys.has(key)) return;
+                handledKeys.add(key);
+
+                if (key === parentKey) {
+                    ordered.push(...group);
+                    unresolvedGroups.push({ indices: [...group] });
+                    return;
+                }
+
+                const nested = resolver(group);
+                ordered.push(...nested.ordered);
+                unresolvedGroups.push(...nested.unresolvedGroups);
+            });
+
+            return { ordered, unresolvedGroups };
+        }
+
+        function resolveTieBreakGroup(indices, draft) {
+            const manualOrder = getManualTieOrder(draft, indices);
+            if (manualOrder) {
+                return { ordered: manualOrder, unresolvedGroups: [] };
+            }
+
+            const latest = getLatestTieBreakRound(draft, indices);
+            if (!latest) {
+                return {
+                    ordered: [...indices],
+                    unresolvedGroups: [{
+                        indices: [...indices],
+                        pendingMatches: 0,
+                        totalMatches: 0,
+                        latestRound: 0,
+                        hasCompletedRound: false
+                    }]
+                };
+            }
+
+            const expectedMatches = indices.length * (indices.length - 1) / 2;
+            const completedCount = latest.roundMatches.filter(match => isValidPlayedScore(match.score)).length;
+            const pendingMatches = Math.max(0, expectedMatches - completedCount);
+
+            if (latest.roundMatches.length !== expectedMatches || pendingMatches > 0) {
+                return {
+                    ordered: [...indices],
+                    unresolvedGroups: [{
+                        indices: [...indices],
+                        pendingMatches,
+                        totalMatches: expectedMatches,
+                        latestRound: latest.latestRound,
+                        hasCompletedRound: false
+                    }]
+                };
+            }
+
+            const byPair = new Map();
+            latest.roundMatches.forEach(match => {
+                const key = roundRobinGroupKey([Number(match.p1), Number(match.p2)]);
+                byPair.set(key, match);
+            });
+
+            const roundResult = calculateStandingsForIndicesDetailed(indices, (playerA, playerB) => {
+                const match = byPair.get(roundRobinGroupKey([playerA, playerB]));
+                if (!match) return null;
+                return parseRoundRobinScoreForOrderedPlayers(
+                    playerA,
+                    playerB,
+                    Number(match.p1),
+                    Number(match.p2),
+                    match.score
+                );
+            });
+
+            if (!roundResult.unresolvedGroups.length) {
+                return { ordered: roundResult.ordered, unresolvedGroups: [] };
+            }
+
+            const replaced = replaceUnresolvedSubgroups(
+                roundResult.ordered,
+                roundResult.unresolvedGroups,
+                subgroup => resolveTieBreakGroup(subgroup, draft),
+                indices
+            );
+
+            replaced.unresolvedGroups = replaced.unresolvedGroups.map(group => ({
+                pendingMatches: 0,
+                totalMatches: group.indices.length * (group.indices.length - 1) / 2,
+                latestRound: latest.latestRound,
+                hasCompletedRound: true,
+                ...group
+            }));
+
+            return replaced;
+        }
+
+        function calculateResolvedRoundRobinStandings(playerCount, scores, draft) {
+            const base = calculateRoundRobinStandingsDetailed(playerCount, scores);
+            const pointsByIndex = new Map(base.standings.map(item => [item.index, item.points]));
+            const unresolvedByMember = new Map();
+
+            base.unresolvedGroups.forEach(group => {
+                group.indices.forEach(index => unresolvedByMember.set(index, group.indices));
+            });
+
+            const handledKeys = new Set();
+            const ordered = [];
+            const unresolvedGroups = [];
+
+            base.standings.forEach(item => {
+                const group = unresolvedByMember.get(item.index);
+                if (!group) {
+                    ordered.push(item.index);
+                    return;
+                }
+
+                const key = roundRobinGroupKey(group);
+                if (handledKeys.has(key)) return;
+                handledKeys.add(key);
+
+                const resolved = resolveTieBreakGroup(group, draft);
+                ordered.push(...resolved.ordered);
+                unresolvedGroups.push(...resolved.unresolvedGroups);
+            });
+
+            const standings = ordered.map(index => ({
+                index,
+                points: pointsByIndex.get(index) || 0
+            }));
+
+            const positionByIndex = new Map(standings.map((item, position) => [item.index, position + 1]));
+            const enrichedGroups = unresolvedGroups.map(group => {
+                const places = group.indices.map(index => positionByIndex.get(index)).filter(Boolean);
+                return {
+                    ...group,
+                    startPlace: Math.min(...places),
+                    endPlace: Math.max(...places),
+                    groupKey: roundRobinGroupKey(group.indices)
+                };
+            });
+
+            return { standings, unresolvedGroups: enrichedGroups };
+        }
+
+        function calculateRoundRobinStandings(playerCount, scores) {
+            return calculateRoundRobinStandingsDetailed(playerCount, scores).standings;
         }
         // ADMIN MATCH SCORING CONTROLLERS
         function openAdminScoreDialog(fIdx, sIdx, scoreKey, tableIndex = null) {
@@ -8596,7 +8949,7 @@ function getPlayerLastDelta(player) {
             const name1 = decodeName(playerFields[fIdx].name);
             const name2 = decodeName(playerFields[sIdx].name);
             
-            activeScoreMatch = { f: fIdx, s: sIdx, scoreKey: scoreKey, index: tableIndex };
+            activeScoreMatch = { type: 'main', f: fIdx, s: sIdx, scoreKey: scoreKey, index: tableIndex };
 
             document.getElementById('admin-score-match-title').textContent = `${name1} vs ${name2}`;
 
@@ -8652,10 +9005,87 @@ function getPlayerLastDelta(player) {
                 btnsGrid.appendChild(rowRight);
             }
 
-            // Set withdraw names
-            document.getElementById('withdraw-p1-btn').textContent = `Снять: ${name1}`;
-            document.getElementById('withdraw-p2-btn').textContent = `Снять: ${name2}`;
+            // Set withdraw names (withdrawal is available only for main round-robin matches)
+            const withdrawP1 = document.getElementById('withdraw-p1-btn');
+            const withdrawP2 = document.getElementById('withdraw-p2-btn');
+            withdrawP1.style.display = '';
+            withdrawP2.style.display = '';
+            withdrawP1.textContent = `Снять: ${name1}`;
+            withdrawP2.textContent = `Снять: ${name2}`;
 
+            document.getElementById('admin-score-modal').style.display = 'flex';
+        }
+
+        function openAdminTieBreakScoreDialog(matchId) {
+            const draft = clubData.draft;
+            const matches = normalizeTieBreakMatches(draft);
+            const match = matches.find(item => String(item.id) === String(matchId));
+            if (!match) {
+                showToast('Дополнительный матч не найден');
+                return;
+            }
+
+            const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
+            const name1 = decodeName(playerFields[Number(match.p1)]?.name || '').trim();
+            const name2 = decodeName(playerFields[Number(match.p2)]?.name || '').trim();
+
+            activeScoreMatch = {
+                type: 'tieBreak',
+                matchId: String(match.id),
+                f: Number(match.p1),
+                s: Number(match.p2)
+            };
+
+            document.getElementById('admin-score-match-title').textContent = `${name1} vs ${name2}`;
+
+            const winsToWin = draft.winsToWin || 2;
+            const compactContainer = document.getElementById('admin-score-compact-container');
+            const standardContainer = document.getElementById('admin-score-standard-container');
+
+            if (winsToWin === 1) {
+                compactContainer.style.display = 'flex';
+                standardContainer.style.display = 'none';
+            } else {
+                compactContainer.style.display = 'none';
+                standardContainer.style.display = 'flex';
+
+                const btnsGrid = document.getElementById('admin-score-btns-grid');
+                btnsGrid.innerHTML = '';
+                const possibleScores = [];
+                for (let loss = 0; loss < winsToWin; loss++) {
+                    possibleScores.push({ win: winsToWin, loss });
+                }
+
+                const rowLeft = document.createElement('div');
+                rowLeft.style.display = 'flex';
+                rowLeft.style.gap = '8px';
+                const rowRight = document.createElement('div');
+                rowRight.style.display = 'flex';
+                rowRight.style.gap = '8px';
+                rowRight.style.marginTop = '8px';
+
+                possibleScores.forEach(item => {
+                    const btnW = document.createElement('button');
+                    btnW.className = 'dialog-score-btn score-btn-won';
+                    btnW.style.flex = '1';
+                    btnW.textContent = `${item.win} : ${item.loss}`;
+                    btnW.addEventListener('click', () => submitQuickScore(`${item.win}:${item.loss}`));
+                    rowLeft.appendChild(btnW);
+
+                    const btnL = document.createElement('button');
+                    btnL.className = 'dialog-score-btn score-btn-lost';
+                    btnL.style.flex = '1';
+                    btnL.textContent = `${item.loss} : ${item.win}`;
+                    btnL.addEventListener('click', () => submitQuickScore(`${item.loss}:${item.win}`));
+                    rowRight.appendChild(btnL);
+                });
+
+                btnsGrid.appendChild(rowLeft);
+                btnsGrid.appendChild(rowRight);
+            }
+
+            document.getElementById('withdraw-p1-btn').style.display = 'none';
+            document.getElementById('withdraw-p2-btn').style.display = 'none';
             document.getElementById('admin-score-modal').style.display = 'flex';
         }
 
@@ -8676,7 +9106,38 @@ function getPlayerLastDelta(player) {
             showLoader(true);
 
             const draft = { ...clubData.draft };
+
+            if (activeScoreMatch.type === 'tieBreak') {
+                const matches = normalizeTieBreakMatches(draft).map(match => ({ ...match }));
+                const matchIndex = matches.findIndex(item => String(item.id) === String(activeScoreMatch.matchId));
+                if (matchIndex < 0) {
+                    showLoader(false);
+                    showToast('Дополнительный матч не найден');
+                    return;
+                }
+
+                matches[matchIndex].score = score;
+                matches[matchIndex].updatedAt = Date.now();
+                draft.tieBreakMatches = matches;
+                // A changed score invalidates any previously entered manual order.
+                draft.manualTieOrders = {};
+
+                db.ref(`clubs/${activeClubId}/draft`).set(draft)
+                    .then(() => {
+                        closeAdminScoreModal();
+                        showLoader(false);
+                        showToast('Счет дополнительного матча сохранен!');
+                    })
+                    .catch(e => {
+                        showLoader(false);
+                        showToast('Ошибка сохранения: ' + e.message);
+                    });
+                return;
+            }
+
             if (!draft.matchScores) draft.matchScores = {};
+            // A changed main result invalidates any previously entered manual order.
+            draft.manualTieOrders = {};
             
             let finalScore = score;
             if (activeScoreMatch.f > activeScoreMatch.s) {
@@ -8791,80 +9252,122 @@ function getPlayerLastDelta(player) {
         };
 
         // RTTF RATING CALCULATION LOGIC (PORT FROM KOTLIN)
-        function calculateDeltas(playerNames, scores, K, applyPlaceBonuses, playersList) {
+        function calculateSingleMatchImpact(name1, name2, scoreStr, K, playersList) {
+            const match = String(scoreStr || '').match(/^\s*(\d+)\s*:\s*(\d+)\s*$/);
+            if (!match) return null;
+
+            const score1 = Number(match[1]);
+            const score2 = Number(match[2]);
+            if (score1 === score2) return null;
+
+            const p1 = playersList.find(player => player.fullName.toLowerCase() === name1.toLowerCase()) || {
+                id: 999,
+                fullName: name1,
+                rating: 200.0,
+                tournamentsPlayed: 0
+            };
+            const p2 = playersList.find(player => player.fullName.toLowerCase() === name2.toLowerCase()) || {
+                id: 998,
+                fullName: name2,
+                rating: 200.0,
+                tournamentsPlayed: 0
+            };
+
+            const p1Won = score1 > score2;
+            const winner = p1Won ? p1 : p2;
+            const loser = p1Won ? p2 : p1;
+            const winnerScore = p1Won ? score1 : score2;
+            const loserScore = p1Won ? score2 : score1;
+
+            const diff = winner.rating - loser.rating;
+            let baseDelta = 0.0;
+            if (diff < 100.0) baseDelta = (100.0 - diff) / 10.0;
+
+            let winnerDelta = 0.0;
+            let loserDelta = 0.0;
+
+            if (baseDelta > 0.0) {
+                let scoreCoeff = 1.0;
+                if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
+                else if (winnerScore === 3 && loserScore === 2) scoreCoeff = 0.8;
+                else if (winnerScore === 3 && loserScore === 1) scoreCoeff = 0.9;
+                else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
+
+                const winnerIsNovice = (winner.tournamentsPlayed || 0) <= 5;
+                const loserIsNovice = (loser.tournamentsPlayed || 0) <= 5;
+
+                winnerDelta = winnerIsNovice
+                    ? Math.round(baseDelta * 1.0 * 100) / 100
+                    : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
+                loserDelta = loserIsNovice
+                    ? Math.round(baseDelta * 0.5 * 100) / 100
+                    : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
+            }
+
+            return {
+                p1Won,
+                winnerName: winner.fullName.toLowerCase(),
+                loserName: loser.fullName.toLowerCase(),
+                p1Delta: p1Won ? winnerDelta : -loserDelta,
+                p2Delta: p1Won ? -loserDelta : winnerDelta
+            };
+        }
+
+        function calculateDeltas(
+            playerNames,
+            scores,
+            K,
+            applyPlaceBonuses,
+            playersList,
+            additionalMatches = [],
+            standingsOverride = null
+        ) {
             const tournamentPlayers = playerNames.map(name => {
-                const p = playersList.find(pl => pl.fullName.toLowerCase() === name.toLowerCase());
-                return p ? { ...p } : { id: 999, fullName: name, rating: 200.0, tournamentsPlayed: 0, wins: 0, losses: 0 };
+                const player = playersList.find(item => item.fullName.toLowerCase() === name.toLowerCase());
+                return player
+                    ? { ...player }
+                    : { id: 999, fullName: name, rating: 200.0, tournamentsPlayed: 0, wins: 0, losses: 0 };
             });
 
             const accumulatedDeltas = {};
             const winIncrements = {};
             const lossIncrements = {};
-            tournamentPlayers.forEach(p => {
-                accumulatedDeltas[p.fullName.toLowerCase()] = 0.0;
-                winIncrements[p.fullName.toLowerCase()] = 0;
-                lossIncrements[p.fullName.toLowerCase()] = 0;
+            tournamentPlayers.forEach(player => {
+                const key = player.fullName.toLowerCase();
+                accumulatedDeltas[key] = 0.0;
+                winIncrements[key] = 0;
+                lossIncrements[key] = 0;
             });
 
-            const parseScore = (str) => {
-                if (!str || !str.includes(":")) return null;
-                const p = str.split(":");
-                return [parseInt(p[0]), parseInt(p[1])];
+            const applyMatch = (firstIndex, secondIndex, scoreStr) => {
+                const name1 = playerNames[firstIndex];
+                const name2 = playerNames[secondIndex];
+                if (!name1 || !name2) return;
+
+                const impact = calculateSingleMatchImpact(name1, name2, scoreStr, K, tournamentPlayers);
+                if (!impact) return;
+
+                winIncrements[impact.winnerName]++;
+                lossIncrements[impact.loserName]++;
+                accumulatedDeltas[name1.toLowerCase()] += impact.p1Delta;
+                accumulatedDeltas[name2.toLowerCase()] += impact.p2Delta;
             };
 
-            for (let f = 0; f < playerNames.length; f++) {
-                for (let s = f + 1; s < playerNames.length; s++) {
-                    const scoreKey = `${f}_${s}`;
-                    const scoreStr = scores[scoreKey];
-                    const score = parseScore(scoreStr);
-                    if (!score || score[0] === score[1]) continue;
-
-                    const p1 = tournamentPlayers[f];
-                    const p2 = tournamentPlayers[s];
-
-                    const p1Won = score[0] > score[1];
-                    const winner = p1Won ? p1 : p2;
-                    const loser = p1Won ? p2 : p1;
-                    const winnerScore = p1Won ? score[0] : score[1];
-                    const loserScore = p1Won ? score[1] : score[0];
-
-                    const winnerName = winner.fullName.toLowerCase();
-                    const loserName = loser.fullName.toLowerCase();
-
-                    winIncrements[winnerName]++;
-                    lossIncrements[loserName]++;
-
-                    // rttfBaseDelta
-                    const diff = winner.rating - loser.rating;
-                    let baseDelta = 0.0;
-                    if (diff < 100.0) {
-                        baseDelta = (100.0 - diff) / 10.0;
-                    }
-
-                    if (baseDelta <= 0.0) continue;
-
-                    // scoreDominanceMultiplier
-                    let scoreCoeff = 1.0;
-                    if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
-                    else if (winnerScore === 3 && loserScore === 2) scoreCoeff = 0.8;
-                    else if (winnerScore === 3 && loserScore === 1) scoreCoeff = 0.9;
-                    else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
-
-                    const winnerIsNovice = winner.tournamentsPlayed <= 5;
-                    const loserIsNovice = loser.tournamentsPlayed <= 5;
-
-                    const winnerDelta = winnerIsNovice ? Math.round(baseDelta * 1.0 * 100) / 100 
-                                                       : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
-                    const loserDelta = loserIsNovice ? Math.round(baseDelta * 0.5 * 100) / 100 
-                                                     : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
-
-                    accumulatedDeltas[winnerName] += winnerDelta;
-                    accumulatedDeltas[loserName] -= loserDelta;
+            for (let first = 0; first < playerNames.length; first++) {
+                for (let second = first + 1; second < playerNames.length; second++) {
+                    applyMatch(first, second, scores[`${first}_${second}`]);
                 }
             }
 
-            // Standings
-            const standings = calculateRoundRobinStandings(playerNames.length, scores);
+            additionalMatches.forEach(match => {
+                if (!isValidPlayedScore(match.score)) return;
+                applyMatch(Number(match.p1), Number(match.p2), match.score);
+            });
+
+            const standings = Array.isArray(standingsOverride) && standingsOverride.length === playerNames.length
+                ? standingsOverride.map(item => ({ index: Number(item.index), points: Number(item.points) || 0 }))
+                : calculateRoundRobinStandings(playerNames.length, scores);
+
             if (applyPlaceBonuses && playerNames.length >= 3) {
                 const bonus1 = 1.5;
                 const bonus2 = 1.0;
@@ -8883,45 +9386,328 @@ function getPlayerLastDelta(player) {
                 deltas: accumulatedDeltas,
                 wins: winIncrements,
                 losses: lossIncrements,
-                standings: standings
+                standings
             };
         }
 
         // OPEN TOURNAMENT FINALIZE / REVIEW MODAL
-        window.calculatedResult = null; // store calculation outcome
+        window.calculatedResult = null;
+        window.pendingTieBreakResolution = null;
+
+        function formatTiePlaceRange(group) {
+            return group.startPlace === group.endPlace
+                ? `${group.startPlace} место`
+                : `${group.startPlace}–${group.endPlace} места`;
+        }
+
+        function openTieBreakResolutionModal(resolution, playerNames) {
+            window.pendingTieBreakResolution = {
+                resolution,
+                playerNames: [...playerNames]
+            };
+
+            const summary = document.getElementById('tie-break-summary');
+            const manualPanel = document.getElementById('tie-break-manual-panel');
+            const mainActions = document.getElementById('tie-break-main-actions');
+            const createButton = document.getElementById('create-tie-break-matches-btn');
+
+            summary.innerHTML = '';
+            manualPanel.innerHTML = '';
+            manualPanel.style.display = 'none';
+            mainActions.style.display = 'flex';
+
+            let groupsAvailableForNewRound = 0;
+            let matchesToCreate = 0;
+
+            resolution.unresolvedGroups.forEach(group => {
+                const names = group.indices.map(index => playerNames[index]);
+                const playerCount = group.indices.length;
+                const pending = Number(group.pendingMatches) || 0;
+                const total = Number(group.totalMatches) || playerCount * (playerCount - 1) / 2;
+
+                if (pending === 0) {
+                    groupsAvailableForNewRound++;
+                    matchesToCreate += playerCount * (playerCount - 1) / 2;
+                }
+
+                const card = document.createElement('div');
+                card.style.border = '1px solid var(--border-color)';
+                card.style.borderRadius = '14px';
+                card.style.padding = '14px';
+                card.style.backgroundColor = 'var(--bg-card)';
+
+                let explanation;
+                if (pending > 0) {
+                    explanation = `Дополнительные матчи уже созданы: заполнено ${total - pending} из ${total}. Внесите оставшиеся результаты на странице турнира.`;
+                } else if (group.hasCompletedRound) {
+                    explanation = `Предыдущие дополнительные матчи снова не разделили игроков. Можно провести ещё один круг или указать места вручную.`;
+                } else {
+                    explanation = `Совпали общее число побед, результаты между этими игроками и соотношение партий.`;
+                }
+
+                card.innerHTML = `
+                    <div style="font-size:14px; font-weight:800; color:var(--text-main);">Спорные ${formatTiePlaceRange(group)}</div>
+                    <div style="font-size:13px; color:var(--text-main); margin-top:8px; line-height:1.45;">${names.join(', ')}</div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-top:8px; line-height:1.45;">${explanation}</div>
+                `;
+                summary.appendChild(card);
+            });
+
+            if (groupsAvailableForNewRound > 0) {
+                createButton.disabled = false;
+                createButton.style.opacity = '1';
+                createButton.style.cursor = 'pointer';
+                createButton.textContent = `Создать дополнительные матчи (${matchesToCreate})`;
+            } else {
+                createButton.disabled = true;
+                createButton.style.opacity = '0.5';
+                createButton.style.cursor = 'not-allowed';
+                createButton.textContent = 'Сначала внесите созданные результаты';
+            }
+
+            document.getElementById('tie-break-modal').style.display = 'flex';
+        }
+
+        window.closeTieBreakModal = function() {
+            window.pendingTieBreakResolution = null;
+            const modal = document.getElementById('tie-break-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.createTieBreakMatches = async function() {
+            const pending = window.pendingTieBreakResolution;
+            if (!pending || !clubData.draft) return;
+
+            const draft = { ...clubData.draft };
+            const existing = normalizeTieBreakMatches(draft).map(match => ({ ...match }));
+            const now = Date.now();
+            let createdCount = 0;
+
+            pending.resolution.unresolvedGroups.forEach(group => {
+                if ((Number(group.pendingMatches) || 0) > 0) return;
+
+                const groupKey = roundRobinGroupKey(group.indices);
+                const previousRounds = existing
+                    .filter(match => match.groupKey === groupKey)
+                    .map(match => Number(match.round) || 1);
+                const nextRound = previousRounds.length ? Math.max(...previousRounds) + 1 : 1;
+
+                for (let first = 0; first < group.indices.length; first++) {
+                    for (let second = first + 1; second < group.indices.length; second++) {
+                        const p1 = Number(group.indices[first]);
+                        const p2 = Number(group.indices[second]);
+                        existing.push({
+                            id: `tb_${now}_${groupKey}_${nextRound}_${p1}_${p2}_${createdCount}`,
+                            groupKey,
+                            round: nextRound,
+                            p1,
+                            p2,
+                            score: '',
+                            createdAt: now + createdCount
+                        });
+                        createdCount++;
+                    }
+                }
+            });
+
+            if (createdCount === 0) {
+                showToast('Сначала внесите результаты уже созданных матчей');
+                return;
+            }
+
+            draft.tieBreakMatches = existing;
+            showLoader(true);
+            try {
+                await db.ref(`clubs/${activeClubId}/draft`).set(draft);
+                clubData.draft = draft;
+                updateActiveTournament();
+                closeTieBreakModal();
+                showLoader(false);
+                showToast(`Создано дополнительных матчей: ${createdCount}`);
+            } catch (error) {
+                showLoader(false);
+                showToast('Ошибка создания матчей: ' + error.message);
+            }
+        };
+
+        window.showManualTieOrderEditor = function() {
+            const pending = window.pendingTieBreakResolution;
+            if (!pending) return;
+
+            const panel = document.getElementById('tie-break-manual-panel');
+            const mainActions = document.getElementById('tie-break-main-actions');
+            panel.innerHTML = '';
+
+            pending.resolution.unresolvedGroups.forEach((group, groupIndex) => {
+                const block = document.createElement('div');
+                block.style.border = '1px solid var(--border-color)';
+                block.style.borderRadius = '14px';
+                block.style.padding = '14px';
+                block.style.backgroundColor = 'var(--bg-card)';
+
+                const title = document.createElement('div');
+                title.style.fontSize = '14px';
+                title.style.fontWeight = '800';
+                title.style.marginBottom = '10px';
+                title.textContent = `Распределите ${formatTiePlaceRange(group)}`;
+                block.appendChild(title);
+
+                group.indices.forEach((defaultPlayerIndex, offset) => {
+                    const row = document.createElement('label');
+                    row.style.display = 'grid';
+                    row.style.gridTemplateColumns = '82px minmax(0, 1fr)';
+                    row.style.alignItems = 'center';
+                    row.style.gap = '10px';
+                    row.style.marginTop = offset === 0 ? '0' : '8px';
+
+                    const place = group.startPlace + offset;
+                    const select = document.createElement('select');
+                    select.className = 'login-input manual-tie-order-select';
+                    select.style.margin = '0';
+                    select.style.textAlign = 'left';
+                    select.dataset.groupIndex = String(groupIndex);
+                    select.dataset.groupKey = group.groupKey;
+                    select.dataset.place = String(place);
+
+                    group.indices.forEach(playerIndex => {
+                        const option = document.createElement('option');
+                        option.value = String(playerIndex);
+                        option.textContent = pending.playerNames[playerIndex];
+                        option.selected = playerIndex === defaultPlayerIndex;
+                        select.appendChild(option);
+                    });
+
+                    row.innerHTML = `<span style="font-size:13px; font-weight:800;">${place} место</span>`;
+                    row.appendChild(select);
+                    block.appendChild(row);
+                });
+
+                panel.appendChild(block);
+            });
+
+            const saveButton = document.createElement('button');
+            saveButton.className = 'login-btn';
+            saveButton.style.margin = '0';
+            saveButton.style.backgroundColor = 'var(--apple-green)';
+            saveButton.textContent = 'Применить выбранные места';
+            saveButton.addEventListener('click', saveManualTieOrders);
+            panel.appendChild(saveButton);
+
+            const backButton = document.createElement('button');
+            backButton.className = 'login-btn';
+            backButton.style.margin = '0';
+            backButton.style.backgroundColor = 'var(--bg-card)';
+            backButton.style.color = 'var(--text-main)';
+            backButton.style.border = '1px solid var(--border-color)';
+            backButton.textContent = 'Назад';
+            backButton.addEventListener('click', () => {
+                panel.style.display = 'none';
+                mainActions.style.display = 'flex';
+            });
+            panel.appendChild(backButton);
+
+            mainActions.style.display = 'none';
+            panel.style.display = 'flex';
+        };
+
+        async function saveManualTieOrders() {
+            const pending = window.pendingTieBreakResolution;
+            if (!pending || !clubData.draft) return;
+
+            const draft = { ...clubData.draft };
+            draft.manualTieOrders = { ...(draft.manualTieOrders || {}) };
+
+            for (let groupIndex = 0; groupIndex < pending.resolution.unresolvedGroups.length; groupIndex++) {
+                const group = pending.resolution.unresolvedGroups[groupIndex];
+                const selects = [...document.querySelectorAll(`.manual-tie-order-select[data-group-index="${groupIndex}"]`)];
+                const order = selects.map(select => Number(select.value));
+                const unique = new Set(order);
+
+                if (order.length !== group.indices.length || unique.size !== group.indices.length) {
+                    showToast('Каждый спорный игрок должен быть выбран ровно один раз');
+                    return;
+                }
+
+                const expected = [...group.indices].sort((a, b) => a - b);
+                const actual = [...order].sort((a, b) => a - b);
+                if (expected.some((value, index) => value !== actual[index])) {
+                    showToast('В списке должны быть только спорные игроки');
+                    return;
+                }
+
+                draft.manualTieOrders[group.groupKey] = order;
+            }
+
+            showLoader(true);
+            try {
+                await db.ref(`clubs/${activeClubId}/draft`).set(draft);
+                clubData.draft = draft;
+                updateActiveTournament();
+                closeTieBreakModal();
+                showLoader(false);
+                showToast('Итоговые места сохранены');
+                setTimeout(openTournamentFinishModal, 50);
+            } catch (error) {
+                showLoader(false);
+                showToast('Ошибка сохранения мест: ' + error.message);
+            }
+        }
 
         function openTournamentFinishModal() {
+            window.calculatedResult = null;
             const draft = clubData.draft;
+            if (!draft) return;
+
             const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
-            const playerNames = playerFields.map(f => decodeName(f.name).trim());
+            const playerNames = playerFields.map(field => decodeName(field.name).trim());
             const scores = draft.matchScores || {};
             const K = draft.fixedK || 0.20;
-
             const applyPlaceBonuses = document.getElementById('finish-bonuses-checkbox').checked;
-            
-            // Calculate
-            const result = calculateDeltas(playerNames, scores, K, applyPlaceBonuses, clubData.players);
+
+            let finalStandings = null;
+            let additionalMatches = [];
+
+            if (playerNames.length <= 10) {
+                const resolution = calculateResolvedRoundRobinStandings(playerNames.length, scores, draft);
+                if (resolution.unresolvedGroups.length > 0) {
+                    openTieBreakResolutionModal(resolution, playerNames);
+                    return;
+                }
+
+                finalStandings = resolution.standings;
+                additionalMatches = normalizeTieBreakMatches(draft).filter(match => isValidPlayedScore(match.score));
+            }
+
+            const result = calculateDeltas(
+                playerNames,
+                scores,
+                K,
+                applyPlaceBonuses,
+                clubData.players,
+                additionalMatches,
+                finalStandings
+            );
             window.calculatedResult = result;
 
             const tbody = document.getElementById('finish-tourney-ratings-tbody');
             tbody.innerHTML = '';
 
-            result.standings.forEach((item, idx) => {
+            result.standings.forEach((item, index) => {
                 const name = playerNames[item.index];
-                const p = clubData.players.find(pl => pl.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
+                const player = clubData.players.find(entry => entry.fullName.toLowerCase() === name.toLowerCase()) || { rating: 200.0 };
                 const delta = result.deltas[name.toLowerCase()] || 0.0;
-                const newRating = p.rating + delta;
+                const newRating = player.rating + delta;
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${idx + 1}</td>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
                     <td>${name}</td>
-                    <td>${p.rating.toFixed(1)} → <strong>${newRating.toFixed(1)}</strong></td>
+                    <td>${player.rating.toFixed(1)} → <strong>${newRating.toFixed(1)}</strong></td>
                     <td style="text-align:right; font-weight:800; color:${delta >= 0 ? 'var(--apple-green)' : 'var(--apple-red)'};">
                         ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
                     </td>
                 `;
-                tbody.appendChild(tr);
+                tbody.appendChild(row);
             });
 
             document.getElementById('tournament-finish-modal').style.display = 'flex';
@@ -8950,6 +9736,7 @@ function getPlayerLastDelta(player) {
             const playerNames = playerFields.map(f => decodeName(f.name).trim());
             const K = draft.fixedK || 0.20;
             const scores = draft.matchScores || {};
+            const additionalMatches = normalizeTieBreakMatches(draft).filter(match => isValidPlayedScore(match.score));
             const applyPlaceBonuses = document.getElementById('finish-bonuses-checkbox')?.checked || false;
 
             // 1. Update player ratings, wins, losses, tournaments count, and medals in player base
@@ -8995,63 +9782,40 @@ function getPlayerLastDelta(player) {
             const structuredRatings = srRows.join(";;");
 
             // 3. Format structuredMatches string: p1::p2::score::p1Delta::p2Delta
+            // Every additional meeting is appended as its own row. Repeated pairs are never merged.
             const smRows = [];
-            // scores already declared above (used also for updateSeasonAfterTournament)
-            for (let f = 0; f < playerNames.length; f++) {
-                for (let s = f + 1; s < playerNames.length; s++) {
-                    const scoreKey = `${f}_${s}`;
-                    const score = scores[scoreKey];
-                    if (score && score.includes(":")) {
-                        const name1 = playerNames[f];
-                        const name2 = playerNames[s];
-                        
-                        // Deltas for this individual match
-                        const p1 = clubData.players.find(pl => pl.fullName.toLowerCase() === name1.toLowerCase()) || { rating: 200.0 };
-                        const p2 = clubData.players.find(pl => pl.fullName.toLowerCase() === name2.toLowerCase()) || { rating: 200.0 };
-                        const matchParts = score.split(":");
-                        const s1 = parseInt(matchParts[0]);
-                        const s2 = parseInt(matchParts[1]);
-                        
-                        const p1Won = s1 > s2;
-                        const winner = p1Won ? p1 : p2;
-                        const loser = p1Won ? p2 : p1;
-                        const winnerScore = p1Won ? s1 : s2;
-                        const loserScore = p1Won ? s2 : s1;
 
-                        const diff = winner.rating - loser.rating;
-                        let baseDelta = 0.0;
-                        if (diff < 100.0) {
-                            baseDelta = (100.0 - diff) / 10.0;
-                        }
+            const appendStructuredMatch = (firstIndex, secondIndex, score) => {
+                if (!isValidPlayedScore(score)) return;
+                const name1 = playerNames[firstIndex];
+                const name2 = playerNames[secondIndex];
+                if (!name1 || !name2) return;
 
-                        let winnerDelta = 0.0;
-                        let loserDelta = 0.0;
-                        if (baseDelta > 0.0) {
-                            let scoreCoeff = 1.0;
-                            if (winnerScore === 2 && loserScore === 1) scoreCoeff = 0.8;
-                            else if (winnerScore === 3 && loserScore === 2) scoreCoeff = 0.8;
-                            else if (winnerScore === 3 && loserScore === 1) scoreCoeff = 0.9;
-                            else if (winnerScore === 1 && loserScore === 0) scoreCoeff = 1.0;
+                const impact = calculateSingleMatchImpact(name1, name2, score, K, clubData.players);
+                if (!impact) return;
 
-                            const winnerIsNovice = winner.tournamentsPlayed <= 5;
-                            const loserIsNovice = loser.tournamentsPlayed <= 5;
-                            
-                            winnerDelta = winnerIsNovice ? Math.round(baseDelta * 1.0 * 100) / 100 
-                                                         : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
-                            loserDelta = loserIsNovice ? Math.round(baseDelta * 0.5 * 100) / 100 
-                                                       : Math.round(baseDelta * K * scoreCoeff * 100) / 100;
-                        }
+                const p1DeltaStr = (impact.p1Delta >= 0 ? '+' : '') + impact.p1Delta.toFixed(2);
+                const p2DeltaStr = (impact.p2Delta >= 0 ? '+' : '') + impact.p2Delta.toFixed(2);
+                smRows.push(
+                    safe_encode(name1) + '::' +
+                    safe_encode(name2) + '::' +
+                    score + '::' +
+                    p1DeltaStr + '::' +
+                    p2DeltaStr
+                );
+            };
 
-                        const p1Delta = p1Won ? winnerDelta : -loserDelta;
-                        const p2Delta = p1Won ? -loserDelta : winnerDelta;
-
-                        const p1DeltaStr = (p1Delta >= 0 ? '+' : '') + p1Delta.toFixed(2);
-                        const p2DeltaStr = (p2Delta >= 0 ? '+' : '') + p2Delta.toFixed(2);
-                        smRows.push(safe_encode(name1) + "::" + safe_encode(name2) + "::" + score + "::" + p1DeltaStr + "::" + p2DeltaStr);
-                    }
+            for (let first = 0; first < playerNames.length; first++) {
+                for (let second = first + 1; second < playerNames.length; second++) {
+                    appendStructuredMatch(first, second, scores[`${first}_${second}`]);
                 }
             }
-            const structuredMatches = smRows.join(";;");
+
+            additionalMatches.forEach(match => {
+                appendStructuredMatch(Number(match.p1), Number(match.p2), match.score);
+            });
+
+            const structuredMatches = smRows.join(';;');
 
             // 4. Create History Entry
             const standingsText = result.standings.map((item, idx) => {
@@ -9105,6 +9869,13 @@ function getPlayerLastDelta(player) {
                 seasonCalculationSource: {
                     seasonId: _seasonId,
                     matchScores: scores,
+                    additionalMatches: additionalMatches.map(match => ({
+                        id: match.id,
+                        p1: Number(match.p1),
+                        p2: Number(match.p2),
+                        score: match.score
+                    })),
+                    finalStandings: result.standings.map(item => ({ index: item.index, points: item.points })),
                     playerNames: playerNames,
                     playerIds: _playerIds,
                     K: K,
@@ -11095,8 +11866,17 @@ function getPlayerLastDelta(player) {
                 // 5. Build temporary playersList with seasonal ratings
                 const seasonPlayersList = buildSeasonPlayersList(playerNames);
 
-                // 6. Calculate seasonal deltas using existing calculateDeltas (unchanged)
-                const seasonResult = calculateDeltas(playerNames, scores, K, applyPlaceBonuses, seasonPlayersList);
+                // 6. Calculate seasonal deltas, including separately stored additional matches.
+                const calculationSource = historyEntry.seasonCalculationSource || {};
+                const seasonResult = calculateDeltas(
+                    playerNames,
+                    scores,
+                    K,
+                    applyPlaceBonuses,
+                    seasonPlayersList,
+                    calculationSource.additionalMatches || [],
+                    calculationSource.finalStandings || null
+                );
                 // seasonResult.deltas / .wins / .losses — all keyed by fullName.toLowerCase()
 
                 // 7. Prepare atomic update
@@ -11477,6 +12257,7 @@ function getPlayerLastDelta(player) {
             const adminScoreModal = document.getElementById('admin-score-modal');
             const adminPlayoffScoreModal = document.getElementById('admin-playoff-score-modal');
             const tournamentFinishModal = document.getElementById('tournament-finish-modal');
+            const tieBreakModal = document.getElementById('tie-break-modal');
             const analyticsModal = document.getElementById('analytics-modal');
             const badgeSheet = document.getElementById('badge-legend-sheet');
 
@@ -11487,6 +12268,7 @@ function getPlayerLastDelta(player) {
             if (e.target === adminScoreModal) closeAdminScoreModal();
             if (e.target === adminPlayoffScoreModal) closeAdminPlayoffScoreModal();
             if (e.target === tournamentFinishModal) closeTournamentFinishModal();
+            if (e.target === tieBreakModal) closeTieBreakModal();
             if (e.target === analyticsModal) closeAnalyticsModal();
             if (e.target === badgeSheet) closeBadgeLegendSheet();
             const createSeasonModal = document.getElementById('create-season-modal');
