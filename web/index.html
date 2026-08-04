@@ -3774,31 +3774,7 @@
         </div>
     </div>
 
-    <!-- MODAL: UNRESOLVABLE TIE RESOLUTION -->
-    <div id="tie-resolution-modal" class="modal-overlay" style="display:none;">
-        <div class="modal-card" style="max-width:520px;width:100%;">
-            <h3 class="modal-title">⚖️ Не удалось определить места</h3>
-            <p style="font-size:13px;color:var(--text-secondary);margin:8px 0 16px;">
-                У следующих игроков одинаковое количество побед и полностью совпадают дополнительные показатели.
-                Для окончательного распределения мест необходимо провести дополнительные матчи или использовать жеребьёвку.
-            </p>
-            <div id="tie-resolution-details" style="background:var(--bg-secondary,#f5f5f5);border-radius:12px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.5;"></div>
-            <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-                <button class="login-btn" onclick="resolveTieByDraw()" style="background:var(--apple-orange,#FF9500);">
-                    🎲 Определить жеребьёвкой
-                </button>
-                <button class="login-btn" onclick="closeTieModal()" style="background:var(--bg-secondary,#f0f0f0);color:var(--text-primary,#000);border:1px solid var(--border-color,#ddd);">
-                    🔙 Вернуться к турниру
-                </button>
-            </div>
-            <p style="font-size:11px;color:var(--text-tertiary,#999);margin-top:12px;text-align:center;">
-                Рекомендуется провести дополнительные матчи вместо жеребьёвки
-            </p>
-        </div>
-    </div>
-
     <!-- MODAL: HISTORY TOURNAMENT DETAIL -->
-
     <div id="history-modal" class="modal-overlay">
         <div class="modal-card" style="max-width: 480px; width:100%; border-radius: 24px; padding: 20px; background-color: var(--bg-main); box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: none;">
             <!-- HEADER -->
@@ -8461,87 +8437,9 @@ function getPlayerLastDelta(player) {
             return null;
         }
 
-        // ============================================================
-        // TIEBREAK HELPERS — Round-Robin standings with mini-table
-        // ============================================================
-
-        // Returns [aScore, bScore] from player `a`'s perspective vs player `b`.
-        // Score keys are always "${min}_${max}"; stored from lower-index player's POV.
-        function getHeadToHeadScore(a, b, scores) {
-            const f = Math.min(a, b), s = Math.max(a, b);
-            const raw = scores[`${f}_${s}`];
-            if (!raw) return null;
-            if (raw === 'W') return a === f ? [1, 0] : [0, 1];
-            if (raw === 'L') return a === f ? [0, 1] : [1, 0];
-            if (!raw.includes(':')) return null;
-            const parts = raw.split(':').map(Number);
-            if (parts.some(v => isNaN(v))) return null;
-            return a === f ? [parts[0], parts[1]] : [parts[1], parts[0]];
-        }
-
-        // Rank tied players by mini-table (recursive).
-        // unresolvableTies: optional array — receives completely unresolvable groups.
-        // Returns ordered array of player indices (best → last).
-        function rankTiedPlayers(tiedList, scores, unresolvableTies) {
-            if (tiedList.length <= 1) return tiedList.slice();
-
-            const stats = tiedList.map(player => {
-                let miniWins = 0, gamesWon = 0, gamesLost = 0;
-                tiedList.forEach(opp => {
-                    if (opp === player) return;
-                    const sc = getHeadToHeadScore(player, opp, scores);
-                    if (!sc) return;
-                    gamesWon  += sc[0];
-                    gamesLost += sc[1];
-                    if (sc[0] > sc[1]) miniWins++;
-                });
-                return { player, miniWins, gamesWon, gamesLost };
-            });
-
-            // Sort: miniWins desc, then gameRatio desc via cross-multiplication
-            stats.sort((a, b) => {
-                if (b.miniWins !== a.miniWins) return b.miniWins - a.miniWins;
-                const aInf = a.gamesLost === 0, bInf = b.gamesLost === 0;
-                if (aInf && bInf) return b.gamesWon - a.gamesWon;
-                if (aInf) return -1; // infinite ratio → ranks higher
-                if (bInf) return 1;
-                // cross-mult: a.gWon/a.gLost vs b.gWon/b.gLost
-                return (b.gamesWon * a.gamesLost) - (a.gamesWon * b.gamesLost);
-            });
-
-            // Group into buckets of equal (miniWins, gameRatio)
-            const buckets = [];
-            for (const stat of stats) {
-                if (!buckets.length) { buckets.push([stat]); continue; }
-                const prev = buckets[buckets.length - 1][0];
-                if (prev.miniWins !== stat.miniWins) { buckets.push([stat]); continue; }
-                const pInf = prev.gamesLost === 0, sInf = stat.gamesLost === 0;
-                let sameRatio;
-                if (pInf && sInf)       sameRatio = prev.gamesWon === stat.gamesWon;
-                else if (pInf || sInf)  sameRatio = false;
-                else sameRatio = (prev.gamesWon * stat.gamesLost) === (stat.gamesWon * prev.gamesLost);
-                if (sameRatio) buckets[buckets.length - 1].push(stat);
-                else buckets.push([stat]);
-            }
-
-            if (buckets.length === 1) {
-                // Completely unresolvable — record and fall back to stable (registration) order
-                if (unresolvableTies) unresolvableTies.push({ players: tiedList.slice(), stats });
-                return tiedList.slice().sort((a, b) => a - b);
-            }
-
-            // Recursively handle sub-groups that are still internally tied
-            return buckets.flatMap(bucket => {
-                const players = bucket.map(s => s.player);
-                return players.length > 1
-                    ? rankTiedPlayers(players, scores, unresolvableTies)
-                    : players;
-            });
-        }
-
         function calculateRoundRobinStandings(playerCount, scores) {
             const wins = new Array(playerCount).fill(0);
-
+            
             for (let f = 0; f < playerCount; f++) {
                 for (let s = f + 1; s < playerCount; s++) {
                     const scoreKey = `${f}_${s}`;
@@ -8562,32 +8460,13 @@ function getPlayerLastDelta(player) {
                 }
             }
 
-            // Group player indices by win count
-            const byWins = {};
+            const list = [];
             for (let i = 0; i < playerCount; i++) {
-                const w = wins[i];
-                if (!byWins[w]) byWins[w] = [];
-                byWins[w].push(i);
+                list.push({ index: i, points: wins[i] });
             }
 
-            // Collect unresolvable ties with place-range info
-            window._rrUnresolvableTies = [];
-            const list = [];
-            let placeOffset = 0;
-
-            Object.keys(byWins).map(Number).sort((a, b) => b - a).forEach(winLevel => {
-                const group = byWins[winLevel];
-                const unres = [];
-                const ranked = rankTiedPlayers(group, scores, unres);
-                unres.forEach(t => {
-                    t.placeFrom = placeOffset + 1;
-                    t.placeTo   = placeOffset + group.length;
-                    window._rrUnresolvableTies.push(t);
-                });
-                ranked.forEach(idx => list.push({ index: idx, points: wins[idx] }));
-                placeOffset += group.length;
-            });
-
+            // Sort by points descending
+            list.sort((a, b) => b.points - a.points);
             return list;
         }
 
@@ -8891,7 +8770,7 @@ function getPlayerLastDelta(player) {
         // OPEN TOURNAMENT FINALIZE / REVIEW MODAL
         window.calculatedResult = null; // store calculation outcome
 
-        function openTournamentFinishModal(skipTieCheck) {
+        function openTournamentFinishModal() {
             const draft = clubData.draft;
             const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
             const playerNames = playerFields.map(f => decodeName(f.name).trim());
@@ -8899,16 +8778,10 @@ function getPlayerLastDelta(player) {
             const K = draft.fixedK || 0.20;
 
             const applyPlaceBonuses = document.getElementById('finish-bonuses-checkbox').checked;
-
-            // Calculate (also populates window._rrUnresolvableTies)
+            
+            // Calculate
             const result = calculateDeltas(playerNames, scores, K, applyPlaceBonuses, clubData.players);
             window.calculatedResult = result;
-
-            // Block finish if unresolvable ties exist and not already resolved
-            if (!skipTieCheck && window._rrUnresolvableTies && window._rrUnresolvableTies.length > 0) {
-                showTieModal(playerNames, window._rrUnresolvableTies);
-                return;
-            }
 
             const tbody = document.getElementById('finish-tourney-ratings-tbody');
             tbody.innerHTML = '';
@@ -8937,37 +8810,6 @@ function getPlayerLastDelta(player) {
         function closeTournamentFinishModal() {
             window.calculatedResult = null;
             document.getElementById('tournament-finish-modal').style.display = 'none';
-        }
-
-        // TIE RESOLUTION MODAL
-        function showTieModal(playerNames, ties) {
-            const details = document.getElementById('tie-resolution-details');
-            details.innerHTML = ties.map(tie => {
-                const range = tie.placeFrom === tie.placeTo
-                    ? `${tie.placeFrom}-е место`
-                    : `${tie.placeFrom}–${tie.placeTo}-е места`;
-                const rows = tie.stats.map(s => {
-                    const ratio = s.gamesLost === 0
-                        ? (s.gamesWon > 0 ? '∞' : '0')
-                        : (s.gamesWon / s.gamesLost).toFixed(2);
-                    return `<div>▸ <strong>${playerNames[s.player]}</strong>: мини-победы ${s.miniWins}, партии ${s.gamesWon}/${s.gamesLost}, отношение ${ratio}</div>`;
-                }).join('');
-                return `<div style="margin-bottom:10px;"><strong>${range}:</strong>${rows}</div>`;
-            }).join('');
-            document.getElementById('tie-resolution-modal').style.display = 'flex';
-        }
-
-        function closeTieModal() {
-            document.getElementById('tie-resolution-modal').style.display = 'none';
-        }
-
-        function resolveTieByDraw() {
-            if (!confirm('Жеребьёвка определит только итоговые места. Она не изменит RTTF и не будет считаться сыгранным матчем.\n\nПродолжить?')) return;
-            const drawSeed = Date.now().toString();
-            window._tieBreakResolution = { method: 'draw', drawSeed, resolvedAt: Date.now() };
-            closeTieModal();
-            // Re-open finish modal, skipping tie check (ties already accepted via draw)
-            openTournamentFinishModal(true);
         }
 
         // Re-calculate when place bonuses checkbox changes
