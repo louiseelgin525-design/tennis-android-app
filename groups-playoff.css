@@ -1,0 +1,209 @@
+/* Groups + Playoff patch — uses the existing app variables and visual system. */
+.gp-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0 0 16px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: rgba(142, 142, 147, 0.08);
+    overflow: hidden;
+}
+.gp-tab {
+    min-height: 46px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.gp-tab.active {
+    color: #fff;
+    background: var(--apple-blue);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.18);
+}
+.gp-status-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--bg-card);
+}
+.gp-status-icon {
+    display: inline-flex;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--apple-blue);
+    background: rgba(0, 122, 255, 0.12);
+    font-size: 13px;
+    font-weight: 800;
+}
+.gp-status-success { color: var(--apple-green); background: rgba(52, 199, 89, 0.14); }
+.gp-status-warning { color: #b77900; background: rgba(255, 204, 0, 0.18); }
+.gp-status-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.gp-status-copy strong { color: var(--text-main); font-size: 15px; font-weight: 800; }
+.gp-status-copy span { color: var(--text-secondary); font-size: 12px; line-height: 1.35; }
+.gp-group-section { margin-bottom: 22px; }
+.gp-group-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 9px 4px;
+    color: var(--text-main);
+    font-size: 16px;
+    font-weight: 800;
+}
+.gp-group-icon { font-size: 17px; filter: saturate(1.15); }
+.gp-table-wrapper { margin-bottom: 0; border-radius: 16px; }
+.gp-grid { min-width: 100%; width: max-content; }
+.gp-grid th, .gp-grid td { min-width: 48px; }
+.gp-grid th:first-child, .gp-grid td:first-child { min-width: 42px; width: 42px; }
+.gp-grid .player-col-header { min-width: 150px; max-width: 210px; }
+.gp-grid .score-cell.active {
+    color: #fff !important;
+    background: var(--apple-blue) !important;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+    font-weight: 900;
+}
+.gp-grid .gp-clickable { cursor: pointer; }
+.gp-grid .gp-points { color: var(--apple-blue); font-weight: 800; }
+.gp-withdrawn { opacity: 0.5; text-decoration: line-through; }
+.gp-extra-block {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 10px 12px 12px;
+    border: 1px solid var(--border-color);
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    background: var(--bg-card);
+}
+.gp-extra-title { color: var(--text-secondary); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; }
+.gp-extra-row {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 11px;
+    background: var(--bg-main);
+    color: var(--text-main);
+    font: inherit;
+    text-align: left;
+}
+.gp-extra-row.active { border-color: rgba(0, 122, 255, .5); background: rgba(0, 122, 255, .08); }
+.gp-extra-row:not(:disabled) { cursor: pointer; }
+.gp-extra-number { color: var(--text-secondary); font-size: 11px; font-weight: 800; }
+.gp-extra-names { overflow: hidden; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.gp-extra-score { color: var(--apple-blue); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.gp-primary-button, .gp-secondary-button, .gp-text-button {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.gp-primary-button { border: 0; color: #fff; background: var(--apple-blue); }
+.gp-secondary-button { border: 1px solid rgba(0, 122, 255, .25); color: var(--apple-blue); background: rgba(0, 122, 255, .08); }
+.gp-text-button { border: 0; color: var(--text-secondary); background: transparent; }
+.gp-playoff-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 24px 18px;
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    background: var(--bg-card);
+    text-align: center;
+}
+.gp-placeholder-icon { font-size: 32px; }
+.gp-playoff-placeholder strong { color: var(--text-main); font-size: 16px; font-weight: 800; }
+.gp-playoff-placeholder > span { max-width: 520px; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.gp-playoff-seeds { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 560px; margin-top: 12px; text-align: left; }
+.gp-playoff-seed { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--border-color); border-radius: 11px; background: var(--bg-main); }
+.gp-seed-number { color: var(--apple-blue); font-size: 12px; font-weight: 900; }
+.gp-seed-name { overflow: hidden; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.gp-seed-source { color: var(--text-secondary); font-size: 11px; white-space: nowrap; }
+
+.gp-reset-note {
+    width: 100%;
+    max-width: 560px;
+    margin-top: 12px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    background: rgba(255, 59, 48, 0.07);
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.45;
+    text-align: left;
+}
+.gp-danger-button {
+    width: 100%;
+    max-width: 560px;
+    min-height: 44px;
+    margin-top: 4px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 59, 48, 0.30);
+    border-radius: 12px;
+    background: rgba(255, 59, 48, 0.09);
+    color: var(--apple-red);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.gp-danger-button:active { transform: scale(0.99); }
+
+.gp-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    align-items: flex-end;
+    justify-content: center;
+    padding-top: 24px;
+    background: rgba(0, 0, 0, .42);
+}
+.gp-modal-card {
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+    background: var(--bg-main);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, .18);
+}
+.gp-modal-handle { width: 36px; height: 5px; margin: 0 auto 14px; border-radius: 3px; background: var(--border-color); }
+.gp-modal-card h3 { margin: 0 0 14px; color: var(--text-main); font-size: 19px; font-weight: 900; }
+.gp-tie-summary, .gp-tie-manual { display: flex; flex-direction: column; gap: 9px; }
+.gp-tie-card, .gp-manual-block { display: flex; flex-direction: column; gap: 5px; padding: 12px; border: 1px solid var(--border-color); border-radius: 13px; background: var(--bg-card); }
+.gp-tie-card strong, .gp-manual-block strong { color: var(--text-main); font-size: 13px; font-weight: 800; }
+.gp-tie-card span { color: var(--text-secondary); font-size: 12px; line-height: 1.35; }
+.gp-modal-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.gp-manual-row { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 8px; }
+.gp-manual-row span { color: var(--text-secondary); font-size: 12px; font-weight: 700; }
+.gp-manual-row select { min-height: 40px; padding: 0 10px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-main); color: var(--text-main); font: inherit; font-size: 13px; }
+@media (max-width: 420px) {
+    .gp-status-card { align-items: flex-start; flex-wrap: wrap; }
+    .gp-status-card .gp-primary-button, .gp-status-card .gp-secondary-button { width: 100%; }
+    .gp-grid .player-col-header { min-width: 132px; max-width: 170px; }
+    .gp-grid th, .gp-grid td { min-width: 43px; }
+}
