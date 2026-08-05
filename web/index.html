@@ -6385,8 +6385,14 @@ function getPlayerLastDelta(player) {
                                 let isWin = false;
                                 let displayScore = score;
 
-                                if (score === 'W') { isWin = true; }
-                                else if (score === 'L') { isWin = false; }
+                                if (score === 'W') {
+                                    isWin = isP1;
+                                    displayScore = isP1 ? 'W' : 'L';
+                                }
+                                else if (score === 'L') {
+                                    isWin = isP2;
+                                    displayScore = isP1 ? 'L' : 'W';
+                                }
                                 else if (scoreParts.length === 2) {
                                     const s1 = parseInt(scoreParts[0]);
                                     const s2 = parseInt(scoreParts[1]);
@@ -7587,13 +7593,21 @@ function getPlayerLastDelta(player) {
                     rowHTML += `<td style="font-weight: 800; color: var(--apple-blue);">${points}</td><td>${place}</td>`;
                     tr.innerHTML = rowHTML;
                     
-                    // Attach click handler to grid cells if admin
+                    // Attach click handler to grid cells if admin.
+                    // Technical W/L cells involving a withdrawn player are read-only.
                     if (isAdmin) {
                         tr.querySelectorAll('.score-cell').forEach(cell => {
+                            const fIdx = parseInt(cell.getAttribute('data-f'));
+                            const sIdx = parseInt(cell.getAttribute('data-s'));
+                            const involvesWithdrawnPlayer = withdrawnPlayers.has(fIdx) || withdrawnPlayers.has(sIdx);
+
+                            if (involvesWithdrawnPlayer) {
+                                cell.style.cursor = 'default';
+                                return;
+                            }
+
                             cell.style.cursor = 'pointer';
                             cell.addEventListener('click', () => {
-                                const fIdx = parseInt(cell.getAttribute('data-f'));
-                                const sIdx = parseInt(cell.getAttribute('data-s'));
                                 const key = cell.getAttribute('data-key');
                                 openAdminScoreDialog(fIdx, sIdx, key);
                             });
@@ -9170,52 +9184,78 @@ function getPlayerLastDelta(player) {
 
         // WITHDRAW PLAYER (ROUND ROBIN)
         window.submitPlayerWithdrawal = function(slotIdx) {
-            if (!activeScoreMatch) return;
-            const targetPlayerIdx = slotIdx === 0 ? activeScoreMatch.f : activeScoreMatch.s;
-            const targetPlayerName = decodeName(JSON.parse(clubData.draft.playerFieldsJson || "[]")[targetPlayerIdx].name);
+            if (!activeScoreMatch || !clubData.draft) return;
 
-            if (!confirm(`Вы действительно хотите снять игрока "${targetPlayerName}" с текущего турнира? Все его несыгранные матчи будут аннулированы.`)) {
+            // Keep a stable snapshot: Firebase can re-render the screen while the save is in progress.
+            const scoreMatch = { ...activeScoreMatch };
+            const targetPlayerIdx = slotIdx === 0 ? scoreMatch.f : scoreMatch.s;
+            const playerFields = JSON.parse(clubData.draft.playerFieldsJson || "[]");
+            const targetPlayerField = playerFields[targetPlayerIdx];
+
+            if (!targetPlayerField) {
+                showToast("Не удалось определить снимаемого игрока");
+                return;
+            }
+
+            const targetPlayerName = decodeName(targetPlayerField.name);
+            if (!confirm(`Вы действительно хотите снять игрока "${targetPlayerName}" с текущего турнира? Во всех его будущих матчах будет поставлено L, соперникам — W. Рейтинг за эти технические результаты не изменяется.`)) {
                 return;
             }
 
             showLoader(true);
-            const draft = { ...clubData.draft };
-            if (!draft.withdrawnPlayers) draft.withdrawnPlayers = [];
-            
-            // Add to withdrawn list
+
+            // Clone nested collections before changing them. This also fixes the crash when matchScores is absent.
+            const draft = {
+                ...clubData.draft,
+                matchScores: { ...(clubData.draft.matchScores || {}) },
+                withdrawnPlayers: [...(clubData.draft.withdrawnPlayers || [])],
+                activeRoundRobinMatches: [...(clubData.draft.activeRoundRobinMatches || [])],
+                lastFinishedPlayers: [...(clubData.draft.lastFinishedPlayers || [])],
+                manualTieOrders: {}
+            };
+
             if (!draft.withdrawnPlayers.includes(targetPlayerIdx)) {
                 draft.withdrawnPlayers.push(targetPlayerIdx);
             }
 
-            // Void all remaining matches for this player in matchScores
-            const playerCount = draft.playersCount;
-            const winsToWin = draft.winsToWin || 2;
-            const lossScore = `0:${winsToWin}`;
-            const winScore = `${winsToWin}:0`;
+            // Mark only unplayed matches. The score is stored relative to the lower player index:
+            // W = the first player wins, L = the first player loses.
+            const playerCount = Number(draft.playersCount) || playerFields.length;
             for (let idx = 0; idx < playerCount; idx++) {
                 if (idx === targetPlayerIdx) continue;
-                const scoreKey = targetPlayerIdx < idx ? `${targetPlayerIdx}_${idx}` : `${idx}_${targetPlayerIdx}`;
-                if (!draft.matchScores[scoreKey]) {
-                    draft.matchScores[scoreKey] = targetPlayerIdx < idx ? lossScore : winScore; // auto-defeat
+
+                const first = Math.min(targetPlayerIdx, idx);
+                const second = Math.max(targetPlayerIdx, idx);
+                const scoreKey = `${first}_${second}`;
+                const existingScore = draft.matchScores[scoreKey];
+                const isUnplayed = existingScore === undefined || existingScore === null || existingScore === "";
+
+                if (isUnplayed) {
+                    draft.matchScores[scoreKey] = targetPlayerIdx === first ? "L" : "W";
                 }
             }
 
-            // Clear table slots if occupied
-            if (draft.activeRoundRobinMatches) {
-                for (let i = 0; i < draft.activeRoundRobinMatches.length; i++) {
-                    const match = draft.activeRoundRobinMatches[i];
-                    if (match && (match.startsWith(`${targetPlayerIdx}_`) || match.endsWith(`_${targetPlayerIdx}`))) {
-                        draft.activeRoundRobinMatches[i] = null;
-                    }
+            // Free every table occupied by the withdrawn player.
+            for (let tableIndex = 0; tableIndex < draft.activeRoundRobinMatches.length; tableIndex++) {
+                const match = draft.activeRoundRobinMatches[tableIndex];
+                if (!match) continue;
+
+                const parts = String(match).split("_");
+                const first = Number(parts[0]);
+                const second = Number(parts[1]);
+                if (first === targetPlayerIdx || second === targetPlayerIdx) {
+                    draft.activeRoundRobinMatches[tableIndex] = null;
                 }
             }
 
-            // Reschedule next matches
+            // The scheduler already excludes withdrawnPlayers and immediately fills free tables.
             refreshActiveRoundRobinMatches(draft, playerCount, draft.tablesCount);
 
             db.ref(`clubs/${activeClubId}/draft`).set(draft)
                 .then(() => {
+                    clubData.draft = draft;
                     closeAdminScoreModal();
+                    updateActiveTournament();
                     showLoader(false);
                     showToast(`Игрок "${targetPlayerName}" снят с турнира`);
                 })
@@ -9786,12 +9826,23 @@ function getPlayerLastDelta(player) {
             const smRows = [];
 
             const appendStructuredMatch = (firstIndex, secondIndex, score) => {
-                if (!isValidPlayedScore(score)) return;
+                const normalizedScore = String(score || '').trim();
                 const name1 = playerNames[firstIndex];
                 const name2 = playerNames[secondIndex];
                 if (!name1 || !name2) return;
 
-                const impact = calculateSingleMatchImpact(name1, name2, score, K, clubData.players);
+                // Technical W/L results are kept in history, but never affect rating or match statistics.
+                if (normalizedScore === 'W' || normalizedScore === 'L') {
+                    smRows.push(
+                        safe_encode(name1) + '::' +
+                        safe_encode(name2) + '::' +
+                        normalizedScore + '::+0.00::+0.00'
+                    );
+                    return;
+                }
+
+                if (!isValidPlayedScore(normalizedScore)) return;
+                const impact = calculateSingleMatchImpact(name1, name2, normalizedScore, K, clubData.players);
                 if (!impact) return;
 
                 const p1DeltaStr = (impact.p1Delta >= 0 ? '+' : '') + impact.p1Delta.toFixed(2);
@@ -9799,7 +9850,7 @@ function getPlayerLastDelta(player) {
                 smRows.push(
                     safe_encode(name1) + '::' +
                     safe_encode(name2) + '::' +
-                    score + '::' +
+                    normalizedScore + '::' +
                     p1DeltaStr + '::' +
                     p2DeltaStr
                 );
