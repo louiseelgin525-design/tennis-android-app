@@ -7502,7 +7502,7 @@ function getPlayerLastDelta(player) {
             resultsHeader.textContent = '📊 Таблицы результатов';
             container.appendChild(resultsHeader);
 
-            if (playerNames.length <= 10) {
+            if (draft.format === 'rr' || draft.tournamentFormat === 'rr' || playerNames.length <= 10) {
                 // Round Robin table
                 const wrapper = document.createElement('div');
                 wrapper.className = 'table-scroll-wrapper';
