@@ -1043,6 +1043,14 @@
     }
 
     function renderPlayoffTab(container, draft, playerNames) {
+        /* FULL_PLAYOFF_11_40_BRIDGE_V203 */
+        if (global.FullPlayoff11to40 && typeof global.FullPlayoff11to40.renderForDraft === 'function') {
+            try {
+                if (global.FullPlayoff11to40.renderForDraft(container, draft)) return;
+            } catch (error) {
+                console.error('[groups-playoff] full playoff bridge failed', error);
+            }
+        }
         if (!draft.groupStageCompleted) {
             container.appendChild(createElement('div', 'gp-playoff-placeholder', `
                 <div class="gp-placeholder-icon">🔒</div>

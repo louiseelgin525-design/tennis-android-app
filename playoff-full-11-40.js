@@ -1,6 +1,6 @@
 /*
  * Full Groups + Playoff bracket for tennis-android-app
- * Version: 2.0.2 (2026-08-06)
+ * Version: 2.0.3 (2026-08-06)
  *
  * Adds one pan/zoom bracket field and exact-place classification for 11–40 players.
  * The approved 12-player / 4x3 template is reproduced exactly as P-M1…P-M26.
@@ -11,7 +11,7 @@
     'use strict';
 
     const VERSION = '2.0.0';
-    const UI_VERSION = '2.0.2';
+    const UI_VERSION = '2.0.3';
     const FORMAT = 'groups_playoff';
     const MIN_PLAYERS = 11;
     const MAX_PLAYERS = 40;
@@ -600,7 +600,8 @@
 
     function ensureBracketForDraft(draft) {
         if (!draft || draft.format !== FORMAT || !draft.groupStageCompleted) return { bracket: null, changed: false };
-        const count = Number(draft.playersCount) || arr(draft.playoffParticipants).length;
+        const participantCount = arr(draft.playoffParticipants).length;
+        const count = participantCount || Number(draft.playersCount) || 0;
         if (count < MIN_PLAYERS || count > MAX_PLAYERS) return { bracket: null, changed: false, unsupported: true };
         let changed = false;
         let bracket = draft.playoffBracket;
@@ -934,8 +935,7 @@
         const signature = bracketRenderSignature(draft, bracket);
         const existing = container.querySelector('.pf-playoff-root');
         if (existing && existing.dataset.renderSignature === signature) return;
-        const old = container.querySelector('.gp-playoff-placeholder');
-        if (old) old.remove();
+        container.querySelectorAll('.gp-playoff-placeholder').forEach(node => node.remove());
         container.querySelectorAll('.pf-playoff-root').forEach(node => node.remove());
         const names = playerNames(draft);
         const progress = playoffProgress(bracket);
@@ -1017,6 +1017,23 @@
         });
     }
 
+    /**
+     * Direct bridge used by groups-playoff.js. Returning true means that the
+     * legacy placeholder has been replaced by the full bracket.
+     */
+    function renderForDraft(container, draft) {
+        if (!container || !draft || draft.format !== FORMAT || !draft.groupStageCompleted) return false;
+        const participantCount = arr(draft.playoffParticipants).length;
+        const declaredCount = Number(draft.playersCount) || 0;
+        const count = participantCount || declaredCount;
+        if (count < MIN_PLAYERS || count > MAX_PLAYERS) return false;
+        const ensured = ensureBracketForDraft(draft);
+        if (!ensured.bracket) return false;
+        renderBracketInto(container, draft, ensured.bracket);
+        if (ensured.changed) persistDraft(draft, true);
+        return true;
+    }
+
     function enhanceCurrentView() {
         if (renderGuard || typeof document === 'undefined') return;
         if (typeof clubData === 'undefined' || !clubData.draft || clubData.draft.format !== FORMAT) return;
@@ -1026,15 +1043,13 @@
         renderGuard = true;
         try {
             const draft = clubData.draft;
-            const ensured = ensureBracketForDraft(draft);
-            if (ensured.unsupported) {
+            if (renderForDraft(container, draft)) return;
+            const participantCount = arr(draft.playoffParticipants).length;
+            const count = participantCount || Number(draft.playersCount) || 0;
+            if (draft.groupStageCompleted && (count < MIN_PLAYERS || count > MAX_PLAYERS)) {
                 const old = container.querySelector('.gp-playoff-placeholder');
                 if (old) old.innerHTML = `<strong>Этот размер пока не поддерживается</strong><span>Поддерживаются турниры от ${MIN_PLAYERS} до ${MAX_PLAYERS} участников.</span>`;
-                return;
             }
-            if (!ensured.bracket) return;
-            renderBracketInto(container, draft, ensured.bracket);
-            if (ensured.changed) persistDraft(draft, true);
         } finally {
             renderGuard = false;
         }
@@ -1580,6 +1595,20 @@
             });
             observer.observe(container, { childList: true, subtree: false });
         }
+        // Re-run after navigation, mobile page restoration and delayed Firebase load.
+        document.addEventListener('click', event => {
+            if (event.target && event.target.closest && event.target.closest('.gp-tab')) {
+                setTimeout(scheduleEnhance, 0);
+                setTimeout(scheduleEnhance, 120);
+            }
+        }, true);
+        global.addEventListener?.('pageshow', scheduleEnhance);
+        global.addEventListener?.('load', scheduleEnhance);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) scheduleEnhance();
+        });
+        setTimeout(scheduleEnhance, 50);
+        setTimeout(scheduleEnhance, 500);
         scheduleEnhance();
     }
 
@@ -1597,6 +1626,8 @@
         resolveFinalStandings,
         descendantsOf,
         updateCompletion,
+        ensureBracketForDraft,
+        renderForDraft,
         calculateFullResult
     };
 
