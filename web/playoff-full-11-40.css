@@ -1,0 +1,310 @@
+/* Full pan/zoom playoff field — version 2.0.2 */
+.pf-playoff-root {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.pf-status-row {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border-color, #dfe3eb);
+    border-radius: 16px;
+    padding: 12px 14px;
+    color: var(--text-main, #111827);
+    font-size: 13px;
+    line-height: 1.25;
+}
+
+.pf-status-row strong { font-weight: 800; }
+.pf-status-sub {
+    margin-top: 3px;
+    color: var(--text-secondary, #7a8292);
+    font-size: 11px;
+}
+
+.pf-viewport {
+    position: relative;
+    width: 100%;
+    height: clamp(500px, calc(100vh - 285px), 760px);
+    overflow: hidden;
+    border: 1px solid var(--border-color, #dfe3eb);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 1px 1px, rgba(110, 122, 145, 0.14) 1px, transparent 1.2px) 0 0 / 22px 22px,
+        #f6f8fc;
+    touch-action: none;
+    overscroll-behavior: contain;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grab;
+}
+
+.pf-viewport:active { cursor: grabbing; }
+
+.pf-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    contain: layout paint style;
+}
+
+.pf-routes {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.pf-route {
+    fill: none;
+    stroke-width: 2.2;
+}
+.pf-route-winner { stroke: rgba(0, 122, 255, 0.70); }
+.pf-route-loser {
+    stroke: rgba(111, 119, 135, 0.58);
+    stroke-dasharray: 7 5;
+}
+
+.pf-match-card {
+    position: absolute;
+    width: 236px;
+    height: 112px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 9px 10px 8px;
+    border-radius: 15px;
+    border: 1px solid var(--border-color, #dfe3eb);
+    background: var(--bg-card, #fff);
+    color: var(--text-main, #111827);
+    box-shadow: 0 3px 10px rgba(24, 39, 75, 0.07);
+    text-align: left;
+    font: inherit;
+    cursor: default;
+    overflow: hidden;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    contain: layout paint style;
+}
+
+.pf-match-card.ready {
+    border-color: rgba(0, 122, 255, 0.82);
+    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.12), 0 3px 10px rgba(24, 39, 75, 0.07);
+}
+
+.pf-match-card.playing {
+    border: 2px solid var(--apple-blue, #007aff);
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 122, 255, 0.18);
+}
+
+.pf-match-card.completed {
+    background: rgba(52, 199, 89, 0.09);
+    border-color: rgba(52, 199, 89, 0.35);
+    cursor: pointer;
+}
+
+.pf-match-card.locked {
+    background: rgba(235, 238, 244, 0.88);
+    color: var(--text-secondary, #7a8292);
+}
+
+.pf-match-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 23px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(130, 139, 156, 0.18);
+    color: var(--text-secondary, #737b8c);
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.pf-match-head > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pf-match-head strong {
+    color: var(--text-main, #111827);
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.pf-table-badge {
+    flex: 0 0 auto;
+    min-width: 25px;
+    height: 21px;
+    padding: 0 7px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    background: var(--apple-blue, #007aff);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.pf-player-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 34px;
+    border-bottom: 1px solid rgba(130, 139, 156, 0.12);
+    font-size: 12px;
+    font-weight: 650;
+}
+.pf-player-row:last-child { border-bottom: none; }
+.pf-player-row.winner { color: var(--apple-blue, #007aff); font-weight: 850; }
+
+.pf-player-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pf-match-card.locked .pf-player-name { font-size: 10px; }
+.pf-player-score {
+    flex: 0 0 auto;
+    min-width: 18px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.pf-controls {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    z-index: 20;
+    display: flex;
+    gap: 8px;
+}
+
+.pf-control {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(120, 130, 150, 0.26);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--apple-blue, #007aff);
+    box-shadow: 0 4px 14px rgba(24, 39, 75, 0.12);
+    font-size: 21px;
+    font-weight: 800;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.pf-control:active { transform: scale(0.95); }
+
+.pf-finish-card {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 14px;
+    border: 1px solid rgba(52, 199, 89, 0.32);
+    border-radius: 16px;
+    background: rgba(52, 199, 89, 0.08);
+}
+.pf-finish-card strong { font-size: 14px; font-weight: 850; color: var(--text-main, #111827); }
+.pf-finish-card span { font-size: 11px; color: var(--text-secondary, #737b8c); }
+.pf-finish-button { margin-top: 7px; width: 100%; }
+
+@media (max-width: 600px) {
+    .pf-viewport {
+        height: calc(100vh - 255px);
+        min-height: 470px;
+        border-radius: 14px;
+    }
+    .pf-status-row { padding: 10px 12px; }
+}
+
+
+/* During movement remove expensive shadows and transitions to keep the field stable. */
+.pf-viewport.is-interacting .pf-match-card {
+    box-shadow: none !important;
+}
+
+.pf-viewport,
+.pf-canvas,
+.pf-match-card,
+.pf-routes,
+.pf-route {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Completion action stays visible above the bracket instead of being placed
+   below a full-height, non-scrolling pan/zoom viewport. */
+.pf-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pf-status-copy {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.pf-status-row-complete {
+    border-color: rgba(52, 199, 89, 0.38);
+    background: rgba(52, 199, 89, 0.08);
+}
+
+.pf-status-finish-button {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 148px;
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+/* Opponents in the shared score dialog: centered, readable and blue. */
+#admin-score-match-title.pf-score-opponents {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 10px auto 16px;
+    padding: 0 26px;
+    text-align: center;
+    color: var(--apple-blue, #007aff);
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 800;
+    white-space: normal;
+}
+
+#admin-score-match-title.pf-score-opponents + #admin-score-compact-container,
+#admin-score-match-title.pf-score-opponents ~ #admin-score-standard-container {
+    margin-top: 0 !important;
+}
+
+@media (max-width: 600px) {
+    .pf-status-row {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+    .pf-status-finish-button {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
