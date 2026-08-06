@@ -1079,11 +1079,27 @@
         opener(Number(match.p1), Number(match.p2), `playoff:${match.id}`, tableIndex == null ? null : Number(tableIndex));
         try {
             const names = typeof clubData !== 'undefined' && clubData.draft ? playerNames(clubData.draft) : [];
-            const title = document.getElementById('admin-score-match-title');
-            if (title) {
-                title.textContent = `${names[Number(match.p1)] || `Игрок ${Number(match.p1) + 1}`}  VS  ${names[Number(match.p2)] || `Игрок ${Number(match.p2) + 1}`}`;
+            const opponentText = `${names[Number(match.p1)] || `Игрок ${Number(match.p1) + 1}`}  VS  ${names[Number(match.p2)] || `Игрок ${Number(match.p2) + 1}`}`;
+            const styleTitle = () => {
+                const title = document.getElementById('admin-score-match-title');
+                if (!title) return;
+                title.textContent = opponentText;
                 title.classList.add('pf-score-opponents');
-            }
+                title.style.setProperty('display', 'block', 'important');
+                title.style.setProperty('width', '100%', 'important');
+                title.style.setProperty('box-sizing', 'border-box', 'important');
+                title.style.setProperty('margin', '10px auto 16px', 'important');
+                title.style.setProperty('padding', '0 20px', 'important');
+                title.style.setProperty('text-align', 'center', 'important');
+                title.style.setProperty('color', 'var(--apple-blue, #007aff)', 'important');
+                title.style.setProperty('font-size', '14px', 'important');
+                title.style.setProperty('font-weight', '800', 'important');
+                title.style.setProperty('line-height', '1.35', 'important');
+                title.style.setProperty('white-space', 'normal', 'important');
+            };
+            styleTitle();
+            requestAnimationFrame(styleTitle);
+            setTimeout(styleTitle, 60);
         } catch (_) {}
         try {
             activeScoreMatch = {

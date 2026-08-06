@@ -1,4 +1,4 @@
-/* Full pan/zoom playoff field — version 2.0.2 */
+/* Full pan/zoom playoff field — version 2.0.4 */
 .pf-playoff-root {
     display: flex;
     flex-direction: column;
@@ -308,3 +308,52 @@
     }
 }
 
+
+
+/* Hotfix 2.0.4: opponent names are centered and blue in the bracket. */
+.pf-player-row {
+    position: relative;
+    justify-content: center;
+}
+
+.pf-match-card:not(.locked) .pf-player-name {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 28px;
+    text-align: center;
+    color: var(--apple-blue, #007aff);
+    font-weight: 800;
+}
+
+.pf-match-card.locked .pf-player-name {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 22px;
+    text-align: center;
+}
+
+.pf-player-score {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Force the shared result dialog title to stay centered and blue even when
+   the legacy application applies its own inline/late styles. */
+#admin-score-match-title.pf-score-opponents,
+#admin-score-modal #admin-score-match-title.pf-score-opponents {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 10px auto 16px !important;
+    padding: 0 20px !important;
+    text-align: center !important;
+    color: var(--apple-blue, #007aff) !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+    font-weight: 800 !important;
+    white-space: normal !important;
+}
