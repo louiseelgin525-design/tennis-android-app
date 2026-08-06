@@ -3054,9 +3054,12 @@
         }
     </style>
     <!-- GROUPS_PLAYOFF_PATCH_V1:CSS -->
-    <link rel="stylesheet" href="./groups-playoff.css?v=1.0.6">
 
-    <link rel="stylesheet" href="./playoff-full-11-40.css?v=2.0.5">
+    <!-- GROUPS_PLAYOFF_RELIABLE_V210:CSS -->
+
+    <!-- GROUPS_PLAYOFF_RELIABLE_V210:CSS -->
+    <link rel="stylesheet" href="./groups-playoff.css?v=1.0.7">
+    <link rel="stylesheet" href="./playoff-full-11-40.css?v=2.1.0">
 </head>
 <body>
 
@@ -12331,91 +12334,13 @@ function getPlayerLastDelta(player) {
         });
         </script>
         <!-- GROUPS_PLAYOFF_PATCH_V1:JS -->
-    <script src="./groups-playoff.js?v=1.0.6"></script>
 
-    <script src="./playoff-full-11-40.js?v=2.0.5"></script>
 
-<!-- FULL_PLAYOFF_FORCE_BRIDGE_V205:START -->
-<script>
-(function () {
-    'use strict';
+    <!-- GROUPS_PLAYOFF_RELIABLE_V210:JS -->
 
-    function getDraft() {
-        try {
-            if (typeof clubData !== 'undefined' && clubData && clubData.draft) {
-                return clubData.draft;
-            }
-        } catch (_) {}
-        try {
-            return window.clubData && window.clubData.draft ? window.clubData.draft : null;
-        } catch (_) {
-            return null;
-        }
-    }
-
-    function playoffTabIsActive(draft) {
-        const active = document.querySelector('.gp-tab.active');
-        if (active && String(active.textContent || '').trim() === 'Плей-офф') return true;
-        return !!(draft && draft.currentStage === 'playoff');
-    }
-
-    function forceFullPlayoffRender() {
-        try {
-            const api = window.FullPlayoff11to40;
-            const draft = getDraft();
-            const container = document.getElementById('active-tournament-container');
-
-            if (!api || typeof api.renderForDraft !== 'function') return false;
-            if (!draft || draft.format !== 'groups_playoff') return false;
-            if (!draft.groupStageCompleted) return false;
-            if (!playoffTabIsActive(draft)) return false;
-            if (!container) return false;
-
-            const rendered = api.renderForDraft(container, draft);
-            if (rendered) {
-                const legacy = container.querySelector('.gp-playoff-placeholder');
-                if (legacy) legacy.remove();
-            }
-            return !!rendered;
-        } catch (error) {
-            console.error('[full-playoff-force-bridge-2.0.5]', error);
-            return false;
-        }
-    }
-
-    window.__forceFullPlayoffRender = forceFullPlayoffRender;
-
-    function runSeveralTimes() {
-        const delays = [0, 50, 150, 350, 750, 1500, 3000];
-        delays.forEach(delay => setTimeout(forceFullPlayoffRender, delay));
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', runSeveralTimes, { once: true });
-    } else {
-        runSeveralTimes();
-    }
-
-    document.addEventListener('click', function (event) {
-        const target = event.target && event.target.closest ? event.target.closest('.gp-tab') : null;
-        if (target) runSeveralTimes();
-    }, true);
-
-    window.addEventListener('pageshow', runSeveralTimes);
-    window.addEventListener('load', runSeveralTimes);
-    document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) runSeveralTimes();
-    });
-
-    let attempts = 0;
-    const timer = setInterval(function () {
-        attempts += 1;
-        forceFullPlayoffRender();
-        if (attempts >= 80) clearInterval(timer);
-    }, 250);
-})();
-</script>
-<!-- FULL_PLAYOFF_FORCE_BRIDGE_V205:END -->
-
+    <!-- GROUPS_PLAYOFF_RELIABLE_V210:JS -->
+    <script src="./groups-playoff.js?v=1.0.7"></script>
+    <script src="./playoff-full-11-40.js?v=2.1.0"></script>
+    <script src="./playoff-bootstrap-11-40.js?v=2.1.0"></script>
 </body>
 </html>

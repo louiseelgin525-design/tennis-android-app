@@ -1043,14 +1043,6 @@
     }
 
     function renderPlayoffTab(container, draft, playerNames) {
-        /* FULL_PLAYOFF_11_40_BRIDGE_V203 */
-        if (global.FullPlayoff11to40 && typeof global.FullPlayoff11to40.renderForDraft === 'function') {
-            try {
-                if (global.FullPlayoff11to40.renderForDraft(container, draft)) return;
-            } catch (error) {
-                console.error('[groups-playoff] full playoff bridge failed', error);
-            }
-        }
         if (!draft.groupStageCompleted) {
             container.appendChild(createElement('div', 'gp-playoff-placeholder', `
                 <div class="gp-placeholder-icon">🔒</div>
@@ -1060,34 +1052,36 @@
             return;
         }
 
-        const participants = normalizeArray(draft.playoffParticipants);
-        const card = createElement('div', 'gp-playoff-placeholder');
-        card.innerHTML = `
-            <div class="gp-placeholder-icon">🏆</div>
-            <strong>Участники плей-офф сформированы</strong>
-            <span>Полная схема сетки, маршруты победителей и матчи за места будут подключены после утверждения второй части ТЗ.</span>
-        `;
-        const list = createElement('div', 'gp-playoff-seeds');
-        participants.forEach((participant, index) => {
-            list.appendChild(createElement('div', 'gp-playoff-seed', `
-                <span class="gp-seed-number">${index + 1}</span>
-                <span class="gp-seed-name">${escapeHtml(playerNames[Number(participant.playerIndex)] || `Игрок ${Number(participant.playerIndex) + 1}`)}</span>
-                <span class="gp-seed-source">Г${Number(participant.groupId)} · ${Number(participant.groupPlace)} место</span>
-            `));
-        });
-        card.appendChild(list);
-
-        if (typeof isAdmin !== 'undefined' && isAdmin) {
-            card.appendChild(createElement('div', 'gp-reset-note',
-                'Сетка плей-офф пока не реализована, поэтому этот тестовый турнир нельзя завершить обычным способом. Его можно удалить без сохранения в историю и без изменения рейтинга.'
-            ));
-            const resetButton = createElement('button', 'gp-danger-button', 'Удалить текущий турнир и создать новый');
-            resetButton.type = 'button';
-            resetButton.addEventListener('click', discardGroupsPlayoffTournament);
-            card.appendChild(resetButton);
+        /*
+         * RELIABLE_FULL_PLAYOFF_11_40_V210
+         * После групп старая заглушка больше не показывается.
+         * Полная сетка вызывается напрямую; загрузчик страхует порядок скриптов и кэш.
+         */
+        if (global.FullPlayoff11to40 && typeof global.FullPlayoff11to40.renderForDraft === 'function') {
+            try {
+                if (global.FullPlayoff11to40.renderForDraft(container, draft)) return;
+            } catch (error) {
+                console.error('[groups-playoff] full playoff direct render failed', error);
+            }
         }
 
-        container.appendChild(card);
+        const loading = createElement('div', 'gp-playoff-placeholder gp-playoff-loading');
+        loading.innerHTML = `
+            <div class="gp-placeholder-icon">🏆</div>
+            <strong>Формируется сетка плей-офф…</strong>
+            <span>Все участники переходят в полную сетку распределения мест.</span>
+        `;
+        container.appendChild(loading);
+
+        if (global.PlayoffBootstrap1140 && typeof global.PlayoffBootstrap1140.render === 'function') {
+            global.PlayoffBootstrap1140.render(container, draft);
+        } else {
+            setTimeout(() => {
+                if (global.PlayoffBootstrap1140 && typeof global.PlayoffBootstrap1140.ensureAndRender === 'function') {
+                    global.PlayoffBootstrap1140.ensureAndRender(false);
+                }
+            }, 0);
+        }
     }
 
     async function discardGroupsPlayoffTournament() {
