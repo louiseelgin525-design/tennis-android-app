@@ -7145,6 +7145,20 @@ function getPlayerLastDelta(player) {
             db.ref().update(updates);
         }
 
+
+        // TOURNAMENT_WINS_RELOAD_FIX_V310
+        // Painting the selector must NEVER write to Firebase.
+        // This prevents an empty setup screen shown during initial app loading
+        // from overwriting an already active tournament's winsToWin.
+        function paintDraftWinsSelection(wins) {
+            const normalizedWins = [1, 2, 3].includes(Number(wins)) ? Number(wins) : 2;
+            document.querySelectorAll('.wins-segment-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.getElementById(`wins-btn-${normalizedWins}`);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
         function updateDraftSetupPanelInputs() {
             const draft = clubData.draft;
             if (!draft) return;
@@ -7160,12 +7174,8 @@ function getPlayerLastDelta(player) {
             const tablesVal = document.getElementById('draft-tables-val');
             if (tablesVal) tablesVal.textContent = draft.tablesCount ?? 0;
             
-            const wins = draft.winsToWin || 2;
-            document.querySelectorAll('.wins-segment-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            const activeBtn = document.getElementById(`wins-btn-${wins}`);
-            if (activeBtn) activeBtn.classList.add('active');
+            const wins = draft.winsToWin ?? 2;
+            paintDraftWinsSelection(wins);
             
             // Sync local selectedPlayerIdsForDraft set from firebase
             const fields = JSON.parse(draft.playerFieldsJson || "[]");
@@ -7173,14 +7183,11 @@ function getPlayerLastDelta(player) {
             
             const count = draft.playersCount || 2;
             if (!window.draftSetup) {
-                window.draftSetup = {
-                    playersCount: count,
-                    tablesCount: draft.tablesCount ?? 0,
-                    winsToWin: draft.winsToWin || 2
-                };
-            } else {
-                window.draftSetup.playersCount = count;
+                window.draftSetup = {};
             }
+            window.draftSetup.playersCount = count;
+            window.draftSetup.tablesCount = draft.tablesCount ?? 0;
+            window.draftSetup.winsToWin = draft.winsToWin ?? 2;
             window.draftSetupPlayersList = Array(count).fill(null);
             
             fields.forEach((f, idx) => {
@@ -7242,12 +7249,10 @@ function getPlayerLastDelta(player) {
                         const fields = JSON.parse(draft.playerFieldsJson || "[]");
                         selectedPlayerIdsForDraft.clear();
                         const count = draft.playersCount || 2;
-                        window.draftSetup = window.draftSetup || {
-                            playersCount: count,
-                            tablesCount: draft.tablesCount ?? 0,
-                            winsToWin: draft.winsToWin || 2
-                        };
+                        window.draftSetup = window.draftSetup || {};
                         window.draftSetup.playersCount = count;
+                        window.draftSetup.tablesCount = draft.tablesCount ?? 0;
+                        window.draftSetup.winsToWin = draft.winsToWin ?? 2;
                         window.draftSetupPlayersList = Array(count).fill(null);
                         
                         fields.forEach((f, idx) => {
@@ -7273,7 +7278,7 @@ function getPlayerLastDelta(player) {
                         <div class="active-header-badge" style="background-color: rgba(255, 204, 0, 0.15); color: var(--apple-gold);">${SVG_ICONS.clock}</div>
                         <div class="active-header-info">
                             <div class="active-header-title">${draft.name || "Новый турнир"}</div>
-                            <div class="active-header-desc">Регистрация участников • Добавлено: ${registeredNames.length} • Победы: до ${draft.winsToWin || 2}</div>
+                            <div class="active-header-desc">Регистрация участников • Добавлено: ${registeredNames.length} • Победы: до ${draft.winsToWin ?? 2}</div>
                         </div>
                     `;
                     container.appendChild(header);
@@ -7349,7 +7354,7 @@ function getPlayerLastDelta(player) {
             activeListContainer.style.marginBottom = '0'; // reset for column layout
 
             let hasActiveMatches = false;
-            const activeMatches = draft.activeRoundRobinMatches || [];
+            const activeMatches = normalizeActiveRoundRobinMatches(draft.activeRoundRobinMatches, draft.playersCount, draft.tablesCount);
             activeMatches.forEach((matchStr, index) => {
                 if (matchStr && matchStr.includes("_")) {
                     const parts = matchStr.split("_");
@@ -7581,7 +7586,7 @@ function getPlayerLastDelta(player) {
                                     }
                                 }
                             } else {
-                                const activeMatches = draft.activeRoundRobinMatches || [];
+                                const activeMatches = normalizeActiveRoundRobinMatches(draft.activeRoundRobinMatches, draft.playersCount, draft.tablesCount);
                                 const tableIdx = activeMatches.indexOf(scoreKey);
                                 const isActive = tableIdx >= 0;
                                 if (isActive) {
@@ -7835,7 +7840,7 @@ function getPlayerLastDelta(player) {
             window.draftSetup = {
                 playersCount: firebaseDraft.playersCount || 2,
                 tablesCount: firebaseDraft.tablesCount ?? 0,
-                winsToWin: firebaseDraft.winsToWin || 2
+                winsToWin: firebaseDraft.winsToWin ?? 2
             };
             window.draftSetupPlayersList = Array(window.draftSetup.playersCount).fill(null);
             const fields = JSON.parse(firebaseDraft.playerFieldsJson || "[]");
@@ -7870,7 +7875,7 @@ function getPlayerLastDelta(player) {
                 const simText = document.getElementById('draft-simultaneous-players-text');
                 if (simText) simText.textContent = `До ${window.draftSetup.tablesCount * 2} игроков одновременно`;
                 
-                selectDraftWins(window.draftSetup.winsToWin);
+                paintDraftWinsSelection(window.draftSetup.winsToWin);
             }, 10);
  
             renderDraftPlayersSelector();
@@ -7907,15 +7912,37 @@ function getPlayerLastDelta(player) {
         };
  
         // WINS COUNT SEGMENT SELECTOR
-        window.selectDraftWins = function(wins) {
+        window.selectDraftWins = async function(wins) {
             if (!window.draftSetup) return;
-            window.draftSetup.winsToWin = wins;
-            document.querySelectorAll('.wins-segment-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            const activeBtn = document.getElementById(`wins-btn-${wins}`);
-            if (activeBtn) activeBtn.classList.add('active');
-            db.ref(`clubs/${activeClubId}/draft/winsToWin`).set(wins);
+
+            const normalizedWins = Number(wins);
+            if (![1, 2, 3].includes(normalizedWins)) return;
+
+            // Check the LIVE draft before writing. During app startup the UI can briefly
+            // show an empty setup form while an active tournament is still loading.
+            const draftRef = db.ref(`clubs/${activeClubId}/draft`);
+            try {
+                const liveSnap = await draftRef.once('value');
+                const liveDraft = liveSnap.val();
+
+                if (liveDraft && liveDraft.isListGenerated) {
+                    console.warn('[winsToWin] Blocked attempt to change an active tournament', {
+                        club: activeClubId,
+                        requested: normalizedWins,
+                        current: liveDraft.winsToWin
+                    });
+                    window.draftSetup.winsToWin = liveDraft.winsToWin ?? 2;
+                    paintDraftWinsSelection(window.draftSetup.winsToWin);
+                    return;
+                }
+
+                window.draftSetup.winsToWin = normalizedWins;
+                paintDraftWinsSelection(normalizedWins);
+                await draftRef.child('winsToWin').set(normalizedWins);
+            } catch (error) {
+                console.error('[winsToWin] Save failed', error);
+                showToast('Не удалось сохранить количество побед');
+            }
         };
 
         // RENDER CHECKBOX SELECTOR FOR DRAFT SETUP
@@ -8168,7 +8195,7 @@ function getPlayerLastDelta(player) {
                 window.draftSetup = {
                     playersCount: draft.playersCount || 2,
                     tablesCount: draft.tablesCount ?? 0,
-                    winsToWin: draft.winsToWin || 2
+                    winsToWin: draft.winsToWin ?? 2
                 };
             }
             if (!window.draftSetupPlayersList || window.draftSetupPlayersList.length === 0) {
@@ -8347,19 +8374,44 @@ function getPlayerLastDelta(player) {
 
 
         // ROUND ROBIN MATCH SCHEDULING (ported from Kotlin)
+
+        // ROUND_ROBIN_FIREBASE_ARRAY_FIX_V304
+        // Firebase RTDB can return a sparse JS array as an object.
+        // Example: [null, null, "3_4"] may come back as {"2":"3_4"}.
+        // Always normalize to a dense Array before round-robin table logic.
+        function normalizeActiveRoundRobinMatches(raw, playerCount, tablesCount) {
+            const safePlayerCount = Math.max(0, Number(playerCount) || 0);
+            const requestedTables = Math.max(1, Number(tablesCount) || 1);
+            const maxUsefulTables = Math.max(1, Math.floor(safePlayerCount / 2));
+            const effectiveTablesCount = Math.max(1, Math.min(requestedTables, maxUsefulTables));
+            const result = new Array(effectiveTablesCount).fill(false);
+
+            const assign = (index, value) => {
+                const idx = Number(index);
+                if (!Number.isInteger(idx) || idx < 0 || idx >= effectiveTablesCount) return;
+                if (typeof value !== 'string' || !/^\d+_\d+$/.test(value)) return;
+                result[idx] = value;
+            };
+
+            if (Array.isArray(raw)) {
+                raw.forEach((value, index) => assign(index, value));
+            } else if (raw && typeof raw === 'object') {
+                Object.entries(raw).forEach(([index, value]) => assign(index, value));
+            }
+
+            return result;
+        }
+
         function refreshActiveRoundRobinMatches(draft, playerCount, tablesCount) {
             const effectiveTablesCount = Math.max(1, Math.min(tablesCount || 1, Math.max(1, Math.floor(playerCount / 2))));
 
             const withdrawnSet = new Set(draft.withdrawnPlayers || []);
-
-            // 1. Maintain the list size equal to tables count
-            if (!draft.activeRoundRobinMatches) draft.activeRoundRobinMatches = [];
-            while (draft.activeRoundRobinMatches.length < effectiveTablesCount) {
-                draft.activeRoundRobinMatches.push(null);
-            }
-            while (draft.activeRoundRobinMatches.length > effectiveTablesCount) {
-                draft.activeRoundRobinMatches.pop();
-            }
+            // ROUND_ROBIN_NORMALIZE_BEFORE_SCHEDULING_V304
+            draft.activeRoundRobinMatches = normalizeActiveRoundRobinMatches(
+                draft.activeRoundRobinMatches,
+                playerCount,
+                effectiveTablesCount
+            );
 
             const scores = draft.matchScores || {};
 
@@ -8385,7 +8437,7 @@ function getPlayerLastDelta(player) {
                                 scores[normalKey] !== undefined;
 
                 if (invalid) {
-                    draft.activeRoundRobinMatches[i] = null;
+                    draft.activeRoundRobinMatches[i] = false;
                 }
             }
 
@@ -8975,7 +9027,7 @@ function getPlayerLastDelta(player) {
             document.getElementById('admin-score-match-title').textContent = `${name1} vs ${name2}`;
 
             // Show compact if winsToWin == 1
-            const winsToWin = clubData.draft.winsToWin || 2;
+            const winsToWin = clubData.draft.winsToWin ?? 2;
             const compactContainer = document.getElementById('admin-score-compact-container');
             const standardContainer = document.getElementById('admin-score-standard-container');
 
@@ -9059,7 +9111,7 @@ function getPlayerLastDelta(player) {
 
             document.getElementById('admin-score-match-title').textContent = `${name1} vs ${name2}`;
 
-            const winsToWin = draft.winsToWin || 2;
+            const winsToWin = draft.winsToWin ?? 2;
             const compactContainer = document.getElementById('admin-score-compact-container');
             const standardContainer = document.getElementById('admin-score-standard-container');
 
@@ -9171,7 +9223,7 @@ function getPlayerLastDelta(player) {
 
             // If match was played at a table, clear table assignment
             if (activeScoreMatch.index !== null && draft.activeRoundRobinMatches) {
-                draft.activeRoundRobinMatches[activeScoreMatch.index] = null;
+                draft.activeRoundRobinMatches[activeScoreMatch.index] = false;
             }
 
             // Reschedule next match
