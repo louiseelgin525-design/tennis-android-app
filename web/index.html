@@ -3838,6 +3838,11 @@
                 </button>
             </div>
             
+            <!-- ADMIN ONLY: correct a completed tournament score -->
+            <button id="history-edit-results-btn" onclick="openHistoryEditModal()" class="login-btn" style="display:none; margin:0 0 12px 0; height:46px; border-radius:14px; background:#ffffff; color:var(--apple-blue); border:1px solid rgba(0,122,255,0.22); box-shadow:none;">
+                ✏️ Исправить результат
+            </button>
+
             <!-- STANDINGS CARD -->
             <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:20px; padding:16px; display:flex; flex-direction:column; gap:12px; width:100%; box-sizing:border-box;">
                 <div style="font-size:11px; font-weight:800; color:var(--text-secondary); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:2px; text-align:left;">Итоговая таблица и матчи</div>
@@ -3846,6 +3851,32 @@
                 <div id="modal-history-standings" style="display:flex; flex-direction:column; gap:4px; max-height: 480px; overflow-y:auto; padding-right:4px;">
                     <!-- Loaded dynamically -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN EDIT COMPLETED TOURNAMENT RESULT -->
+    <div id="history-edit-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:480px; width:100%; border-radius:24px; padding:20px; background-color:var(--bg-main); border:none; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                <div style="min-width:0; text-align:left;">
+                    <h3 style="font-size:20px; font-weight:800; margin:0; color:var(--text-main);">Исправить результат</h3>
+                    <div id="history-edit-subtitle" style="font-size:12px; color:var(--text-secondary); margin-top:3px; line-height:1.35;"></div>
+                </div>
+                <button onclick="closeHistoryEditModal()" style="width:36px; height:36px; border-radius:50%; border:none; background:#fff; color:var(--text-secondary); font-size:20px; cursor:pointer; flex-shrink:0;">✕</button>
+            </div>
+
+            <div style="background:#fff7e8; border:1px solid #f5d89b; color:#8a5a00; border-radius:14px; padding:12px 14px; font-size:12px; line-height:1.45; margin-bottom:14px; text-align:left;">
+                Изменение пересчитает этот турнир и все турниры после него. Перед сохранением приложение автоматически создаст резервную копию данных.
+            </div>
+
+            <div id="history-edit-match-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+
+            <div id="history-edit-score-panel" style="display:none; margin-top:14px; background:#ffffff; border:1px solid var(--border-color); border-radius:18px; padding:14px;">
+                <div id="history-edit-score-title" style="font-size:15px; font-weight:800; color:var(--text-main); text-align:left;"></div>
+                <div id="history-edit-score-current" style="font-size:12px; color:var(--text-secondary); margin-top:3px; text-align:left;"></div>
+                <div id="history-edit-score-buttons" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;"></div>
+                <button onclick="cancelHistoricalMatchSelection()" class="login-btn" style="height:42px; margin-top:10px; background:#f2f2f7; color:var(--text-main);">Отмена</button>
             </div>
         </div>
     </div>
@@ -9992,6 +10023,8 @@ function getPlayerLastDelta(player) {
                     matchScores: scores,
                     additionalMatches: additionalMatches.map(match => ({
                         id: match.id,
+                        groupKey: match.groupKey || null,
+                        round: Number(match.round) || 1,
                         p1: Number(match.p1),
                         p2: Number(match.p2),
                         score: match.score
@@ -9999,6 +10032,7 @@ function getPlayerLastDelta(player) {
                     finalStandings: result.standings.map(item => ({ index: item.index, points: item.points })),
                     playerNames: playerNames,
                     playerIds: _playerIds,
+                    winsToWin: Number(draft.winsToWin) || 2,
                     K: K,
                     applyPlaceBonuses: applyPlaceBonuses
                 }
@@ -10263,6 +10297,10 @@ function getPlayerLastDelta(player) {
             if (titleEl) titleEl.textContent = entry.name;
             const subEl = document.getElementById('modal-history-subtitle');
             if (subEl) subEl.textContent = `${entry.dateText} • ${entry.playersCount} участников`;
+            // Only an authenticated administrator can edit a completed tournament.
+            const historyEditBtn = document.getElementById('history-edit-results-btn');
+            if (historyEditBtn) historyEditBtn.style.display = isAdmin ? 'flex' : 'none';
+
             
             // Pre-calculate wins/losses per player from structuredMatches
             const statsMap = {}; // { playerName: { wins: 0, losses: 0, delta: 0 } }
@@ -10442,6 +10480,547 @@ function getPlayerLastDelta(player) {
         function closeHistoryModal() {
             document.getElementById('history-modal').style.display = 'none';
         }
+
+        // ADMIN: CORRECT A SCORE IN A COMPLETED TOURNAMENT
+        let historyCorrectionState = {
+            entryId: null,
+            selectedMatch: null
+        };
+
+        function getHistorySource(entry) {
+            return entry && entry.seasonCalculationSource && typeof entry.seasonCalculationSource === 'object'
+                ? entry.seasonCalculationSource
+                : null;
+        }
+
+        function getSourcePlayerIdByName(source, name) {
+            if (!source || !name) return null;
+            const ids = source.playerIds && typeof source.playerIds === 'object' ? source.playerIds : {};
+            if (ids[name] !== undefined && ids[name] !== null) return String(ids[name]);
+            const key = Object.keys(ids).find(k => String(k).toLowerCase() === String(name).toLowerCase());
+            if (key !== undefined) return String(ids[key]);
+            const player = clubData.players.find(p => String(p.fullName).toLowerCase() === String(name).toLowerCase());
+            return player ? String(player.id) : null;
+        }
+
+        function getSourceParticipantIds(source) {
+            const names = Array.isArray(source?.playerNames) ? source.playerNames : [];
+            return names.map(name => getSourcePlayerIdByName(source, name));
+        }
+
+        function getCurrentHistoricalPlayerNames(source) {
+            const originalNames = Array.isArray(source?.playerNames) ? source.playerNames : [];
+            const ids = getSourceParticipantIds(source);
+            return originalNames.map((name, index) => {
+                const id = ids[index];
+                const current = id !== null
+                    ? clubData.players.find(p => String(p.id) === String(id))
+                    : null;
+                return current ? current.fullName : name;
+            });
+        }
+
+        function resolveHistoryPlayerId(entry, source, name) {
+            const current = clubData.players.find(p => String(p.fullName).toLowerCase() === String(name).toLowerCase());
+            if (current) return String(current.id);
+            const fromSource = getSourcePlayerIdByName(source, name);
+            if (fromSource !== null) return String(fromSource);
+            return null;
+        }
+
+        function parseTieBreakSourceMatch(match) {
+            const copy = { ...match, p1: Number(match.p1), p2: Number(match.p2) };
+            if (copy.groupKey && copy.round) return copy;
+            const parts = String(copy.id || '').split('_');
+            if (parts.length >= 7 && parts[0] === 'tb') {
+                copy.groupKey = copy.groupKey || parts[2];
+                copy.round = Number(copy.round) || Number(parts[3]) || 1;
+            } else {
+                copy.groupKey = copy.groupKey || roundRobinGroupKey([copy.p1, copy.p2]);
+                copy.round = Number(copy.round) || 1;
+            }
+            return copy;
+        }
+
+        function inferHistoricalWinsToWin(source) {
+            const explicit = Number(source?.winsToWin);
+            if ([1, 2, 3].includes(explicit)) return explicit;
+            let maxWin = 0;
+            const scan = score => {
+                const m = String(score || '').match(/^\s*(\d+)\s*:\s*(\d+)\s*$/);
+                if (m) maxWin = Math.max(maxWin, Number(m[1]), Number(m[2]));
+            };
+            Object.values(source?.matchScores || {}).forEach(scan);
+            (Array.isArray(source?.additionalMatches) ? source.additionalMatches : []).forEach(m => scan(m.score));
+            return [1, 2, 3].includes(maxWin) ? maxWin : 2;
+        }
+
+        function validateHistoryCorrectionRange(targetId) {
+            const ordered = [...clubData.history].sort((a, b) => Number(a.id) - Number(b.id));
+            const start = ordered.findIndex(e => Number(e.id) === Number(targetId));
+            if (start < 0) return { ok: false, message: 'Турнир не найден в истории.' };
+
+            const range = ordered.slice(start);
+            for (const entry of range) {
+                const source = getHistorySource(entry);
+                if (!source || !Array.isArray(source.playerNames) || !source.matchScores || !Array.isArray(source.finalStandings)) {
+                    return { ok: false, message: `Нельзя безопасно пересчитать турнир «${entry.name}»: в старой записи не хватает технических данных.` };
+                }
+                if (source.playerNames.length > 10) {
+                    return { ok: false, message: `Автопересчёт пока доступен для завершённых турниров «каждый с каждым» до 10 участников. В цепочке найден турнир «${entry.name}» другого формата.` };
+                }
+                if (source.seasonId) {
+                    return { ok: false, message: `Турнир «${entry.name}» относится к сезону. Исправление сезонных турниров пока заблокировано, чтобы не повредить сезонную статистику.` };
+                }
+                const participantIds = getSourceParticipantIds(source);
+                if (participantIds.some(id => id === null || !clubData.players.some(p => String(p.id) === String(id)))) {
+                    return { ok: false, message: `В турнире «${entry.name}» есть профиль игрока, которого сейчас нет в базе. Автопересчёт остановлен.` };
+                }
+            }
+            return { ok: true, ordered, start, range };
+        }
+
+        window.openHistoryEditModal = function() {
+            if (!isAdmin || !firebase.auth().currentUser) {
+                showToast('Исправлять завершённые турниры может только администратор');
+                return;
+            }
+            if (!activeHistoryEntry) return;
+            if (clubData.draft) {
+                showToast('Сначала завершите или удалите текущий незавершённый турнир');
+                return;
+            }
+
+            const validation = validateHistoryCorrectionRange(activeHistoryEntry.id);
+            if (!validation.ok) {
+                showToast(validation.message);
+                return;
+            }
+
+            historyCorrectionState = { entryId: activeHistoryEntry.id, selectedMatch: null };
+            const source = getHistorySource(activeHistoryEntry);
+            const names = getCurrentHistoricalPlayerNames(source);
+            const list = document.getElementById('history-edit-match-list');
+            const subtitle = document.getElementById('history-edit-subtitle');
+            const laterCount = validation.range.length - 1;
+            subtitle.textContent = `${activeHistoryEntry.name} • ${laterCount > 0 ? `будет пересчитано ещё ${laterCount} последующих турнир(а)` : 'это последний турнир'}`;
+            list.innerHTML = '';
+
+            const rows = [];
+            Object.entries(source.matchScores || {}).forEach(([scoreKey, score]) => {
+                const parts = String(scoreKey).split('_');
+                if (parts.length !== 2) return;
+                const p1 = Number(parts[0]);
+                const p2 = Number(parts[1]);
+                if (!Number.isInteger(p1) || !Number.isInteger(p2) || !names[p1] || !names[p2]) return;
+                if (score === undefined || score === null || score === '') return;
+                rows.push({ type: 'main', key: scoreKey, p1, p2, score: String(score), label: 'Матч' });
+            });
+            (Array.isArray(source.additionalMatches) ? source.additionalMatches : []).forEach((match, index) => {
+                const p1 = Number(match.p1);
+                const p2 = Number(match.p2);
+                if (!names[p1] || !names[p2] || !match.score) return;
+                rows.push({ type: 'additional', key: String(match.id || index), p1, p2, score: String(match.score), label: 'Доп. матч' });
+            });
+
+            rows.forEach(rowData => {
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.style.width = '100%';
+                row.style.border = '1px solid var(--border-color)';
+                row.style.background = '#ffffff';
+                row.style.borderRadius = '14px';
+                row.style.padding = '12px 14px';
+                row.style.display = 'flex';
+                row.style.alignItems = 'center';
+                row.style.justifyContent = 'space-between';
+                row.style.gap = '12px';
+                row.style.cursor = 'pointer';
+                row.style.textAlign = 'left';
+                row.innerHTML = `
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-size:11px; color:var(--text-secondary); font-weight:700;">${rowData.label}</div>
+                        <div style="font-size:14px; color:var(--text-main); font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">${names[rowData.p1]} — ${names[rowData.p2]}</div>
+                    </div>
+                    <div style="font-size:16px; font-weight:850; color:var(--apple-blue); flex-shrink:0;">${rowData.score}</div>
+                `;
+                row.addEventListener('click', () => selectHistoricalMatchForEdit(rowData));
+                list.appendChild(row);
+            });
+
+            if (!rows.length) {
+                list.innerHTML = '<div style="padding:18px; text-align:center; color:var(--text-secondary); font-size:13px;">В этой записи нет матчей, доступных для редактирования.</div>';
+            }
+
+            cancelHistoricalMatchSelection();
+            document.getElementById('history-edit-modal').style.display = 'flex';
+        };
+
+        window.closeHistoryEditModal = function() {
+            historyCorrectionState = { entryId: null, selectedMatch: null };
+            document.getElementById('history-edit-modal').style.display = 'none';
+        };
+
+        window.cancelHistoricalMatchSelection = function() {
+            historyCorrectionState.selectedMatch = null;
+            const panel = document.getElementById('history-edit-score-panel');
+            if (panel) panel.style.display = 'none';
+        };
+
+        function selectHistoricalMatchForEdit(matchData) {
+            if (!isAdmin) return;
+            const entry = clubData.history.find(e => Number(e.id) === Number(historyCorrectionState.entryId));
+            if (!entry) return;
+            const source = getHistorySource(entry);
+            const names = getCurrentHistoricalPlayerNames(source);
+            historyCorrectionState.selectedMatch = { ...matchData };
+
+            document.getElementById('history-edit-score-title').textContent = `${names[matchData.p1]} — ${names[matchData.p2]}`;
+            document.getElementById('history-edit-score-current').textContent = `Сейчас в истории: ${matchData.score}`;
+
+            const buttons = document.getElementById('history-edit-score-buttons');
+            buttons.innerHTML = '';
+            const winsToWin = inferHistoricalWinsToWin(source);
+            const possibleScores = [];
+            for (let loserScore = 0; loserScore < winsToWin; loserScore++) {
+                possibleScores.push(`${winsToWin}:${loserScore}`);
+                possibleScores.push(`${loserScore}:${winsToWin}`);
+            }
+
+            possibleScores.forEach(score => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                const firstWins = Number(score.split(':')[0]) > Number(score.split(':')[1]);
+                btn.className = `dialog-score-btn ${firstWins ? 'score-btn-won' : 'score-btn-lost'}`;
+                btn.textContent = score.replace(':', ' : ');
+                btn.disabled = score === String(matchData.score);
+                if (btn.disabled) btn.style.opacity = '0.35';
+                btn.addEventListener('click', () => applyHistoricalScoreCorrection(score));
+                buttons.appendChild(btn);
+            });
+
+            document.getElementById('history-edit-score-panel').style.display = 'block';
+            document.getElementById('history-edit-score-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function standingsGroupKeys(groups) {
+            return new Set((groups || []).map(group => roundRobinGroupKey(group.indices || [])));
+        }
+
+        function resolveCorrectedHistoricalStandings(source, originalScores, correctedScores) {
+            const count = source.playerNames.length;
+            const tieBreakMatches = (Array.isArray(source.additionalMatches) ? source.additionalMatches : []).map(parseTieBreakSourceMatch);
+            const baseDraft = { tieBreakMatches, manualTieOrders: {} };
+            const originalResolution = calculateResolvedRoundRobinStandings(count, originalScores, baseDraft);
+            let correctedResolution = calculateResolvedRoundRobinStandings(count, correctedScores, baseDraft);
+
+            if (!correctedResolution.unresolvedGroups.length) return correctedResolution.standings;
+
+            const oldUnresolved = standingsGroupKeys(originalResolution.unresolvedGroups);
+            const storedOrder = (Array.isArray(source.finalStandings) ? source.finalStandings : []).map(item => Number(item.index));
+            const manualTieOrders = {};
+
+            for (const group of correctedResolution.unresolvedGroups) {
+                const key = roundRobinGroupKey(group.indices || []);
+                if (!oldUnresolved.has(key)) {
+                    throw new Error('После исправления возникло новое полностью равное положение игроков. Автоматический пересчёт остановлен, чтобы не назначать места случайно.');
+                }
+                const set = new Set(group.indices.map(Number));
+                const manual = storedOrder.filter(index => set.has(index));
+                if (manual.length !== set.size) {
+                    throw new Error('Не удалось восстановить ранее заданный порядок спорных мест.');
+                }
+                manualTieOrders[key] = manual;
+            }
+
+            correctedResolution = calculateResolvedRoundRobinStandings(count, correctedScores, { tieBreakMatches, manualTieOrders });
+            if (correctedResolution.unresolvedGroups.length) {
+                throw new Error('После исправления остались неразрешённые равные места.');
+            }
+            return correctedResolution.standings;
+        }
+
+        function countOldHistoricalMatchStats(entry, source, baselineById) {
+            const matches = entry.structuredMatches ? entry.structuredMatches.split(';;') : [];
+            matches.forEach(row => {
+                const p = row.split('::');
+                if (p.length < 3 || !isValidPlayedScore(p[2])) return;
+                const name1 = decodeName(p[0]);
+                const name2 = decodeName(p[1]);
+                const id1 = resolveHistoryPlayerId(entry, source, name1);
+                const id2 = resolveHistoryPlayerId(entry, source, name2);
+                if (!id1 || !id2 || !baselineById.has(id1) || !baselineById.has(id2)) return;
+                const [a, b] = p[2].split(':').map(Number);
+                if (a > b) {
+                    baselineById.get(id1).wins = Math.max(0, (baselineById.get(id1).wins || 0) - 1);
+                    baselineById.get(id2).losses = Math.max(0, (baselineById.get(id2).losses || 0) - 1);
+                } else if (b > a) {
+                    baselineById.get(id2).wins = Math.max(0, (baselineById.get(id2).wins || 0) - 1);
+                    baselineById.get(id1).losses = Math.max(0, (baselineById.get(id1).losses || 0) - 1);
+                }
+            });
+        }
+
+        function rollbackHistoryRangeToBaseline(range) {
+            const players = clubData.players.map(player => ({ ...player }));
+            const byId = new Map(players.map(player => [String(player.id), player]));
+            const ratingInitialized = new Set();
+
+            range.forEach(entry => {
+                const source = getHistorySource(entry);
+                const ids = getSourceParticipantIds(source);
+                ids.forEach(id => {
+                    const player = byId.get(String(id));
+                    if (player) player.tournamentsPlayed = Math.max(0, (player.tournamentsPlayed || 0) - 1);
+                });
+                countOldHistoricalMatchStats(entry, source, byId);
+
+                const standings = Array.isArray(source.finalStandings) ? source.finalStandings : [];
+                [0, 1, 2].forEach(placeIndex => {
+                    const standing = standings[placeIndex];
+                    if (!standing) return;
+                    const id = ids[Number(standing.index)];
+                    const player = byId.get(String(id));
+                    if (!player) return;
+                    if (placeIndex === 0) player.goldMedals = Math.max(0, (player.goldMedals || 0) - 1);
+                    if (placeIndex === 1) player.silverMedals = Math.max(0, (player.silverMedals || 0) - 1);
+                    if (placeIndex === 2) player.bronzeMedals = Math.max(0, (player.bronzeMedals || 0) - 1);
+                });
+
+                const rows = entry.structuredRatings ? entry.structuredRatings.split(';;') : [];
+                rows.forEach(row => {
+                    const parts = row.split('::');
+                    if (parts.length < 2) return;
+                    const id = resolveHistoryPlayerId(entry, source, decodeName(parts[0]));
+                    if (!id || ratingInitialized.has(String(id))) return;
+                    const oldRating = Number(parts[1]);
+                    const player = byId.get(String(id));
+                    if (!player || !Number.isFinite(oldRating)) return;
+                    player.rating = oldRating;
+                    ratingInitialized.add(String(id));
+                });
+            });
+
+            return players;
+        }
+
+        function buildReplayedHistoryEntry(entry, source, playerNames, participantIds, scores, additionalMatches, standings, result, playersBefore) {
+            const K = Number(source.K) || 0.20;
+            const playerByName = name => playersBefore.find(p => String(p.fullName).toLowerCase() === String(name).toLowerCase());
+
+            const structuredRatings = standings.map(item => {
+                const name = playerNames[item.index];
+                const player = playerByName(name) || { rating: 200.0 };
+                const delta = result.deltas[name.toLowerCase()] || 0;
+                return `${safe_encode(name)}::${Number(player.rating).toFixed(1)}::${(Number(player.rating) + delta).toFixed(1)}::${delta.toFixed(2)}`;
+            }).join(';;');
+
+            const smRows = [];
+            const appendMatch = (first, second, rawScore) => {
+                const score = String(rawScore || '').trim();
+                const name1 = playerNames[first];
+                const name2 = playerNames[second];
+                if (!name1 || !name2 || !score) return;
+                if (score === 'W' || score === 'L') {
+                    smRows.push(`${safe_encode(name1)}::${safe_encode(name2)}::${score}::+0.00::+0.00`);
+                    return;
+                }
+                if (!isValidPlayedScore(score)) return;
+                const impact = calculateSingleMatchImpact(name1, name2, score, K, playersBefore);
+                if (!impact) return;
+                const d1 = (impact.p1Delta >= 0 ? '+' : '') + impact.p1Delta.toFixed(2);
+                const d2 = (impact.p2Delta >= 0 ? '+' : '') + impact.p2Delta.toFixed(2);
+                smRows.push(`${safe_encode(name1)}::${safe_encode(name2)}::${score}::${d1}::${d2}`);
+            };
+
+            for (let first = 0; first < playerNames.length; first++) {
+                for (let second = first + 1; second < playerNames.length; second++) {
+                    appendMatch(first, second, scores[`${first}_${second}`]);
+                }
+            }
+            additionalMatches.forEach(match => appendMatch(Number(match.p1), Number(match.p2), match.score));
+
+            const standingsText = standings.map((item, index) => {
+                const medal = index === 0 ? '🥇 ' : index === 1 ? '🥈 ' : index === 2 ? '🥉 ' : '';
+                return `${index + 1}. ${medal}${playerNames[item.index]} — ${Number(item.points) || 0} оч.`;
+            }).join('\n');
+
+            const ratingText = standings.map(item => {
+                const name = playerNames[item.index];
+                const player = playerByName(name) || { rating: 200.0 };
+                const delta = result.deltas[name.toLowerCase()] || 0;
+                const oldRating = Number(player.rating);
+                const newRating = oldRating + delta;
+                return `${name}: ${oldRating.toFixed(1)} → ${newRating.toFixed(1)} (${delta >= 0 ? '+' : ''}${delta.toFixed(2)})`;
+            }).join('\n');
+
+            const playerIds = {};
+            playerNames.forEach((name, index) => { playerIds[name] = String(participantIds[index]); });
+
+            return {
+                ...entry,
+                winnerName: playerNames[standings[0].index],
+                standingsText,
+                ratingText,
+                structuredRatings,
+                structuredMatches: smRows.join(';;'),
+                seasonCalculationSource: {
+                    ...source,
+                    matchScores: { ...scores },
+                    additionalMatches: additionalMatches.map(match => ({
+                        id: match.id,
+                        groupKey: match.groupKey || null,
+                        round: Number(match.round) || 1,
+                        p1: Number(match.p1),
+                        p2: Number(match.p2),
+                        score: match.score
+                    })),
+                    finalStandings: standings.map(item => ({ index: Number(item.index), points: Number(item.points) || 0 })),
+                    playerNames: [...playerNames],
+                    playerIds,
+                    winsToWin: inferHistoricalWinsToWin(source)
+                }
+            };
+        }
+
+        function applyReplayedTournamentToPlayers(playersBefore, playerNames, standings, result) {
+            return playersBefore.map(player => {
+                const key = String(player.fullName).toLowerCase();
+                const delta = result.deltas[key];
+                if (delta === undefined) return player;
+                const place = standings.findIndex(item => String(playerNames[item.index]).toLowerCase() === key) + 1;
+                return {
+                    ...player,
+                    rating: Math.max(0, Number(player.rating) + delta),
+                    tournamentsPlayed: (player.tournamentsPlayed || 0) + 1,
+                    wins: (player.wins || 0) + (result.wins[key] || 0),
+                    losses: (player.losses || 0) + (result.losses[key] || 0),
+                    goldMedals: (player.goldMedals || 0) + (place === 1 ? 1 : 0),
+                    silverMedals: (player.silverMedals || 0) + (place === 2 ? 1 : 0),
+                    bronzeMedals: (player.bronzeMedals || 0) + (place === 3 ? 1 : 0)
+                };
+            });
+        }
+
+        function recalculateHistoryAfterScoreCorrection(targetId, selectedMatch, newScore) {
+            const validation = validateHistoryCorrectionRange(targetId);
+            if (!validation.ok) throw new Error(validation.message);
+
+            const originalTarget = validation.range[0];
+            const targetSourceOriginal = getHistorySource(originalTarget);
+            const correctedSource = {
+                ...targetSourceOriginal,
+                matchScores: { ...(targetSourceOriginal.matchScores || {}) },
+                additionalMatches: (Array.isArray(targetSourceOriginal.additionalMatches) ? targetSourceOriginal.additionalMatches : []).map(m => ({ ...m }))
+            };
+
+            if (selectedMatch.type === 'main') {
+                if (!(selectedMatch.key in correctedSource.matchScores)) throw new Error('Матч не найден в исходных данных турнира.');
+                correctedSource.matchScores[selectedMatch.key] = newScore;
+            } else {
+                const idx = correctedSource.additionalMatches.findIndex(m => String(m.id) === String(selectedMatch.key));
+                if (idx < 0) throw new Error('Дополнительный матч не найден в исходных данных турнира.');
+                correctedSource.additionalMatches[idx].score = newScore;
+            }
+
+            let playersState = rollbackHistoryRangeToBaseline(validation.range);
+            const rebuiltById = new Map();
+
+            validation.range.forEach((entry, rangeIndex) => {
+                const originalSource = getHistorySource(entry);
+                const source = rangeIndex === 0 ? correctedSource : { ...originalSource };
+                const participantIds = getSourceParticipantIds(originalSource);
+                const playerNames = participantIds.map((id, index) => {
+                    const current = playersState.find(p => String(p.id) === String(id));
+                    return current ? current.fullName : originalSource.playerNames[index];
+                });
+                const scores = { ...(source.matchScores || {}) };
+                const additionalMatches = (Array.isArray(source.additionalMatches) ? source.additionalMatches : []).map(parseTieBreakSourceMatch);
+                const standings = rangeIndex === 0
+                    ? resolveCorrectedHistoricalStandings(originalSource, targetSourceOriginal.matchScores || {}, scores)
+                    : originalSource.finalStandings.map(item => ({ index: Number(item.index), points: Number(item.points) || 0 }));
+
+                const result = calculateDeltas(
+                    playerNames,
+                    scores,
+                    Number(source.K) || 0.20,
+                    !!source.applyPlaceBonuses,
+                    playersState,
+                    additionalMatches.filter(match => isValidPlayedScore(match.score)),
+                    standings
+                );
+
+                const rebuilt = buildReplayedHistoryEntry(
+                    entry,
+                    source,
+                    playerNames,
+                    participantIds,
+                    scores,
+                    additionalMatches,
+                    standings,
+                    result,
+                    playersState
+                );
+                rebuiltById.set(Number(entry.id), rebuilt);
+                playersState = applyReplayedTournamentToPlayers(playersState, playerNames, standings, result);
+            });
+
+            const updatedHistory = clubData.history.map(entry => rebuiltById.get(Number(entry.id)) || entry);
+            return { updatedPlayers: playersState, updatedHistory };
+        }
+
+        window.applyHistoricalScoreCorrection = async function(newScore) {
+            if (!isAdmin || !firebase.auth().currentUser) {
+                showToast('Исправлять завершённые турниры может только администратор');
+                return;
+            }
+            const selected = historyCorrectionState.selectedMatch;
+            const targetId = historyCorrectionState.entryId;
+            if (!selected || targetId === null) return;
+            if (String(selected.score) === String(newScore)) return;
+
+            const validation = validateHistoryCorrectionRange(targetId);
+            if (!validation.ok) {
+                showToast(validation.message);
+                return;
+            }
+
+            const message = validation.range.length > 1
+                ? `Изменить счёт ${selected.score} на ${newScore}? Будет пересчитан этот турнир и ещё ${validation.range.length - 1} последующих турнир(а).`
+                : `Изменить счёт ${selected.score} на ${newScore}? Турнир будет полностью пересчитан.`;
+            if (!confirm(message)) return;
+
+            showLoader(true);
+            try {
+                const recalculated = recalculateHistoryAfterScoreCorrection(targetId, selected, newScore);
+                const backupId = Date.now();
+                const backup = {
+                    createdAt: backupId,
+                    targetHistoryId: Number(targetId),
+                    oldScore: String(selected.score),
+                    newScore: String(newScore),
+                    playersJson: JSON.stringify(clubData.players),
+                    historyJson: JSON.stringify(clubData.history)
+                };
+
+                // Backup first. If this fails, no live data is changed.
+                await db.ref(`clubs/${activeClubId}/historyEditBackups/${backupId}`).set(backup);
+
+                // Atomic multi-key update of live player base + history.
+                await db.ref(`clubs/${activeClubId}`).update({
+                    players: JSON.stringify(recalculated.updatedPlayers),
+                    history: JSON.stringify(recalculated.updatedHistory)
+                });
+
+                closeHistoryEditModal();
+                closeHistoryModal();
+                showLoader(false);
+                showToast('Результат исправлен. Рейтинги и последующая история пересчитаны.');
+            } catch (error) {
+                showLoader(false);
+                showToast('Исправление отменено: ' + error.message);
+            }
+        };
 
         // VISITOR ANALYTICS CONTROLLER
         function openAnalyticsModal() {
