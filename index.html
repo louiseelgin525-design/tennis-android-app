@@ -10642,7 +10642,7 @@ function getPlayerLastDelta(player) {
                         <div style="font-size:11px; color:var(--text-secondary); font-weight:700;">${rowData.label}</div>
                         <div style="font-size:14px; color:var(--text-main); font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">${names[rowData.p1]} — ${names[rowData.p2]}</div>
                     </div>
-                    <div style="font-size:16px; font-weight:850; color:var(--apple-blue); flex-shrink:0;">${rowData.score}</div>
+                    <div style="font-size:16px; font-weight:850; color:var(--apple-blue); flex-shrink:0;">${formatHistoricalMatchListScore(rowData.score)}</div>
                 `;
                 row.addEventListener('click', () => selectHistoricalMatchForEdit(rowData));
                 list.appendChild(row);
@@ -10667,6 +10667,29 @@ function getPlayerLastDelta(player) {
             if (panel) panel.style.display = 'none';
         };
 
+        function getHistoricalTechnicalScoreForWithdrawal(matchData, withdrawnIndex) {
+            const target = Number(withdrawnIndex);
+            if (target === Number(matchData.p1)) return 'L';
+            if (target === Number(matchData.p2)) return 'W';
+            throw new Error('Участник не относится к выбранному матчу.');
+        }
+
+        function formatHistoricalMatchListScore(score) {
+            const value = String(score || '').trim();
+            if (value === 'W') return 'W / L';
+            if (value === 'L') return 'L / W';
+            return value;
+        }
+
+        function formatHistoricalScoreDescription(score, matchData, names) {
+            const value = String(score || '').trim();
+            const p1Name = names[matchData.p1];
+            const p2Name = names[matchData.p2];
+            if (value === 'W') return `Сейчас: W / L · снятие: ${p2Name}`;
+            if (value === 'L') return `Сейчас: L / W · снятие: ${p1Name}`;
+            return `Сейчас в истории: ${value}`;
+        }
+
         function selectHistoricalMatchForEdit(matchData) {
             if (!isAdmin) return;
             const entry = clubData.history.find(e => Number(e.id) === Number(historyCorrectionState.entryId));
@@ -10676,7 +10699,7 @@ function getPlayerLastDelta(player) {
             historyCorrectionState.selectedMatch = { ...matchData };
 
             document.getElementById('history-edit-score-title').textContent = `${names[matchData.p1]} — ${names[matchData.p2]}`;
-            document.getElementById('history-edit-score-current').textContent = `Сейчас в истории: ${matchData.score}`;
+            document.getElementById('history-edit-score-current').textContent = formatHistoricalScoreDescription(matchData.score, matchData, names);
 
             const buttons = document.getElementById('history-edit-score-buttons');
             buttons.innerHTML = '';
@@ -10698,6 +10721,37 @@ function getPlayerLastDelta(player) {
                 btn.addEventListener('click', () => applyHistoricalScoreCorrection(score));
                 buttons.appendChild(btn);
             });
+
+            // Technical result. W/L is stored relative to the FIRST player in the row:
+            // W = first player wins technically, second player withdrew.
+            // L = first player withdrew, second player wins technically.
+            if (matchData.type === 'main') {
+                const technicalHeader = document.createElement('div');
+                technicalHeader.style.gridColumn = '1 / -1';
+                technicalHeader.style.marginTop = '4px';
+                technicalHeader.style.paddingTop = '10px';
+                technicalHeader.style.borderTop = '1px solid var(--border-color)';
+                technicalHeader.innerHTML = '<div style="font-size:12px; font-weight:800; color:var(--text-main);">Технический результат</div><div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Выберите, кто именно снялся. RTTF за такой матч не меняется.</div>';
+                buttons.appendChild(technicalHeader);
+
+                [matchData.p1, matchData.p2].forEach(withdrawnIndex => {
+                    const technicalScore = getHistoricalTechnicalScoreForWithdrawal(matchData, withdrawnIndex);
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'login-btn';
+                    btn.style.height = '44px';
+                    btn.style.background = '#fff3d9';
+                    btn.style.color = '#e78a00';
+                    btn.style.border = '1px solid #f4cf8a';
+                    btn.style.borderRadius = '12px';
+                    btn.style.fontSize = '13px';
+                    btn.textContent = `Снять: ${names[withdrawnIndex]}`;
+                    btn.disabled = technicalScore === String(matchData.score);
+                    if (btn.disabled) btn.style.opacity = '0.35';
+                    btn.addEventListener('click', () => applyHistoricalScoreCorrection(technicalScore));
+                    buttons.appendChild(btn);
+                });
+            }
 
             document.getElementById('history-edit-score-panel').style.display = 'block';
             document.getElementById('history-edit-score-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -10985,9 +11039,18 @@ function getPlayerLastDelta(player) {
                 return;
             }
 
+            const targetEntry = clubData.history.find(e => Number(e.id) === Number(targetId));
+            const targetSource = getHistorySource(targetEntry);
+            const targetNames = getCurrentHistoricalPlayerNames(targetSource);
+            const oldLabel = (String(selected.score) === 'W' || String(selected.score) === 'L')
+                ? formatHistoricalScoreDescription(selected.score, selected, targetNames)
+                : `Сейчас в истории: ${selected.score}`;
+            const newLabel = (String(newScore) === 'W' || String(newScore) === 'L')
+                ? formatHistoricalScoreDescription(newScore, selected, targetNames).replace(/^Сейчас:/, 'Новый результат:')
+                : `Новый счёт: ${newScore}`;
             const message = validation.range.length > 1
-                ? `Изменить счёт ${selected.score} на ${newScore}? Будет пересчитан этот турнир и ещё ${validation.range.length - 1} последующих турнир(а).`
-                : `Изменить счёт ${selected.score} на ${newScore}? Турнир будет полностью пересчитан.`;
+                ? `${oldLabel}\n${newLabel}\n\nБудет пересчитан этот турнир и ещё ${validation.range.length - 1} последующих турнир(а).`
+                : `${oldLabel}\n${newLabel}\n\nТурнир будет полностью пересчитан.`;
             if (!confirm(message)) return;
 
             showLoader(true);
