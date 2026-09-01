@@ -12278,7 +12278,7 @@ function getPlayerLastDelta(player) {
                             width:100%;margin-top:14px;padding:11px;background:rgba(255,255,255,0.1);
                             border:1px solid rgba(255,255,255,0.15);border-radius:12px;
                             color:#FFFFFF;font-size:14px;font-weight:700;cursor:pointer;">
-                            Открыть сезон →
+                            Посмотреть сезон →
                         </button>
                         ${isAdmin ? `<button onclick="confirmCompleteSeason()" style="
                             width:100%;margin-top:8px;padding:10px;background:rgba(255,59,48,0.15);
@@ -12370,11 +12370,15 @@ function getPlayerLastDelta(player) {
             const isCompleted = selectedSeason.status === 'completed';
             const isScheduled = !isCompleted && now < selectedSeason.startAt;
             const season = selectedSeason;
+            // SEASON_FIRST_TOURNAMENT_UI_FIX_V3
+            // Do not create a leader/ranking before the first completed tournament of the season.
+            const anyTournamentPlayed = isCompleted || Object.values(selectedSeasonStats || {})
+                .some(stat => (stat.tournamentsCount || 0) > 0);
 
             let standings = [];
             if (isCompleted && season.finalStandings) {
                 standings = season.finalStandings;
-            } else if (!isScheduled) {
+            } else if (!isScheduled && anyTournamentPlayed) {
                 standings = Object.entries(selectedSeasonStats)
                     .map(([pid, stat]) => {
                         const player = clubData.players.find(p => String(p.id) === String(pid));
@@ -12460,7 +12464,11 @@ function getPlayerLastDelta(player) {
                             <span style="font-size:14px;font-weight:800;color:${idx===0?'#FFC947':'var(--text-main)'};">${item.finalSeasonRating.toFixed(1)}</span>
                         </div>`;
                     }).join('')}
-                </div>` : '<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:14px;">Турниры сезона ещё не проведены</div>';
+                </div>` : `<div style="background:#FFFFFF;border-radius:18px;border:1px solid rgba(229,229,234,0.7);padding:22px 18px;text-align:center;">
+                    <div style="font-size:16px;font-weight:800;color:var(--text-main);margin-bottom:6px;">Сезон только начался</div>
+                    <div style="font-size:13px;color:var(--text-secondary);line-height:1.45;">Первый лидер и места появятся после первого завершённого турнира.</div>
+                    <div style="font-size:12px;color:#B37A00;margin-top:8px;font-weight:700;">Все игроки начинают со стартового рейтинга сезона.</div>
+                </div>`;
 
             // Completed: finalAwards
             let awardsHtml = '';
@@ -12482,7 +12490,7 @@ function getPlayerLastDelta(player) {
             }
 
             // Weekly progress: hidden for completed seasons (phase 2)
-            const weeklyHtml = isCompleted ? '' : `<div id="season-weekly-progress" style="background:#FFFFFF;border-radius:18px;padding:16px;border:1px solid rgba(229,229,234,0.7);">
+            const weeklyHtml = (isCompleted || !anyTournamentPlayed) ? '' : `<div id="season-weekly-progress" style="background:#FFFFFF;border-radius:18px;padding:16px;border:1px solid rgba(229,229,234,0.7);">
                 <h3 style="font-size:15px;font-weight:800;color:var(--text-main);margin:0 0 4px;">Прогресс за 7 дней</h3>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Загрузка...</div>
             </div>`;
@@ -12506,7 +12514,7 @@ function getPlayerLastDelta(player) {
             `;
 
             // Load weekly progress asynchronously (active only)
-            if (!isCompleted) {
+            if (!isCompleted && anyTournamentPlayed) {
                 loadWeeklyProgress(season.id, standings);
             }
         }
@@ -12950,7 +12958,7 @@ function getPlayerLastDelta(player) {
                     // No tournaments yet — show neutral «season just started» message,
                     // no rank and no misleading leader badge
                     el.innerHTML = `
-                        <div onclick="openSeasonScreen('${season.id}')" style="background:rgba(10,132,255,0.06);
+                        <div onclick="closePlayerModal(); openSeasonScreen('${season.id}')" style="background:rgba(10,132,255,0.06);
                             border:1px solid rgba(10,132,255,0.15);border-radius:14px;padding:12px 16px;cursor:pointer;
                             display:flex;justify-content:space-between;align-items:center;">
                             <div>
@@ -12969,7 +12977,7 @@ function getPlayerLastDelta(player) {
                     const isLeader = rank === 1;
 
                     el.innerHTML = `
-                        <div onclick="openSeasonScreen('${season.id}')" style="background:rgba(10,132,255,0.06);
+                        <div onclick="closePlayerModal(); openSeasonScreen('${season.id}')" style="background:rgba(10,132,255,0.06);
                             border:1px solid rgba(10,132,255,0.15);border-radius:14px;padding:12px 16px;cursor:pointer;
                             display:flex;justify-content:space-between;align-items:center;">
                             <div>
