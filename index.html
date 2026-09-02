@@ -9997,6 +9997,19 @@ function getPlayerLastDelta(player) {
                 if (pl) _playerIds[name] = String(pl.id);
             });
 
+            // SEASON_RTTF_FIX_V2_SNAPSHOT
+            // Save the exact ordinary-club tournament experience BEFORE this tournament.
+            // Future season recalculation can therefore reproduce normal RTTF exactly.
+            const _playerTournamentsBefore = {};
+            playerNames.forEach(name => {
+                const pl = clubData.players.find(
+                    p => p.fullName.toLowerCase() === String(name).toLowerCase()
+                );
+                const value = Number(pl?.tournamentsPlayed || 0);
+                _playerTournamentsBefore[name] = value;
+                _playerTournamentsBefore[String(name).toLowerCase()] = value;
+            });
+
             // Determine whether this tournament falls inside the active season window.
             // seasonId is stored only when the tournament genuinely belongs to the season;
             // otherwise it is null so retrySeasonUpdate never credits the wrong season.
@@ -10032,6 +10045,7 @@ function getPlayerLastDelta(player) {
                     finalStandings: result.standings.map(item => ({ index: item.index, points: item.points })),
                     playerNames: playerNames,
                     playerIds: _playerIds,
+                    tournamentsPlayedBefore: _playerTournamentsBefore,
                     winsToWin: Number(draft.winsToWin) || 2,
                     K: K,
                     applyPlaceBonuses: applyPlaceBonuses
@@ -12495,6 +12509,15 @@ function getPlayerLastDelta(player) {
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Загрузка...</div>
             </div>`;
 
+            // SEASON_RTTF_FIX_V2_BUTTON
+            const recalcHtml = (!isCompleted && isAdmin) ? `
+                <button onclick="recalculateSeasonRating('${season.id}')" style="
+                    width:100%;padding:12px 14px;margin-top:12px;
+                    background:rgba(10,132,255,0.08);border:1px solid rgba(10,132,255,0.28);
+                    border-radius:14px;color:var(--apple-blue);font-size:13px;
+                    font-weight:700;cursor:pointer;">
+                    ↻ Пересчитать сезонный рейтинг
+                </button>` : '';
             sv.innerHTML = `
                 <div style="padding:0 0 8px;">${backBtn}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -12507,6 +12530,7 @@ function getPlayerLastDelta(player) {
                     </div>
                     ${statusBadge}
                 </div>
+                ${recalcHtml}
                 ${leaderHtml}
                 ${tableHtml}
                 ${weeklyHtml}
@@ -12557,17 +12581,77 @@ function getPlayerLastDelta(player) {
         }
 
         // ─── buildSeasonPlayersList: reuse calculateDeltas with season ratings ─
-        function buildSeasonPlayersList(playerNames) {
+        // SEASON_RTTF_FIX_V2_BUILD
+        // Count REAL club tournaments completed before a historical tournament.
+        // This recreates the same novice/experienced status that the ordinary RTTF
+        // calculation had at that moment.
+        function countClubTournamentsBefore(timestamp, playerName, playerId) {
+            const ts = Number(timestamp || 0);
+            const wantedName = String(playerName || '').trim().toLowerCase();
+            const wantedId = playerId == null ? null : String(playerId);
+
+            return (clubData.history || []).reduce((count, entry) => {
+                if (!entry || Number(entry.id || 0) >= ts) return count;
+
+                const src = entry.seasonCalculationSource || {};
+                if (wantedId && src.playerIds && typeof src.playerIds === 'object') {
+                    const ids = Object.values(src.playerIds).map(String);
+                    if (ids.includes(wantedId)) return count + 1;
+                }
+
+                if (Array.isArray(src.playerNames)) {
+                    const hasByName = src.playerNames.some(
+                        n => String(n || '').trim().toLowerCase() === wantedName
+                    );
+                    if (hasByName) return count + 1;
+                }
+
+                if (entry.structuredRatings) {
+                    try {
+                        const hasLegacyName = String(entry.structuredRatings).split(';;').some(row => {
+                            const parts = row.split('::');
+                            if (!parts.length) return false;
+                            return String(decodeName(parts[0]) || '').trim().toLowerCase() === wantedName;
+                        });
+                        if (hasLegacyName) return count + 1;
+                    } catch (_) {}
+                }
+                return count;
+            }, 0);
+        }
+
+        function buildSeasonPlayersList(playerNames, seasonStats, season, historyEntry) {
+            const stats = seasonStats || {};
+            const targetSeason = season || activeSeason;
+            const savedBefore = historyEntry?.seasonCalculationSource?.tournamentsPlayedBefore || {};
+
             return playerNames.map(name => {
                 const realPlayer = clubData.players.find(
-                    p => p.fullName.toLowerCase() === name.toLowerCase()
+                    p => p.fullName.toLowerCase() === String(name).toLowerCase()
                 ) || { id: null, fullName: name, tournamentsPlayed: 0, rating: 200.0 };
+
                 const pid = realPlayer.id;
-                const stat = pid ? activeSeasonStats[pid] : null;
+                const stat = pid != null ? stats[String(pid)] : null;
+
+                // IMPORTANT: season tournament count must NEVER define novice status.
+                // The ordinary club RTTF uses real tournamentsPlayed.
+                let realTournamentsBefore = Number(realPlayer.tournamentsPlayed || 0);
+                const savedValue = savedBefore[name] ?? savedBefore[String(name).toLowerCase()];
+
+                if (savedValue !== undefined && Number.isFinite(Number(savedValue))) {
+                    realTournamentsBefore = Number(savedValue);
+                } else if (historyEntry?.id) {
+                    realTournamentsBefore = countClubTournamentsBefore(
+                        historyEntry.id,
+                        name,
+                        pid
+                    );
+                }
+
                 return {
                     ...realPlayer,
-                    rating: stat ? stat.rating : (activeSeason?.baseRating ?? 100.0),
-                    tournamentsPlayed: stat ? (stat.tournamentsCount || 0) : 0
+                    rating: stat ? Number(stat.rating) : Number(targetSeason?.baseRating ?? 100.0),
+                    tournamentsPlayed: realTournamentsBefore
                 };
             });
         }
@@ -12635,7 +12719,7 @@ function getPlayerLastDelta(player) {
                 clubData.players.forEach(p => { nameToId[p.fullName.toLowerCase()] = String(p.id); });
 
                 // 5. Build temporary playersList with seasonal ratings
-                const seasonPlayersList = buildSeasonPlayersList(playerNames);
+                const seasonPlayersList = buildSeasonPlayersList(playerNames, freshStats, season, historyEntry);
 
                 // 6. Calculate seasonal deltas, including separately stored additional matches.
                 const calculationSource = historyEntry.seasonCalculationSource || {};
@@ -12792,6 +12876,148 @@ function getPlayerLastDelta(player) {
                 showLoader(false);
                 showToast('Ошибка повтора: ' + e.message);
                 debugLog('retrySeasonUpdate error: ' + e.message);
+            }
+        };
+
+        // SEASON_RTTF_FIX_V2_RECALC
+        // Admin-only full season replay. It resets ONLY the independent season layer,
+        // then replays completed season tournaments chronologically through the SAME
+        // calculateDeltas() function as ordinary club tournaments.
+        window.recalculateSeasonRating = async function(seasonId) {
+            if (!isAdmin) {
+                showToast('Пересчитать сезон может только администратор.');
+                return;
+            }
+
+            const sid = String(seasonId || selectedSeason?.id || activeSeason?.id || '');
+            if (!sid) {
+                showToast('Сезон не выбран.');
+                return;
+            }
+
+            if (!confirm('Пересчитать сезонный рейтинг с самого начала? Обычный рейтинг клуба и результаты турниров не изменятся.')) {
+                return;
+            }
+
+            showLoader(true);
+            let backup = null;
+            try {
+                const [seasonSnap, statsSnap, ratingHistSnap, processedSnap, historySnap] = await Promise.all([
+                    db.ref(`clubs/${activeClubId}/seasons/${sid}`).once('value'),
+                    db.ref(`clubs/${activeClubId}/seasonStats/${sid}`).once('value'),
+                    db.ref(`clubs/${activeClubId}/seasonRatingHistory/${sid}`).once('value'),
+                    db.ref(`clubs/${activeClubId}/seasonProcessedTournaments/${sid}`).once('value'),
+                    db.ref(`clubs/${activeClubId}/history`).once('value')
+                ]);
+
+                const season = seasonSnap.val();
+                if (!season) throw new Error('Сезон не найден.');
+                if (season.status !== 'active') throw new Error('Пересчёт разрешён только для активного сезона.');
+
+                let historyRaw = historySnap.val();
+                let allHistory = [];
+                if (Array.isArray(historyRaw)) allHistory = historyRaw;
+                else if (typeof historyRaw === 'string' && historyRaw.trim()) {
+                    try { allHistory = JSON.parse(historyRaw); } catch (_) { allHistory = []; }
+                } else if (historyRaw && typeof historyRaw === 'object') {
+                    allHistory = Object.values(historyRaw);
+                }
+
+                const seasonEntries = allHistory
+                    .filter(entry => {
+                        const src = entry?.seasonCalculationSource;
+                        return src &&
+                            String(src.seasonId || '') === sid &&
+                            Number(entry.id || 0) >= Number(season.startAt || 0) &&
+                            Number(entry.id || 0) < Number(season.endAt || Number.MAX_SAFE_INTEGER);
+                    })
+                    .sort((a, b) => Number(a.id) - Number(b.id));
+
+                if (seasonEntries.length === 0) {
+                    throw new Error('В истории нет завершённых турниров этого сезона.');
+                }
+
+                // Backup only the season layer. Ordinary club data is never modified.
+                backup = {
+                    stats: statsSnap.val() || null,
+                    ratingHistory: ratingHistSnap.val() || null,
+                    processed: processedSnap.val() || null
+                };
+                const backupId = String(Date.now());
+                await db.ref(
+                    `clubs/${activeClubId}/seasonRecalcBackups/${sid}/${backupId}`
+                ).set({
+                    createdAt: Date.now(),
+                    reason: 'manual_admin_recalculate',
+                    stats: backup.stats,
+                    ratingHistory: backup.ratingHistory,
+                    processed: backup.processed
+                });
+
+                const initialStats = {};
+                clubData.players.forEach(p => {
+                    initialStats[String(p.id)] = {
+                        rating: Number(season.baseRating ?? 100.0),
+                        matchesCount: 0,
+                        winsCount: 0,
+                        lossesCount: 0,
+                        tournamentsCount: 0
+                    };
+                });
+
+                const resetUpdates = {};
+                resetUpdates[`clubs/${activeClubId}/seasonStats/${sid}`] = initialStats;
+                resetUpdates[`clubs/${activeClubId}/seasonRatingHistory/${sid}`] = null;
+                resetUpdates[`clubs/${activeClubId}/seasonProcessedTournaments/${sid}`] = null;
+                await db.ref().update(resetUpdates);
+
+                for (const entry of seasonEntries) {
+                    const src = entry.seasonCalculationSource;
+                    if (!src || !src.matchScores || !Array.isArray(src.playerNames)) {
+                        throw new Error('У турнира "' + (entry.name || entry.id) + '" нет данных для безопасного пересчёта.');
+                    }
+
+                    await updateSeasonAfterTournament(
+                        entry,
+                        src.matchScores,
+                        src.playerNames,
+                        Number(src.K),
+                        !!src.applyPlaceBonuses,
+                        season
+                    );
+                }
+
+                // Reload selected season stats immediately for the current screen.
+                const refreshed = await db.ref(
+                    `clubs/${activeClubId}/seasonStats/${sid}`
+                ).once('value');
+                selectedSeasonStats = refreshed.val() || {};
+                if (activeSeason && String(activeSeason.id) === sid) {
+                    activeSeasonStats = selectedSeasonStats;
+                }
+                if (selectedSeason && String(selectedSeason.id) === sid) {
+                    renderSeasonScreen();
+                }
+                renderHall();
+
+                showLoader(false);
+                showToast('✅ Сезонный рейтинг полностью пересчитан.');
+            } catch (e) {
+                // If reset/replay failed after a backup was made, restore old season data.
+                if (backup) {
+                    try {
+                        const restore = {};
+                        restore[`clubs/${activeClubId}/seasonStats/${sid}`] = backup.stats;
+                        restore[`clubs/${activeClubId}/seasonRatingHistory/${sid}`] = backup.ratingHistory;
+                        restore[`clubs/${activeClubId}/seasonProcessedTournaments/${sid}`] = backup.processed;
+                        await db.ref().update(restore);
+                    } catch (restoreErr) {
+                        debugLog('Season recalculation rollback failed: ' + restoreErr.message);
+                    }
+                }
+                showLoader(false);
+                showToast('Ошибка пересчёта сезона: ' + e.message);
+                debugLog('recalculateSeasonRating error: ' + e.message);
             }
         };
 
