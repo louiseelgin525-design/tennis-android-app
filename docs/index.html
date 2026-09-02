@@ -4980,6 +4980,7 @@
                     _activeSeasonStatsListenerRef.on('value', (s) => {
                         activeSeasonStats = s.val() || {};
                         renderHall();
+                        if (isAdmin) ensureActiveSeasonCoachBaseline().catch(() => {});
                     });
                 } else {
                     renderHall();
@@ -12154,6 +12155,66 @@ function getPlayerLastDelta(player) {
             });
         }
 
+        // SEASON_COACH_OUT_OF_STANDINGS_V1
+        function isSeasonRankingEligible(player) {
+            return !!player && player.role !== 'coach';
+        }
+
+        function getCoachSeasonStartRating(player, season) {
+            if (!player) return Number(season?.baseRating ?? 100.0);
+            const saved = season?.coachStartRatings?.[String(player.id)];
+            if (saved !== undefined && Number.isFinite(Number(saved))) return Number(saved);
+            return Number(player.rating ?? season?.baseRating ?? 100.0);
+        }
+
+        // Safe one-time migration for an already active season.
+        // Only a coach with zero season matches/tournaments is rebased.
+        let _coachSeasonBaselineSyncInFlight = false;
+        async function ensureActiveSeasonCoachBaseline() {
+            if (!isAdmin || !activeSeason || _coachSeasonBaselineSyncInFlight) return;
+            const coaches = (clubData.players || []).filter(p => p.role === 'coach');
+            if (!coaches.length) return;
+
+            const updates = {};
+            coaches.forEach(coach => {
+                const pid = String(coach.id);
+                const stat = activeSeasonStats?.[pid] || null;
+                const saved = activeSeason.coachStartRatings?.[pid];
+                const noSeasonActivity = !stat ||
+                    (((stat.matchesCount || 0) === 0) && ((stat.tournamentsCount || 0) === 0));
+
+                const startRating = saved !== undefined && Number.isFinite(Number(saved))
+                    ? Number(saved)
+                    : Number(coach.rating ?? activeSeason.baseRating ?? 100.0);
+
+                if (saved === undefined) {
+                    updates[`clubs/${activeClubId}/seasons/${activeSeason.id}/coachStartRatings/${pid}`] = startRating;
+                }
+
+                if (noSeasonActivity &&
+                    (!stat || Math.abs(Number(stat.rating || 0) - startRating) > 0.0001)) {
+                    updates[`clubs/${activeClubId}/seasonStats/${activeSeason.id}/${pid}/rating`] = startRating;
+                    if (!stat) {
+                        updates[`clubs/${activeClubId}/seasonStats/${activeSeason.id}/${pid}/matchesCount`] = 0;
+                        updates[`clubs/${activeClubId}/seasonStats/${activeSeason.id}/${pid}/winsCount`] = 0;
+                        updates[`clubs/${activeClubId}/seasonStats/${activeSeason.id}/${pid}/lossesCount`] = 0;
+                        updates[`clubs/${activeClubId}/seasonStats/${activeSeason.id}/${pid}/tournamentsCount`] = 0;
+                    }
+                }
+            });
+
+            if (!Object.keys(updates).length) return;
+
+            _coachSeasonBaselineSyncInFlight = true;
+            try {
+                await db.ref().update(updates);
+            } catch (e) {
+                debugLog('ensureActiveSeasonCoachBaseline error: ' + e.message);
+            } finally {
+                _coachSeasonBaselineSyncInFlight = false;
+            }
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // SEASON BLOCK RENDERING
         // ─────────────────────────────────────────────────────────────────────
@@ -12231,7 +12292,7 @@ function getPlayerLastDelta(player) {
                             <div style="font-size:15px; font-weight:800; color:#FFFFFF; margin:3px 0 6px;">${displaySeason.name}</div>
                             <div style="font-size:12px; color:rgba(255,255,255,0.65);">
                                 Старт: ${formatMoscowDate(displaySeason.startAt, 'long')}<br>
-                                Все игроки начнут с рейтинга ${displaySeason.baseRating.toFixed(1)}
+                                Игроки начнут с рейтинга ${displaySeason.baseRating.toFixed(1)}<br>Тренер — со своего клубного рейтинга
                             </div>
                             <div style="font-size:12px; color:#FFC947; margin-top:6px; font-weight:700;">⏳ До старта: ${daysLeft}</div>
                         </div>
@@ -12246,7 +12307,7 @@ function getPlayerLastDelta(player) {
                         const player = clubData.players.find(p => String(p.id) === String(pid));
                         return { pid, stat, player };
                     })
-                    .filter(e => e.player)
+                    .filter(e => e.player && e.player.role !== 'coach')
                     .sort((a, b) => b.stat.rating - a.stat.rating);
 
                 // True only when at least one player has played a tournament in this season
@@ -12264,7 +12325,7 @@ function getPlayerLastDelta(player) {
                     : `<div style="padding:12px 0;text-align:center;">
                         <div style="font-size:15px;font-weight:700;color:#FFFFFF;margin-bottom:4px;">Сезон только начался</div>
                         <div style="font-size:12px;color:rgba(255,255,255,0.5);">Первый лидер появится после турнира</div>
-                        <div style="font-size:12px;color:rgba(255,201,71,0.75);margin-top:6px;">Все игроки начинают со ${(displaySeason.baseRating || 100).toFixed(1)}</div>
+                        <div style="font-size:12px;color:rgba(255,201,71,0.75);margin-top:6px;">Игроки начинают со ${(displaySeason.baseRating || 100).toFixed(1)} · тренер вне зачёта</div>
                     </div>`;
 
                 const daysLeft = countdownDays(displaySeason.endAt);
@@ -12390,18 +12451,34 @@ function getPlayerLastDelta(player) {
                 .some(stat => (stat.tournamentsCount || 0) > 0);
 
             let standings = [];
+            let coachStandings = [];
             if (isCompleted && season.finalStandings) {
                 standings = season.finalStandings;
-            } else if (!isScheduled && anyTournamentPlayed) {
-                standings = Object.entries(selectedSeasonStats)
+                coachStandings = season.finalCoachStandings || [];
+            } else if (!isScheduled) {
+                const allSeasonRows = Object.entries(selectedSeasonStats || {})
                     .map(([pid, stat]) => {
                         const player = clubData.players.find(p => String(p.id) === String(pid));
-                        return { playerId: pid, playerNameSnapshot: player?.fullName || pid,
-                                 finalSeasonRating: stat.rating, tournamentsCount: stat.tournamentsCount || 0 };
+                        return {
+                            playerId: pid,
+                            playerNameSnapshot: player?.fullName || pid,
+                            finalSeasonRating: Number(stat.rating),
+                            tournamentsCount: stat.tournamentsCount || 0,
+                            isCoach: player?.role === 'coach'
+                        };
                     })
-                    .filter(e => e.playerNameSnapshot)
-                    .sort((a, b) => b.finalSeasonRating - a.finalSeasonRating)
-                    .map((item, idx) => ({ ...item, place: idx + 1 }));
+                    .filter(e => e.playerNameSnapshot);
+
+                coachStandings = allSeasonRows
+                    .filter(e => e.isCoach)
+                    .sort((a, b) => b.finalSeasonRating - a.finalSeasonRating);
+
+                if (anyTournamentPlayed) {
+                    standings = allSeasonRows
+                        .filter(e => !e.isCoach)
+                        .sort((a, b) => b.finalSeasonRating - a.finalSeasonRating)
+                        .map((item, idx) => ({ ...item, place: idx + 1 }));
+                }
             }
 
             // Build header
@@ -12464,6 +12541,29 @@ function getPlayerLastDelta(player) {
                     </div>`;
             })() : '';
 
+            const coachHtml = coachStandings.length ? `
+                <div style="margin-top:2px;">
+                    <div style="font-size:11px;font-weight:800;color:#8A8F9C;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px 4px;">
+                        Тренер клуба
+                    </div>
+                    ${coachStandings.map(item => {
+                        const p = clubData.players.find(x => String(x.id) === String(item.playerId));
+                        const avatar = p ? clubData.avatars[p.id] : null;
+                        const initial = (item.playerNameSnapshot || '?').charAt(0).toUpperCase();
+                        const avatarHtml = avatar
+                            ? `<div style="width:46px;height:46px;border-radius:50%;background:url('${avatar}') center/cover;flex-shrink:0;"></div>`
+                            : `<div style="width:46px;height:46px;border-radius:50%;background:#E8F2FF;color:#0A84FF;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">${initial}</div>`;
+                        return `<div style="background:#FFFFFF;border:1.5px solid rgba(10,132,255,0.20);border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+                            ${avatarHtml}
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:14px;font-weight:800;color:var(--text-main);">${item.playerNameSnapshot}</div>
+                                <div style="font-size:11px;color:#0A84FF;font-weight:700;margin-top:2px;">Тренер · вне зачёта</div>
+                            </div>
+                            <div style="font-size:16px;font-weight:850;color:var(--text-main);">${item.finalSeasonRating.toFixed(1)}</div>
+                        </div>`;
+                    }).join('')}
+                </div>` : '';
+
             const tableHtml = standings.length > 0 ? `
                 <div style="background:#FFFFFF;border-radius:18px;overflow:hidden;border:1px solid rgba(229,229,234,0.7);">
                     <div style="padding:14px 16px;border-bottom:1px solid rgba(229,229,234,0.7);">
@@ -12509,15 +12609,6 @@ function getPlayerLastDelta(player) {
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Загрузка...</div>
             </div>`;
 
-            // SEASON_RTTF_FIX_V2_BUTTON
-            const recalcHtml = (!isCompleted && isAdmin) ? `
-                <button onclick="recalculateSeasonRating('${season.id}')" style="
-                    width:100%;padding:12px 14px;margin-top:12px;
-                    background:rgba(10,132,255,0.08);border:1px solid rgba(10,132,255,0.28);
-                    border-radius:14px;color:var(--apple-blue);font-size:13px;
-                    font-weight:700;cursor:pointer;">
-                    ↻ Пересчитать сезонный рейтинг
-                </button>` : '';
             sv.innerHTML = `
                 <div style="padding:0 0 8px;">${backBtn}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -12530,8 +12621,8 @@ function getPlayerLastDelta(player) {
                     </div>
                     ${statusBadge}
                 </div>
-                ${recalcHtml}
                 ${leaderHtml}
+                ${coachHtml}
                 ${tableHtml}
                 ${weeklyHtml}
                 ${awardsHtml}
@@ -12650,7 +12741,7 @@ function getPlayerLastDelta(player) {
 
                 return {
                     ...realPlayer,
-                    rating: stat ? Number(stat.rating) : Number(targetSeason?.baseRating ?? 100.0),
+                    rating: stat ? Number(stat.rating) : (realPlayer.role === 'coach' ? getCoachSeasonStartRating(realPlayer, targetSeason) : Number(targetSeason?.baseRating ?? 100.0)),
                     tournamentsPlayed: realTournamentsBefore
                 };
             });
@@ -12746,8 +12837,9 @@ function getPlayerLastDelta(player) {
                     const delta = seasonResult.deltas[nameKey] || 0;
                     const winsInc = seasonResult.wins[nameKey] || 0;
                     const lossesInc = seasonResult.losses[nameKey] || 0;
+                    const realPlayerForSeason = clubData.players.find(p => String(p.id) === String(pid));
                     const currentStat = freshStats[pid] || {
-                        rating: season.baseRating, matchesCount: 0, winsCount: 0,
+                        rating: realPlayerForSeason?.role === 'coach' ? getCoachSeasonStartRating(realPlayerForSeason, season) : season.baseRating, matchesCount: 0, winsCount: 0,
                         lossesCount: 0, tournamentsCount: 0
                     };
 
@@ -12957,7 +13049,7 @@ function getPlayerLastDelta(player) {
                 const initialStats = {};
                 clubData.players.forEach(p => {
                     initialStats[String(p.id)] = {
-                        rating: Number(season.baseRating ?? 100.0),
+                        rating: p.role === 'coach' ? getCoachSeasonStartRating(p, season) : Number(season.baseRating ?? 100.0),
                         matchesCount: 0,
                         winsCount: 0,
                         lossesCount: 0,
@@ -13058,9 +13150,13 @@ function getPlayerLastDelta(player) {
 
             const seasonId = String(Date.now());
             const updates = {};
+            const coachStartRatings = {};
+            clubData.players.forEach(p => {
+                if (p.role === 'coach') coachStartRatings[String(p.id)] = Number(p.rating);
+            });
 
             updates[`clubs/${activeClubId}/seasons/${seasonId}`] = {
-                id: seasonId, name, startAt, endAt, baseRating,
+                id: seasonId, name, startAt, endAt, baseRating, coachStartRatings,
                 status: 'active', createdAt: Date.now(),
                 completedAt: null, championPlayerId: null,
                 finalStandings: null, finalAwards: null
@@ -13069,7 +13165,7 @@ function getPlayerLastDelta(player) {
             // Init seasonStats for ALL current players
             clubData.players.forEach(p => {
                 updates[`clubs/${activeClubId}/seasonStats/${seasonId}/${p.id}`] = {
-                    rating: baseRating, matchesCount: 0, winsCount: 0,
+                    rating: p.role === 'coach' ? Number(p.rating) : baseRating, matchesCount: 0, winsCount: 0,
                     lossesCount: 0, tournamentsCount: 0
                 };
             });
@@ -13105,24 +13201,41 @@ function getPlayerLastDelta(player) {
                 const freshSnap = await db.ref(`clubs/${activeClubId}/seasonStats/${activeSeason.id}`).once('value');
                 const freshStats = freshSnap.val() || {};
 
-                const standings = Object.entries(freshStats)
+                const allSeasonRows = Object.entries(freshStats)
                     .map(([pid, stat]) => {
                         const player = clubData.players.find(p => String(p.id) === String(pid));
                         return {
                             playerId: pid,
                             playerNameSnapshot: player?.fullName || String(pid),
-                            finalSeasonRating: stat.rating
+                            finalSeasonRating: stat.rating,
+                            isCoach: player?.role === 'coach'
                         };
-                    })
+                    });
+
+                const standings = allSeasonRows
+                    .filter(item => !item.isCoach)
                     .sort((a, b) => b.finalSeasonRating - a.finalSeasonRating)
                     .map((item, idx) => ({ ...item, place: idx + 1 }));
 
+                const finalCoachStandings = allSeasonRows
+                    .filter(item => item.isCoach)
+                    .sort((a, b) => b.finalSeasonRating - a.finalSeasonRating)
+                    .map(item => ({
+                        playerId: item.playerId,
+                        playerNameSnapshot: item.playerNameSnapshot,
+                        finalSeasonRating: item.finalSeasonRating
+                    }));
+
                 const mostActiveEntry = Object.entries(freshStats)
-                    .map(([pid, s]) => ({ pid, count: s.matchesCount || 0 }))
+                    .map(([pid, s]) => ({
+                        pid,
+                        count: s.matchesCount || 0,
+                        player: clubData.players.find(p => String(p.id) === String(pid))
+                    }))
+                    .filter(e => e.player && e.player.role !== 'coach')
                     .sort((a, b) => b.count - a.count)[0];
-                const mostActivePlayer = mostActiveEntry
-                    ? clubData.players.find(p => String(p.id) === String(mostActiveEntry.pid))
-                    : null;
+
+                const mostActivePlayer = mostActiveEntry?.player || null;
 
                 const finalAwards = {
                     mostActive: mostActiveEntry && mostActivePlayer ? {
@@ -13139,6 +13252,7 @@ function getPlayerLastDelta(player) {
                 updates[`clubs/${activeClubId}/seasons/${sid}/completedAt`] = Date.now();
                 updates[`clubs/${activeClubId}/seasons/${sid}/championPlayerId`] = standings[0]?.playerId || null;
                 updates[`clubs/${activeClubId}/seasons/${sid}/finalStandings`] = standings;
+                updates[`clubs/${activeClubId}/seasons/${sid}/finalCoachStandings`] = finalCoachStandings;
                 updates[`clubs/${activeClubId}/seasons/${sid}/finalAwards`] = finalAwards;
                 updates[`clubs/${activeClubId}/activeSeasonId`] = null;
 
@@ -13196,11 +13310,13 @@ function getPlayerLastDelta(player) {
                         </div>`;
                 } else {
                     // At least one tournament played — show rank and leader badge
+                    const isCoach = player?.role === 'coach';
                     const sortedStats = Object.entries(activeSeasonStats)
-                        .map(([pid, s]) => ({ pid, rating: s.rating }))
+                        .map(([pid, s]) => ({ pid, rating: s.rating, player: clubData.players.find(p => String(p.id) === String(pid)) }))
+                        .filter(e => e.player && e.player.role !== 'coach')
                         .sort((a, b) => b.rating - a.rating);
-                    const rank = sortedStats.findIndex(e => String(e.pid) === String(player.id)) + 1;
-                    const isLeader = rank === 1;
+                    const rank = isCoach ? 0 : (sortedStats.findIndex(e => String(e.pid) === String(player.id)) + 1);
+                    const isLeader = !isCoach && rank === 1;
 
                     el.innerHTML = `
                         <div onclick="closePlayerModal(); openSeasonScreen('${season.id}')" style="background:rgba(10,132,255,0.06);
@@ -13212,7 +13328,7 @@ function getPlayerLastDelta(player) {
                                 </div>
                                 <div style="font-size:13px;font-weight:600;color:var(--text-main);">${season.name}</div>
                                 <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
-                                    Рейтинг: <strong>${stat.rating.toFixed(1)}</strong> · Место: <strong>#${rank}</strong>
+                                    Рейтинг: <strong>${stat.rating.toFixed(1)}</strong> · ${isCoach ? '<strong style="color:#0A84FF;">Тренер · вне зачёта</strong>' : 'Место: <strong>#' + rank + '</strong>'}
                                 </div>
                             </div>
                             <span style="color:var(--text-secondary);font-size:18px;">›</span>
