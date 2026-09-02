@@ -6472,6 +6472,7 @@ function getPlayerLastDelta(player) {
                                     oppRating: oppRating,
                                     score: displayScore,
                                     isWin: isWin,
+                                    technical: score === 'W' || score === 'L',
                                     delta: delta
                                 });
                             }
@@ -6509,6 +6510,8 @@ function getPlayerLastDelta(player) {
             const chronologicalHistory = [...playerHistory].sort((a, b) => a.timestamp - b.timestamp);
             chronologicalHistory.forEach(h => {
                 h.matches.forEach(m => {
+                    // WITHDRAW_HISTORY_TECHNICAL_MATCH_V4
+                    if (m.technical) return;
                     if (m.isWin) {
                         currentStreak++;
                         if (currentStreak > bestStreak) bestStreak = currentStreak;
@@ -6798,6 +6801,7 @@ function getPlayerLastDelta(player) {
             const h2h = {};
             playerHistory.forEach(h => {
                 h.matches.forEach(m => {
+                    if (m.technical) return;
                     const opp = m.opponent.trim();
                     if (!h2h[opp]) h2h[opp] = { wins: 0, losses: 0 };
                     if (m.isWin) {
@@ -10440,7 +10444,12 @@ function getPlayerLastDelta(player) {
 
                                     let displayScore = mScore;
                                     let won = false;
-                                    if (mScore && mScore.includes(":")) {
+                                    if (mScore === 'W' || mScore === 'L') {
+                                        const storedP1Won = mScore === 'W';
+                                        const selectedWon = isP1 ? storedP1Won : !storedP1Won;
+                                        displayScore = selectedWon ? 'W' : 'L';
+                                        won = selectedWon;
+                                    } else if (mScore && mScore.includes(":")) {
                                         const scoreParts = mScore.split(":");
                                         const s1 = parseInt(scoreParts[0]) || 0;
                                         const s2 = parseInt(scoreParts[1]) || 0;
@@ -11381,6 +11390,8 @@ function getPlayerLastDelta(player) {
                         const r1 = ratingsMap[p1];
                         const r2 = ratingsMap[p2];
 
+                        if (score === 'W' || score === 'L') return;
+
                         if (!tourneyStats[p1]) tourneyStats[p1] = { played: 0, wins: 0 };
                         if (!tourneyStats[p2]) tourneyStats[p2] = { played: 0, wins: 0 };
 
@@ -11790,6 +11801,7 @@ function getPlayerLastDelta(player) {
                         const p1 = decodeName(p[0]).toLowerCase();
                         const p2 = decodeName(p[1]).toLowerCase();
                         const score = p[2];
+                        if (score === 'W' || score === 'L') return;
 
                         const scoreParts = score.split(":");
                         let p1Won = false;
