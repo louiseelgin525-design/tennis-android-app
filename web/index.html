@@ -9997,9 +9997,13 @@ function getPlayerLastDelta(player) {
 
             // Build name→id map at save time (draft still alive at this point)
             const _playerIds = {};
+            const _playerRatingsBefore = {};
             playerNames.forEach(name => {
                 const pl = clubData.players.find(p => p.fullName.toLowerCase() === name.toLowerCase());
-                if (pl) _playerIds[name] = String(pl.id);
+                if (pl) {
+                    _playerIds[name] = String(pl.id);
+                    _playerRatingsBefore[String(pl.id)] = Number(pl.rating);
+                }
             });
 
             // SEASON_RTTF_FIX_V2_SNAPSHOT
@@ -10050,6 +10054,7 @@ function getPlayerLastDelta(player) {
                     finalStandings: result.standings.map(item => ({ index: item.index, points: item.points })),
                     playerNames: playerNames,
                     playerIds: _playerIds,
+                    playerRatingsBefore: _playerRatingsBefore,
                     tournamentsPlayedBefore: _playerTournamentsBefore,
                     winsToWin: Number(draft.winsToWin) || 2,
                     K: K,
@@ -10545,8 +10550,6 @@ function getPlayerLastDelta(player) {
         }
 
         function resolveHistoryPlayerId(entry, source, name) {
-            const current = clubData.players.find(p => String(p.fullName).toLowerCase() === String(name).toLowerCase());
-            if (current) return String(current.id);
             const fromSource = getSourcePlayerIdByName(source, name);
             if (fromSource !== null) return String(fromSource);
             return null;
@@ -10592,9 +10595,6 @@ function getPlayerLastDelta(player) {
                 }
                 if (source.playerNames.length > 10) {
                     return { ok: false, message: `Автопересчёт пока доступен для завершённых турниров «каждый с каждым» до 10 участников. В цепочке найден турнир «${entry.name}» другого формата.` };
-                }
-                if (source.seasonId) {
-                    return { ok: false, message: `Турнир «${entry.name}» относится к сезону. Исправление сезонных турниров пока заблокировано, чтобы не повредить сезонную статистику.` };
                 }
                 const participantIds = getSourceParticipantIds(source);
                 if (participantIds.some(id => id === null || !clubData.players.some(p => String(p.id) === String(id)))) {
@@ -10785,11 +10785,12 @@ function getPlayerLastDelta(player) {
             return new Set((groups || []).map(group => roundRobinGroupKey(group.indices || [])));
         }
 
-        function resolveCorrectedHistoricalStandings(source, originalScores, correctedScores) {
+        function resolveCorrectedHistoricalStandings(source, originalScores, correctedScores, correctedSource = source) {
             const count = source.playerNames.length;
-            const tieBreakMatches = (Array.isArray(source.additionalMatches) ? source.additionalMatches : []).map(parseTieBreakSourceMatch);
+            const originalMatches = (Array.isArray(source.additionalMatches) ? source.additionalMatches : []).map(parseTieBreakSourceMatch);
+            const tieBreakMatches = (Array.isArray(correctedSource.additionalMatches) ? correctedSource.additionalMatches : []).map(parseTieBreakSourceMatch);
             const baseDraft = { tieBreakMatches, manualTieOrders: {} };
-            const originalResolution = calculateResolvedRoundRobinStandings(count, originalScores, baseDraft);
+            const originalResolution = calculateResolvedRoundRobinStandings(count, originalScores, { tieBreakMatches: originalMatches, manualTieOrders: {} });
             let correctedResolution = calculateResolvedRoundRobinStandings(count, correctedScores, baseDraft);
 
             if (!correctedResolution.unresolvedGroups.length) return correctedResolution.standings;
@@ -10842,7 +10843,6 @@ function getPlayerLastDelta(player) {
         function rollbackHistoryRangeToBaseline(range) {
             const players = clubData.players.map(player => ({ ...player }));
             const byId = new Map(players.map(player => [String(player.id), player]));
-            const ratingInitialized = new Set();
 
             range.forEach(entry => {
                 const source = getHistorySource(entry);
@@ -10865,20 +10865,43 @@ function getPlayerLastDelta(player) {
                     if (placeIndex === 2) player.bronzeMedals = Math.max(0, (player.bronzeMedals || 0) - 1);
                 });
 
+            });
+
+            // Display strings round ratings to one decimal. Undo exact two-decimal
+            // deltas backwards instead, so repeated corrections do not lose precision.
+            [...range].reverse().forEach(entry => {
+                const source = getHistorySource(entry);
+                const restored = new Set();
                 const rows = entry.structuredRatings ? entry.structuredRatings.split(';;') : [];
                 rows.forEach(row => {
                     const parts = row.split('::');
-                    if (parts.length < 2) return;
                     const id = resolveHistoryPlayerId(entry, source, decodeName(parts[0]));
-                    if (!id || ratingInitialized.has(String(id))) return;
-                    const oldRating = Number(parts[1]);
                     const player = byId.get(String(id));
-                    if (!player || !Number.isFinite(oldRating)) return;
-                    player.rating = oldRating;
-                    ratingInitialized.add(String(id));
+                    if (!player || parts.length < 4 || restored.has(String(id))) {
+                        throw new Error(`Не удалось восстановить исходные рейтинги турнира «${entry.name}».`);
+                    }
+                    const delta = Number(parts[3]);
+                    const saved = source.playerRatingsBefore?.[String(id)];
+                    if (!Number.isFinite(delta) || !Number.isFinite(Number(parts[1])) || !Number.isFinite(Number(parts[2]))) {
+                        throw new Error('Некорректная запись истории рейтинга.');
+                    }
+                    if (saved === undefined && Number(player.rating) === 0 && delta < 0) {
+                        throw new Error('В старой записи рейтинг был ограничен нулём. Для точного восстановления нужна исходная копия рейтинга.');
+                    }
+                    const before = saved !== undefined ? Number(saved) : Math.round((Number(player.rating) - delta) * 1e10) / 1e10;
+                    if (!Number.isFinite(before) || before < 0 ||
+                        Math.abs(Math.max(0, before + delta) - Number(player.rating)) > 0.000001 ||
+                        Math.abs(before - Number(parts[1])) > 0.051 ||
+                        Math.abs((before + delta) - Number(parts[2])) > 0.051) {
+                        throw new Error(`Рейтинг игрока изменён вне истории турниров. Нельзя безопасно пересчитать «${entry.name}».`);
+                    }
+                    player.rating = before;
+                    restored.add(String(id));
                 });
+                if (getSourceParticipantIds(source).some(id => !restored.has(String(id)))) {
+                    throw new Error(`В турнире «${entry.name}» не хватает исходных рейтингов.`);
+                }
             });
-
             return players;
         }
 
@@ -10933,7 +10956,13 @@ function getPlayerLastDelta(player) {
             }).join('\n');
 
             const playerIds = {};
-            playerNames.forEach((name, index) => { playerIds[name] = String(participantIds[index]); });
+            const playerRatingsBefore = {};
+            const tournamentsPlayedBefore = {};
+            playerNames.forEach((name, index) => {
+                playerIds[name] = String(participantIds[index]);
+                playerRatingsBefore[String(participantIds[index])] = Number(playerByName(name)?.rating);
+                tournamentsPlayedBefore[name] = Number(playerByName(name)?.tournamentsPlayed || 0);
+            });
 
             return {
                 ...entry,
@@ -10956,6 +10985,8 @@ function getPlayerLastDelta(player) {
                     finalStandings: standings.map(item => ({ index: Number(item.index), points: Number(item.points) || 0 })),
                     playerNames: [...playerNames],
                     playerIds,
+                    playerRatingsBefore,
+                    tournamentsPlayedBefore,
                     winsToWin: inferHistoricalWinsToWin(source)
                 }
             };
@@ -10994,10 +11025,16 @@ function getPlayerLastDelta(player) {
 
             if (selectedMatch.type === 'main') {
                 if (!(selectedMatch.key in correctedSource.matchScores)) throw new Error('Матч не найден в исходных данных турнира.');
+                if (String(correctedSource.matchScores[selectedMatch.key]) !== String(selectedMatch.score)) {
+                    throw new Error('Счёт уже изменился. Откройте турнир заново.');
+                }
                 correctedSource.matchScores[selectedMatch.key] = newScore;
             } else {
                 const idx = correctedSource.additionalMatches.findIndex(m => String(m.id) === String(selectedMatch.key));
                 if (idx < 0) throw new Error('Дополнительный матч не найден в исходных данных турнира.');
+                if (String(correctedSource.additionalMatches[idx].score) !== String(selectedMatch.score)) {
+                    throw new Error('Счёт уже изменился. Откройте турнир заново.');
+                }
                 correctedSource.additionalMatches[idx].score = newScore;
             }
 
@@ -11015,7 +11052,7 @@ function getPlayerLastDelta(player) {
                 const scores = { ...(source.matchScores || {}) };
                 const additionalMatches = (Array.isArray(source.additionalMatches) ? source.additionalMatches : []).map(parseTieBreakSourceMatch);
                 const standings = rangeIndex === 0
-                    ? resolveCorrectedHistoricalStandings(originalSource, targetSourceOriginal.matchScores || {}, scores)
+                    ? resolveCorrectedHistoricalStandings(originalSource, targetSourceOriginal.matchScores || {}, scores, source)
                     : originalSource.finalStandings.map(item => ({ index: Number(item.index), points: Number(item.points) || 0 }));
 
                 const result = calculateDeltas(
@@ -11047,7 +11084,119 @@ function getPlayerLastDelta(player) {
             return { updatedPlayers: playersState, updatedHistory };
         }
 
+        // Calculate entirely in memory: never clear live season statistics before replay.
+        // Completed seasons retain their frozen standings and awards.
+        function rebuildSeasonForHistoryCorrection(seasonId, season, history, previousStats, processed, ratingHistory) {
+            if (!season) throw new Error('Сезон турнира не найден.');
+            if (season.status !== 'active') {
+                throw new Error(`Сезон «${season.name || seasonId}» уже закрыт. Его итоговые места и награды зафиксированы; исправление отменено.`);
+            }
+            const entries = history.filter(entry => String(getHistorySource(entry)?.seasonId || '') === String(seasonId))
+                .sort((a, b) => Number(a.id) - Number(b.id));
+            const entryIds = new Set(entries.map(entry => String(entry.id)));
+            if (!entries.length || entryIds.size !== entries.length) throw new Error('Не удалось восстановить список турниров сезона.');
+
+            for (const [id, marker] of Object.entries(processed || {})) {
+                if (marker === 'processing' || marker?.state === 'processing') {
+                    throw new Error('Сезон сейчас пересчитывается. Дождитесь завершения и повторите исправление.');
+                }
+                if (!entryIds.has(id)) throw new Error('В истории не хватает турнира, учтённого в сезоне. Исправление отменено.');
+            }
+            for (const rows of Object.values(ratingHistory || {})) {
+                if (Object.keys(rows || {}).some(id => !entryIds.has(id))) {
+                    throw new Error('История сезонного рейтинга содержит отсутствующий турнир. Исправление отменено.');
+                }
+            }
+
+            const stats = {};
+            const rebuiltRatingHistory = {};
+            const rebuiltProcessed = {};
+            const playersById = new Map(clubData.players.map(player => [String(player.id), player]));
+            // Keep unplayed profiles (including archived ones), and preserve extra fields.
+            const allIds = new Set([...Object.keys(previousStats || {}), ...playersById.keys()]);
+            for (const id of allIds) {
+                const player = playersById.get(id);
+                const startRating = player?.role === 'coach'
+                    ? getCoachSeasonStartRating(player, season) : Number(season.baseRating ?? 100);
+                if (!Number.isFinite(startRating)) throw new Error('Некорректный стартовый рейтинг сезона.');
+                stats[id] = { ...(previousStats?.[id] || {}), rating: startRating,
+                    matchesCount: 0, winsCount: 0, lossesCount: 0, tournamentsCount: 0 };
+            }
+
+            for (const entry of entries) {
+                const source = getHistorySource(entry);
+                const count = source?.playerNames?.length;
+                const standings = source?.finalStandings;
+                if (!Array.isArray(source?.playerNames) || !count || !source.matchScores ||
+                    !Array.isArray(standings) || standings.length !== count ||
+                    new Set(standings.map(item => Number(item.index))).size !== count ||
+                    standings.some(item => !Number.isInteger(Number(item.index)) || Number(item.index) < 0 || Number(item.index) >= count)) {
+                    throw new Error(`В турнире «${entry.name}» не хватает данных для пересчёта сезона.`);
+                }
+                if (!(Number(entry.id) >= Number(season.startAt) && Number(entry.id) < Number(season.endAt))) {
+                    throw new Error(`Турнир «${entry.name}» не входит в даты своего сезона.`);
+                }
+                const ids = getSourceParticipantIds(source);
+                if (ids.some(id => id === null || !playersById.has(String(id))) || new Set(ids).size !== count) {
+                    throw new Error(`Не удалось найти всех игроков турнира «${entry.name}» для пересчёта сезона.`);
+                }
+                const names = ids.map(id => playersById.get(String(id)).fullName);
+                if (new Set(names.map(name => name.toLowerCase())).size !== count) {
+                    throw new Error('В турнире есть игроки с одинаковыми именами. Исправление отменено.');
+                }
+                // Resolve historical identities by ID, retaining experience at that date
+                // even when a player has since been renamed.
+                const savedBefore = source.tournamentsPlayedBefore || {};
+                const renamedBefore = {};
+                names.forEach((name, index) => {
+                    const oldName = source.playerNames[index];
+                    const saved = savedBefore[oldName] ?? savedBefore[String(oldName).toLowerCase()];
+                    renamedBefore[name] = saved !== undefined ? saved : countClubTournamentsBefore(entry.id, oldName, ids[index]);
+                });
+                const replayEntry = { ...entry, seasonCalculationSource: { ...source, tournamentsPlayedBefore: renamedBefore } };
+                const seasonPlayers = buildSeasonPlayersList(names, stats, season, replayEntry);
+                const result = calculateDeltas(names, source.matchScores, Number(source.K) || 0.20,
+                    !!source.applyPlaceBonuses, seasonPlayers, source.additionalMatches || [], standings);
+                names.forEach((name, index) => {
+                    const id = String(ids[index]);
+                    const key = name.toLowerCase();
+                    const stat = stats[id];
+                    const delta = result.deltas[key] || 0;
+                    const wins = result.wins[key] || 0;
+                    const losses = result.losses[key] || 0;
+                    const ratingBefore = stat.rating;
+                    const ratingAfter = Math.max(0, ratingBefore + delta);
+                    if (!Number.isFinite(ratingAfter)) throw new Error('Не удалось рассчитать сезонный рейтинг.');
+                    stats[id] = { ...stat, rating: ratingAfter,
+                        matchesCount: stat.matchesCount + wins + losses,
+                        winsCount: stat.winsCount + wins, lossesCount: stat.lossesCount + losses,
+                        tournamentsCount: stat.tournamentsCount + 1 };
+                    if (!rebuiltRatingHistory[id]) rebuiltRatingHistory[id] = {};
+                    rebuiltRatingHistory[id][String(entry.id)] = { ratingBefore, ratingAfter, delta, ts: Number(entry.id) };
+                });
+                rebuiltProcessed[String(entry.id)] = 'done';
+            }
+            return { stats, ratingHistory: rebuiltRatingHistory, processed: rebuiltProcessed };
+        }
+
+        function parseHistoryCorrectionList(raw) {
+            const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (Array.isArray(value)) return value;
+            if (value && typeof value === 'object') return Object.values(value);
+            throw new Error('Не удалось прочитать свежие данные клуба. Обновите страницу.');
+        }
+
+        function historyCorrectionInputsMatch(current, original, seasonIds) {
+            if (!current) return false;
+            const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+            if (['players', 'history', 'draft', 'activeSeasonId'].some(key => !same(current[key], original[key]))) return false;
+            return seasonIds.every(id => ['seasons', 'seasonStats', 'seasonRatingHistory', 'seasonProcessedTournaments']
+                .every(key => same(current[key]?.[id], original[key]?.[id])));
+        }
+
+        let historyCorrectionSaving = false;
         window.applyHistoricalScoreCorrection = async function(newScore) {
+            if (historyCorrectionSaving) return;
             if (!isAdmin || !firebase.auth().currentUser) {
                 showToast('Исправлять завершённые турниры может только администратор');
                 return;
@@ -11072,14 +11221,49 @@ function getPlayerLastDelta(player) {
             const newLabel = (String(newScore) === 'W' || String(newScore) === 'L')
                 ? formatHistoricalScoreDescription(newScore, selected, targetNames).replace(/^Сейчас:/, 'Новый результат:')
                 : `Новый счёт: ${newScore}`;
-            const message = validation.range.length > 1
+            const seasonIds = [...new Set(validation.range.map(entry => getHistorySource(entry)?.seasonId).filter(Boolean).map(String))];
+            let message = validation.range.length > 1
                 ? `${oldLabel}\n${newLabel}\n\nБудет пересчитан этот турнир и ещё ${validation.range.length - 1} последующих турнир(а).`
                 : `${oldLabel}\n${newLabel}\n\nТурнир будет полностью пересчитан.`;
+            if (seasonIds.length) message += '\nСезонный рейтинг также будет пересчитан с начала затронутого сезона.';
             if (!confirm(message)) return;
 
+            historyCorrectionSaving = true;
             showLoader(true);
+            const correctionClubId = activeClubId;
+            const correctionUserId = firebase.auth().currentUser.uid;
             try {
+                const clubRef = db.ref(`clubs/${correctionClubId}`);
+                const snapshot = await clubRef.once('value');
+                const original = snapshot.val();
+                if (activeClubId !== correctionClubId || !isAdmin || firebase.auth().currentUser?.uid !== correctionUserId) {
+                    throw new Error('Клуб или учётная запись изменились. Повторите исправление.');
+                }
+                if (!original || original.draft || clubData.draft) {
+                    throw new Error('Сначала завершите или удалите текущий незавершённый турнир.');
+                }
+                if (JSON.stringify(parseHistoryCorrectionList(original.players)) !== JSON.stringify(clubData.players) ||
+                    JSON.stringify(parseHistoryCorrectionList(original.history)) !== JSON.stringify(clubData.history)) {
+                    throw new Error('Данные клуба обновились. Откройте турнир заново и повторите исправление.');
+                }
+                const freshSeasonIds = [...new Set(validateHistoryCorrectionRange(targetId).range?.map(entry => getHistorySource(entry)?.seasonId).filter(Boolean).map(String) || [])];
+                if (JSON.stringify(freshSeasonIds) !== JSON.stringify(seasonIds)) {
+                    throw new Error('Список турниров изменился. Откройте турнир заново.');
+                }
                 const recalculated = recalculateHistoryAfterScoreCorrection(targetId, selected, newScore);
+                const rebuiltSeasons = {};
+                const seasonBackups = {};
+                for (const id of seasonIds) {
+                    const season = original.seasons?.[id];
+                    rebuiltSeasons[id] = rebuildSeasonForHistoryCorrection(id, season, recalculated.updatedHistory,
+                        original.seasonStats?.[id], original.seasonProcessedTournaments?.[id], original.seasonRatingHistory?.[id]);
+                    seasonBackups[id] = {
+                        season: season || null,
+                        stats: original.seasonStats?.[id] || null,
+                        ratingHistory: original.seasonRatingHistory?.[id] || null,
+                        processed: original.seasonProcessedTournaments?.[id] || null
+                    };
+                }
                 const backupId = Date.now();
                 const backup = {
                     createdAt: backupId,
@@ -11087,25 +11271,54 @@ function getPlayerLastDelta(player) {
                     oldScore: String(selected.score),
                     newScore: String(newScore),
                     playersJson: JSON.stringify(clubData.players),
-                    historyJson: JSON.stringify(clubData.history)
+                    historyJson: JSON.stringify(clubData.history),
+                    selectedMatch: { ...selected },
+                    seasons: seasonBackups
                 };
 
                 // Backup first. If this fails, no live data is changed.
-                await db.ref(`clubs/${activeClubId}/historyEditBackups/${backupId}`).set(backup);
+                await clubRef.child(`historyEditBackups/${backupId}`).set(backup);
 
-                // Atomic multi-key update of live player base + history.
-                await db.ref(`clubs/${activeClubId}`).update({
-                    players: JSON.stringify(recalculated.updatedPlayers),
-                    history: JSON.stringify(recalculated.updatedHistory)
-                });
+                // Compare and commit all affected layers together. A concurrent score,
+                // season update or new tournament cancels this correction instead of
+                // overwriting it. Unrelated club fields retain their current values.
+                const commit = await clubRef.transaction(current => {
+                    // Firebase may initially supply null when its local cache is empty.
+                    // Returning null lets the server compare-and-swap retry with fresh
+                    // data; returning undefined here would abort before that retry.
+                    if (current === null) return null;
+                    if (activeClubId !== correctionClubId || !isAdmin || firebase.auth().currentUser?.uid !== correctionUserId ||
+                        !historyCorrectionInputsMatch(current, original, seasonIds)) return;
+                    const next = { ...current, players: JSON.stringify(recalculated.updatedPlayers),
+                        history: JSON.stringify(recalculated.updatedHistory) };
+                    if (seasonIds.length) {
+                        next.seasonStats = { ...(current.seasonStats || {}) };
+                        next.seasonRatingHistory = { ...(current.seasonRatingHistory || {}) };
+                        next.seasonProcessedTournaments = { ...(current.seasonProcessedTournaments || {}) };
+                        for (const id of seasonIds) {
+                            next.seasonStats[id] = rebuiltSeasons[id].stats;
+                            next.seasonRatingHistory[id] = rebuiltSeasons[id].ratingHistory;
+                            next.seasonProcessedTournaments[id] = rebuiltSeasons[id].processed;
+                        }
+                    }
+                    return next;
+                }, undefined, false);
+                if (!commit.committed || !commit.snapshot.val()) throw new Error('Данные клуба изменились во время сохранения. Откройте турнир заново и повторите исправление.');
+
+                if (selectedSeason && rebuiltSeasons[String(selectedSeason.id)]) {
+                    selectedSeasonStats = rebuiltSeasons[String(selectedSeason.id)].stats;
+                }
 
                 closeHistoryEditModal();
                 closeHistoryModal();
-                showLoader(false);
-                showToast('Результат исправлен. Рейтинги и последующая история пересчитаны.');
+                showToast(seasonIds.length
+                    ? 'Результат исправлен. Общий и сезонный рейтинги пересчитаны.'
+                    : 'Результат исправлен. Рейтинги и последующая история пересчитаны.');
             } catch (error) {
-                showLoader(false);
                 showToast('Исправление отменено: ' + error.message);
+            } finally {
+                historyCorrectionSaving = false;
+                showLoader(false);
             }
         };
 
