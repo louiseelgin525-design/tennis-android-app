@@ -7505,6 +7505,14 @@ function getPlayerLastDelta(player) {
                 return aWeight - bWeight;
             });
 
+            const fullRoundQueue = getFullRoundRobinQueue(draft);
+            if (fullRoundQueue) {
+                queueList.splice(0, queueList.length, ...fullRoundQueue.map(key => {
+                    const [f, s] = key.split('_').map(Number);
+                    return { f, s };
+                }));
+            }
+
             const queueContainer = document.createElement('div');
             queueContainer.className = 'active-tables-container'; // reuse styles for card flow
             queueContainer.style.marginBottom = '0'; // reset for column layout
@@ -8449,6 +8457,92 @@ function getPlayerLastDelta(player) {
             return result;
         }
 
+        // Circle-method rounds: every player appears once per round, and every
+        // pair appears exactly once across the whole round-robin tournament.
+        function buildFullRoundRobinRounds(playerCount) {
+            if (!Number.isInteger(playerCount) || playerCount < 2 || playerCount % 2 !== 0) return [];
+            const order = Array.from({ length: playerCount }, (_, index) => index);
+            const rounds = [];
+            for (let round = 0; round < playerCount - 1; round++) {
+                const pairs = [];
+                for (let table = 0; table < playerCount / 2; table++) {
+                    const first = order[table];
+                    const second = order[playerCount - 1 - table];
+                    pairs.push(`${Math.min(first, second)}_${Math.max(first, second)}`);
+                }
+                rounds.push(pairs);
+                order.splice(1, 0, order.pop());
+            }
+            return rounds;
+        }
+
+        function hasRoundRobinMatchResult(scores, key) {
+            const score = scores[key];
+            return score === 'W' || score === 'L' || isValidPlayedScore(score);
+        }
+
+        function getFullRoundRobinQueue(draft) {
+            const state = draft.fullRoundRobinState;
+            const withdrawn = Array.isArray(draft.withdrawnPlayers)
+                ? draft.withdrawnPlayers : Object.values(draft.withdrawnPlayers || {});
+            if (!state || state.version !== 1 || state.playerCount !== Number(draft.playersCount) ||
+                state.tablesCount !== Number(draft.tablesCount) || state.playerCount !== state.tablesCount * 2 ||
+                !Number.isInteger(state.roundIndex) || state.roundIndex < 0 || withdrawn.length) return null;
+            const scores = draft.matchScores || {};
+            const active = new Set(normalizeActiveRoundRobinMatches(draft.activeRoundRobinMatches,
+                state.playerCount, state.tablesCount).filter(Boolean));
+            return buildFullRoundRobinRounds(state.playerCount).slice(state.roundIndex)
+                .flatMap(round => round.filter(key => !active.has(key) && !hasRoundRobinMatchResult(scores, key)));
+        }
+
+        // Handle exact capacity (2 players per configured table) as full rounds.
+        // Returning false preserves the existing free-order scheduler elsewhere.
+        function scheduleFullRoundRobinRound(draft, playerCount, tablesCount) {
+            const count = Number(playerCount);
+            const tables = Number(tablesCount);
+            const withdrawn = Array.isArray(draft.withdrawnPlayers)
+                ? draft.withdrawnPlayers : Object.values(draft.withdrawnPlayers || {});
+            if (!Number.isInteger(tables) || tables < 1 || count !== tables * 2 || withdrawn.length) {
+                delete draft.fullRoundRobinState;
+                return false;
+            }
+            const rounds = buildFullRoundRobinRounds(count);
+            if (!rounds.length) return false;
+            const scores = draft.matchScores || {};
+            const active = draft.activeRoundRobinMatches;
+            const hasResult = key => hasRoundRobinMatchResult(scores, key);
+            let state = draft.fullRoundRobinState;
+
+            if (!state || state.version !== 1 || state.playerCount !== count || state.tablesCount !== tables ||
+                !Number.isInteger(state.roundIndex) || state.roundIndex < 0 || state.roundIndex > rounds.length) {
+                const firstUnfinished = rounds.findIndex(round => round.some(key => !hasResult(key)));
+                const nextIndex = firstUnfinished < 0 ? rounds.length : firstUnfinished;
+                const nextPairs = new Set(rounds[nextIndex] || []);
+                // Older drafts may already have crossed several rounds. Keep their
+                // current scheduling instead of moving an assigned match or forcing
+                // an incomplete historical round onto fewer tables.
+                const laterResults = rounds.slice(nextIndex + 1).some(round => round.some(hasResult));
+                const incompatibleActive = active.some(key => key && !nextPairs.has(key));
+                const missingActive = active.some(Boolean) && [...nextPairs].some(key => !hasResult(key) && !active.includes(key));
+                const partialRestart = !active.some(Boolean) && nextIndex < rounds.length &&
+                    rounds[nextIndex].some(hasResult);
+                if (laterResults || incompatibleActive || missingActive || partialRestart) return false;
+                state = { version: 1, playerCount: count, tablesCount: tables, roundIndex: nextIndex };
+                draft.fullRoundRobinState = state;
+            }
+
+            // The unfinished matches retain their tables. Finished tables stay free
+            // until every result in this round has been recorded.
+            if (active.some(Boolean)) return true;
+
+            let roundIndex = state.roundIndex;
+            while (roundIndex < rounds.length && rounds[roundIndex].every(hasResult)) roundIndex++;
+            draft.fullRoundRobinState = { ...state, roundIndex };
+            const nextPairs = (rounds[roundIndex] || []).filter(key => !hasResult(key));
+            draft.activeRoundRobinMatches = Array.from({ length: tables }, (_, table) => nextPairs[table] || false);
+            return true;
+        }
+
         function refreshActiveRoundRobinMatches(draft, playerCount, tablesCount) {
             const effectiveTablesCount = Math.max(1, Math.min(tablesCount || 1, Math.max(1, Math.floor(playerCount / 2))));
 
@@ -8487,6 +8581,8 @@ function getPlayerLastDelta(player) {
                     draft.activeRoundRobinMatches[i] = false;
                 }
             }
+
+            if (scheduleFullRoundRobinRound(draft, playerCount, tablesCount)) return;
 
             // Collect busy players
             const busyPlayers = new Set();
