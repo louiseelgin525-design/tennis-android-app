@@ -7741,7 +7741,7 @@ function getPlayerLastDelta(player) {
                 }
 
                 // Check if tournament is finished (all matches scored)
-                if (isAdmin) {
+                if (isAdmin && getRoundRobinCompletion(draft).complete) {
                     const finishBtn = document.createElement('button');
                     finishBtn.className = 'finish-tourney-btn';
                     finishBtn.innerHTML = `${SVG_ICONS.flag} Завершить турнир и рассчитать дельты`;
@@ -9316,72 +9316,141 @@ function getPlayerLastDelta(player) {
             return parts[1] + ":" + parts[0];
         }
 
+        function isRoundRobinDraft(draft) {
+            if (!draft) return false;
+            return draft.format === 'rr' || draft.tournamentFormat === 'rr' ||
+                (!draft.format && !draft.tournamentFormat && Number(draft.playersCount) <= 10);
+        }
+
+        function isTournamentScoreComplete(score, winsToWin) {
+            if (score === 'W' || score === 'L') return true;
+            if (!isValidPlayedScore(score)) return false;
+            const [a, b] = String(score).split(':').map(Number);
+            return Math.max(a, b) === winsToWin && Math.min(a, b) >= 0 && Math.min(a, b) < winsToWin;
+        }
+
+        function getRoundRobinCompletion(draft) {
+            const count = Number(draft?.playersCount);
+            const winsToWin = Number(draft?.winsToWin) || 2;
+            const scores = draft?.matchScores || {};
+            const missingKeys = [];
+            let played = 0;
+            for (let first = 0; first < count; first++) {
+                for (let second = first + 1; second < count; second++) {
+                    const key = `${first}_${second}`;
+                    if (isTournamentScoreComplete(scores[key], winsToWin)) played++;
+                    else missingKeys.push(key);
+                }
+            }
+            const pendingAdditional = normalizeTieBreakMatches(draft || {}).filter(match =>
+                !match.voided && !isTournamentScoreComplete(match.score, winsToWin)).length;
+            const expected = count * (count - 1) / 2;
+            return { complete: Number.isInteger(count) && count >= 2 && missingKeys.length === 0 && pendingAdditional === 0,
+                expected, played, missingKeys, pendingAdditional };
+        }
+
+        function tournamentStableJson(value) {
+            const normalize = item => {
+                if (Array.isArray(item)) return item.map(normalize);
+                if (item && typeof item === 'object') return Object.keys(item).sort().reduce((result, key) => {
+                    result[key] = normalize(item[key]); return result;
+                }, {});
+                return item;
+            };
+            return JSON.stringify(normalize(value));
+        }
+
+        function getTournamentFinishSignature(draft, players, bonuses) {
+            return tournamentStableJson({ draft, players, bonuses: !!bonuses });
+        }
+
+        function getActiveTournamentIdentity(draft) {
+            return tournamentStableJson({ name: draft?.name, playerFieldsJson: draft?.playerFieldsJson,
+                playersCount: draft?.playersCount, fixedK: draft?.fixedK, winsToWin: draft?.winsToWin,
+                instanceId: draft?.tournamentInstanceId || null });
+        }
+
+        function incompleteTournamentMessage(progress) {
+            return progress.missingKeys.length
+                ? `Турнир ещё не закончен: записано ${progress.played} из ${progress.expected} матчей. Внесите оставшиеся результаты.`
+                : 'Сначала внесите результаты всех дополнительных матчей.';
+        }
+
         // SAVE MATCH RESULT (ROUND ROBIN)
         window.submitQuickScore = function(score) {
-            if (!activeScoreMatch) return;
-            showLoader(true);
-
-            const draft = { ...clubData.draft };
-
-            if (activeScoreMatch.type === 'tieBreak') {
-                const matches = normalizeTieBreakMatches(draft).map(match => ({ ...match }));
-                const matchIndex = matches.findIndex(item => String(item.id) === String(activeScoreMatch.matchId));
-                if (matchIndex < 0) {
-                    showLoader(false);
-                    showToast('Дополнительный матч не найден');
-                    return;
-                }
-
-                matches[matchIndex].score = score;
-                matches[matchIndex].updatedAt = Date.now();
-                draft.tieBreakMatches = matches;
-                // A changed score invalidates any previously entered manual order.
-                draft.manualTieOrders = {};
-
-                db.ref(`clubs/${activeClubId}/draft`).set(draft)
-                    .then(() => {
-                        closeAdminScoreModal();
-                        showLoader(false);
-                        showToast('Счет дополнительного матча сохранен!');
-                    })
-                    .catch(e => {
-                        showLoader(false);
-                        showToast('Ошибка сохранения: ' + e.message);
-                    });
+            if (!activeScoreMatch || !clubData.draft || window.roundRobinScoreSaving) return;
+            const selected = { ...activeScoreMatch };
+            const originalDraft = clubData.draft;
+            const clubId = activeClubId;
+            const identity = getActiveTournamentIdentity(originalDraft);
+            const additional = selected.type === 'tieBreak';
+            const previousMatch = additional ? normalizeTieBreakMatches(originalDraft)
+                .find(match => String(match.id) === String(selected.matchId)) : null;
+            const oldScore = String((additional ? previousMatch?.score : originalDraft.matchScores?.[selected.scoreKey]) ?? '');
+            const newScore = !additional && selected.f > selected.s ? reverseScoreString(score) : String(score);
+            if (!isTournamentScoreComplete(newScore, Number(originalDraft.winsToWin) || 2)) {
+                showToast('Некорректный счёт матча');
                 return;
             }
-
-            if (!draft.matchScores) draft.matchScores = {};
-            // A changed main result invalidates any previously entered manual order.
-            draft.manualTieOrders = {};
-            
-            let finalScore = score;
-            if (activeScoreMatch.f > activeScoreMatch.s) {
-                finalScore = reverseScoreString(score);
+            if (oldScore === newScore) {
+                closeAdminScoreModal();
+                showToast('Этот счёт уже сохранён');
+                return Promise.resolve(false);
             }
-            draft.matchScores[activeScoreMatch.scoreKey] = finalScore;
-
-            // Track last finished players
-            draft.lastFinishedPlayers = [activeScoreMatch.f, activeScoreMatch.s];
-
-            // If match was played at a table, clear table assignment
-            if (activeScoreMatch.index !== null && draft.activeRoundRobinMatches) {
-                draft.activeRoundRobinMatches[activeScoreMatch.index] = false;
+            if (!additional) {
+                const first = Math.min(Number(selected.f), Number(selected.s));
+                const second = Math.max(Number(selected.f), Number(selected.s));
+                if (!Number.isInteger(first) || !Number.isInteger(second) || first < 0 ||
+                    second >= Number(originalDraft.playersCount) || first === second || selected.scoreKey !== `${first}_${second}`) {
+                    showToast('Не удалось определить выбранный матч'); return;
+                }
             }
-
-            // Reschedule next match
-            refreshActiveRoundRobinMatches(draft, draft.playersCount, draft.tablesCount);
-
-            db.ref(`clubs/${activeClubId}/draft`).set(draft)
-                .then(() => {
-                    closeAdminScoreModal();
-                    showLoader(false);
-                    showToast("Счет сохранен!");
-                })
-                .catch(e => {
-                    showLoader(false);
-                    showToast("Ошибка сохранения: " + e.message);
-                });
+            window.roundRobinScoreSaving = true;
+            showLoader(true);
+            let reason = 'Данные матча изменились. Откройте его заново.';
+            return db.ref(`clubs/${clubId}/draft`).transaction(current => {
+                if (current === null) return null; // Allow Firebase to refresh an empty local cache.
+                if (activeClubId !== clubId || getActiveTournamentIdentity(current) !== identity) return;
+                const draft = JSON.parse(JSON.stringify(current));
+                if (additional) {
+                    const matches = normalizeTieBreakMatches(draft).map(match => ({ ...match }));
+                    const index = matches.findIndex(match => String(match.id) === String(selected.matchId));
+                    if (index < 0) { reason = 'Дополнительный матч не найден'; return; }
+                    const saved = String(matches[index].score ?? '');
+                    if (saved === newScore) { reason = 'Этот счёт уже сохранён'; return; }
+                    if (saved !== oldScore) return;
+                    matches[index].score = newScore;
+                    matches[index].updatedAt = Date.now();
+                    draft.tieBreakMatches = matches;
+                } else {
+                    if ((draft.withdrawnPlayers || []).includes(Number(selected.f)) ||
+                        (draft.withdrawnPlayers || []).includes(Number(selected.s))) {
+                        reason = 'Игрок уже снят с турнира. Обновите таблицу.'; return;
+                    }
+                    const saved = String(draft.matchScores?.[selected.scoreKey] ?? '');
+                    if (saved === newScore) { reason = 'Этот счёт уже сохранён'; return; }
+                    if (saved !== oldScore) return;
+                    draft.matchScores = { ...(draft.matchScores || {}), [selected.scoreKey]: newScore };
+                    draft.lastFinishedPlayers = [Number(selected.f), Number(selected.s)];
+                    // Clear by the actual pair, never by a possibly outdated table index.
+                    refreshActiveRoundRobinMatches(draft, draft.playersCount, draft.tablesCount);
+                }
+                draft.manualTieOrders = {};
+                return draft;
+            }, undefined, false).then(commit => {
+                if (!commit.committed || !commit.snapshot.val()) { showToast(reason); return false; }
+                window.calculatedResult = null;
+                window.calculatedResultSource = null;
+                closeAdminScoreModal();
+                showToast(additional ? 'Счёт дополнительного матча сохранён!' : 'Счёт сохранён!');
+                return true;
+            }).catch(error => {
+                showToast('Ошибка сохранения: ' + error.message);
+                return false;
+            }).finally(() => {
+                window.roundRobinScoreSaving = false;
+                showLoader(false);
+            });
         };
 
         // WITHDRAW PLAYER (ROUND ROBIN)
@@ -9897,8 +9966,13 @@ function getPlayerLastDelta(player) {
 
         function openTournamentFinishModal() {
             window.calculatedResult = null;
+            window.calculatedResultSource = null;
             const draft = clubData.draft;
             if (!draft) return;
+            if (isRoundRobinDraft(draft)) {
+                const progress = getRoundRobinCompletion(draft);
+                if (!progress.complete) { showToast(incompleteTournamentMessage(progress)); return; }
+            }
 
             const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
             const playerNames = playerFields.map(field => decodeName(field.name).trim());
@@ -9909,7 +9983,7 @@ function getPlayerLastDelta(player) {
             let finalStandings = null;
             let additionalMatches = [];
 
-            if (playerNames.length <= 10) {
+            if (isRoundRobinDraft(draft)) {
                 const resolution = calculateResolvedRoundRobinStandings(playerNames.length, scores, draft);
                 if (resolution.unresolvedGroups.length > 0) {
                     openTieBreakResolutionModal(resolution, playerNames);
@@ -9930,6 +10004,10 @@ function getPlayerLastDelta(player) {
                 finalStandings
             );
             window.calculatedResult = result;
+            window.calculatedResultSource = {
+                clubId: activeClubId,
+                signature: getTournamentFinishSignature(draft, clubData.players, applyPlaceBonuses)
+            };
 
             const tbody = document.getElementById('finish-tourney-ratings-tbody');
             tbody.innerHTML = '';
@@ -9957,6 +10035,7 @@ function getPlayerLastDelta(player) {
 
         function closeTournamentFinishModal() {
             window.calculatedResult = null;
+            window.calculatedResultSource = null;
             document.getElementById('tournament-finish-modal').style.display = 'none';
         }
 
@@ -9969,11 +10048,28 @@ function getPlayerLastDelta(player) {
 
         // APPLY RATINGS AND SAVE TOURNAMENT TO HISTORY (FINALIZE)
         window.submitFinalizeTournament = async function() {
-            if (!window.calculatedResult) return;
+            if (!window.calculatedResult || window.finalizingTournament || window.roundRobinScoreSaving) return;
+            const preview = window.calculatedResultSource;
+            const finishingClubId = activeClubId;
+            const bonusesAtStart = document.getElementById('finish-bonuses-checkbox')?.checked || false;
+            const draftAtStart = clubData.draft;
+            if (!draftAtStart) return;
+            if (isRoundRobinDraft(draftAtStart)) {
+                const progress = getRoundRobinCompletion(draftAtStart);
+                if (!progress.complete) { showToast(incompleteTournamentMessage(progress)); return; }
+            }
+            const finishSignature = getTournamentFinishSignature(draftAtStart, clubData.players, bonusesAtStart);
+            if (!preview || preview.clubId !== finishingClubId || preview.signature !== finishSignature) {
+                showToast('Данные турнира изменились. Откройте предварительные итоги заново.'); return;
+            }
+            window.finalizingTournament = true;
             showLoader(true);
+            try {
 
             const result = window.calculatedResult;
             const draft = clubData.draft;
+            const historyAtStart = tournamentStableJson(clubData.history);
+            const seasonAtStart = activeSeason ? JSON.parse(JSON.stringify(activeSeason)) : null;
             const playerFields = JSON.parse(draft.playerFieldsJson || "[]");
             const playerNames = playerFields.map(f => decodeName(f.name).trim());
             const K = draft.fixedK || 0.20;
@@ -10160,16 +10256,35 @@ function getPlayerLastDelta(player) {
 
             const updatedHistory = [historyEntry, ...clubData.history];
 
-            // 5. Save all to Firebase and clear draft
-            try {
-                await db.ref(`clubs/${activeClubId}/players`).set(JSON.stringify(updatedPlayers));
-                await db.ref(`clubs/${activeClubId}/history`).set(JSON.stringify(updatedHistory));
-                await db.ref(`clubs/${activeClubId}/draft`).remove();
+            // Recheck against a fresh snapshot, then save all three fields together.
+            // A late score, another device, or a second finalize cannot delete matches
+            // or apply ratings twice.
+                const clubRef = db.ref(`clubs/${finishingClubId}`);
+                const snapshot = await clubRef.once('value');
+                const original = snapshot.val();
+                if (activeClubId !== finishingClubId || !original?.draft ||
+                    getTournamentFinishSignature(original.draft, parseHistoryCorrectionList(original.players), bonusesAtStart) !== finishSignature ||
+                    tournamentStableJson(parseHistoryCorrectionList(original.history || '[]')) !== historyAtStart ||
+                    (_seasonId && tournamentStableJson(original.seasons?.[_seasonId]) !== tournamentStableJson(seasonAtStart))) {
+                    throw new Error('Данные обновились. Откройте предварительные итоги заново.');
+                }
+                const committed = await clubRef.transaction(current => {
+                    if (current === null) return null;
+                    if (activeClubId !== finishingClubId ||
+                        !historyCorrectionInputsMatch(current, original, _seasonId ? [String(_seasonId)] : [])) return;
+                    return { ...current, players: JSON.stringify(updatedPlayers),
+                        history: JSON.stringify(updatedHistory), draft: null };
+                }, undefined, false);
+                if (!committed.committed || !committed.snapshot.val()) {
+                    throw new Error('Турнир изменён на другом устройстве. Проверьте результаты и повторите завершение.');
+                }
+                window.calculatedResult = null;
+                window.calculatedResultSource = null;
 
                 // 6. Update season stats (non-blocking — errors are caught internally)
-                if (activeSeason) {
+                if (_seasonId && activeClubId === finishingClubId) {
                     try {
-                        await updateSeasonAfterTournament(historyEntry, scores, playerNames, K, applyPlaceBonuses);
+                        await updateSeasonAfterTournament(historyEntry, scores, playerNames, K, applyPlaceBonuses, seasonAtStart);
                     } catch (seasonErr) {
                         debugLog('Season update failed (non-critical): ' + seasonErr.message);
                         showToast('Турнир сохранён. Сезонный рейтинг обновится при следующей синхронизации.');
@@ -10177,11 +10292,12 @@ function getPlayerLastDelta(player) {
                 }
 
                 closeTournamentFinishModal();
-                showLoader(false);
                 showToast("Турнир успешно сохранен в историю!");
             } catch (e) {
-                showLoader(false);
                 showToast("Ошибка сохранения: " + e.message);
+            } finally {
+                window.finalizingTournament = false;
+                showLoader(false);
             }
         };
 
@@ -10700,6 +10816,20 @@ function getPlayerLastDelta(player) {
             return { ok: true, ordered, start, range };
         }
 
+        function getHistoricalMainMatchRows(source) {
+            const rows = [];
+            const count = source?.playerNames?.length || 0;
+            for (let p1 = 0; p1 < count; p1++) {
+                for (let p2 = p1 + 1; p2 < count; p2++) {
+                    const key = `${p1}_${p2}`;
+                    const score = String(source.matchScores?.[key] ?? '');
+                    rows.push({ type: 'main', key, p1, p2, score,
+                        label: score ? 'Матч' : 'Результат отсутствует' });
+                }
+            }
+            return rows;
+        }
+
         window.openHistoryEditModal = function() {
             if (!isAdmin || !firebase.auth().currentUser) {
                 showToast('Исправлять завершённые турниры может только администратор');
@@ -10717,7 +10847,7 @@ function getPlayerLastDelta(player) {
                 return;
             }
 
-            historyCorrectionState = { entryId: activeHistoryEntry.id, selectedMatch: null };
+            historyCorrectionState = { entryId: activeHistoryEntry.id, selectedMatch: null, pendingMissingScores: {} };
             const source = getHistorySource(activeHistoryEntry);
             const names = getCurrentHistoricalPlayerNames(source);
             const list = document.getElementById('history-edit-match-list');
@@ -10726,16 +10856,7 @@ function getPlayerLastDelta(player) {
             subtitle.textContent = `${activeHistoryEntry.name} • ${laterCount > 0 ? `будет пересчитано ещё ${laterCount} последующих турнир(а)` : 'это последний турнир'}`;
             list.innerHTML = '';
 
-            const rows = [];
-            Object.entries(source.matchScores || {}).forEach(([scoreKey, score]) => {
-                const parts = String(scoreKey).split('_');
-                if (parts.length !== 2) return;
-                const p1 = Number(parts[0]);
-                const p2 = Number(parts[1]);
-                if (!Number.isInteger(p1) || !Number.isInteger(p2) || !names[p1] || !names[p2]) return;
-                if (score === undefined || score === null || score === '') return;
-                rows.push({ type: 'main', key: scoreKey, p1, p2, score: String(score), label: 'Матч' });
-            });
+            const rows = getHistoricalMainMatchRows(source);
             (Array.isArray(source.additionalMatches) ? source.additionalMatches : []).forEach((match, index) => {
                 const p1 = Number(match.p1);
                 const p2 = Number(match.p2);
@@ -10796,6 +10917,7 @@ function getPlayerLastDelta(player) {
 
         function formatHistoricalMatchListScore(score) {
             const value = String(score || '').trim();
+            if (!value) return 'Нет счёта';
             if (value === 'W') return 'W / L';
             if (value === 'L') return 'L / W';
             return value;
@@ -10807,7 +10929,7 @@ function getPlayerLastDelta(player) {
             const p2Name = names[matchData.p2];
             if (value === 'W') return `Сейчас: W / L · снятие: ${p2Name}`;
             if (value === 'L') return `Сейчас: L / W · снятие: ${p1Name}`;
-            return `Сейчас в истории: ${value}`;
+            return `Сейчас в истории: ${value || 'результат отсутствует'}`;
         }
 
         function selectHistoricalMatchForEdit(matchData) {
@@ -11107,7 +11229,7 @@ function getPlayerLastDelta(player) {
             });
         }
 
-        function recalculateHistoryAfterScoreCorrection(targetId, selectedMatch, newScore) {
+        function recalculateHistoryAfterScoreCorrection(targetId, selectedMatch, newScore, restoredScores = {}) {
             const validation = validateHistoryCorrectionRange(targetId);
             if (!validation.ok) throw new Error(validation.message);
 
@@ -11120,8 +11242,9 @@ function getPlayerLastDelta(player) {
             };
 
             if (selectedMatch.type === 'main') {
-                if (!(selectedMatch.key in correctedSource.matchScores)) throw new Error('Матч не найден в исходных данных турнира.');
-                if (String(correctedSource.matchScores[selectedMatch.key]) !== String(selectedMatch.score)) {
+                const row = getHistoricalMainMatchRows(targetSourceOriginal).find(item => item.key === selectedMatch.key);
+                if (!row) throw new Error('Матч не найден в исходных данных турнира.');
+                if (String(correctedSource.matchScores[selectedMatch.key] ?? '') !== String(selectedMatch.score ?? '')) {
                     throw new Error('Счёт уже изменился. Откройте турнир заново.');
                 }
                 correctedSource.matchScores[selectedMatch.key] = newScore;
@@ -11132,6 +11255,13 @@ function getPlayerLastDelta(player) {
                     throw new Error('Счёт уже изменился. Откройте турнир заново.');
                 }
                 correctedSource.additionalMatches[idx].score = newScore;
+            }
+            for (const [key, score] of Object.entries(restoredScores)) {
+                const row = getHistoricalMainMatchRows(targetSourceOriginal).find(item => item.key === key);
+                if (!row || row.score || !isTournamentScoreComplete(score, inferHistoricalWinsToWin(targetSourceOriginal))) {
+                    throw new Error('Список отсутствующих результатов изменился. Откройте турнир заново.');
+                }
+                correctedSource.matchScores[key] = score;
             }
 
             let playersState = rollbackHistoryRangeToBaseline(validation.range);
@@ -11311,6 +11441,25 @@ function getPlayerLastDelta(player) {
             const targetEntry = clubData.history.find(e => Number(e.id) === Number(targetId));
             const targetSource = getHistorySource(targetEntry);
             const targetNames = getCurrentHistoricalPlayerNames(targetSource);
+            const missingRows = getHistoricalMainMatchRows(targetSource).filter(row => !row.score);
+            let restoredScores = {};
+            if (missingRows.length) {
+                if (selected.type !== 'main' || !missingRows.some(row => row.key === selected.key)) {
+                    selectHistoricalMatchForEdit(missingRows[0]);
+                    showToast('Сначала заполните отсутствующие результаты турнира.');
+                    return;
+                }
+                const pending = { ...(historyCorrectionState.pendingMissingScores || {}) };
+                if (selected.type === 'main' && missingRows.some(row => row.key === selected.key)) pending[selected.key] = String(newScore);
+                historyCorrectionState.pendingMissingScores = pending;
+                const next = missingRows.find(row => !pending[row.key]);
+                if (next) {
+                    selectHistoricalMatchForEdit(next);
+                    showToast(`Для восстановления заполните все отсутствующие матчи. Осталось: ${missingRows.filter(row => !pending[row.key]).length}.`);
+                    return;
+                }
+                restoredScores = Object.fromEntries(missingRows.map(row => [row.key, pending[row.key]]));
+            }
             const oldLabel = (String(selected.score) === 'W' || String(selected.score) === 'L')
                 ? formatHistoricalScoreDescription(selected.score, selected, targetNames)
                 : `Сейчас в истории: ${selected.score}`;
@@ -11321,6 +11470,11 @@ function getPlayerLastDelta(player) {
             let message = validation.range.length > 1
                 ? `${oldLabel}\n${newLabel}\n\nБудет пересчитан этот турнир и ещё ${validation.range.length - 1} последующих турнир(а).`
                 : `${oldLabel}\n${newLabel}\n\nТурнир будет полностью пересчитан.`;
+            if (missingRows.length) {
+                message = 'Восстановить отсутствующие результаты?\n\n' + missingRows.map(row =>
+                    `${targetNames[row.p1]} — ${targetNames[row.p2]}: ${restoredScores[row.key]}`).join('\n') +
+                    '\n\nРейтинги, места и статистика будут пересчитаны. Перед сохранением будет создана резервная копия.';
+            }
             if (seasonIds.length) message += '\nСезонный рейтинг также будет пересчитан с начала затронутого сезона.';
             if (!confirm(message)) return;
 
@@ -11346,7 +11500,7 @@ function getPlayerLastDelta(player) {
                 if (JSON.stringify(freshSeasonIds) !== JSON.stringify(seasonIds)) {
                     throw new Error('Список турниров изменился. Откройте турнир заново.');
                 }
-                const recalculated = recalculateHistoryAfterScoreCorrection(targetId, selected, newScore);
+                const recalculated = recalculateHistoryAfterScoreCorrection(targetId, selected, newScore, restoredScores);
                 const rebuiltSeasons = {};
                 const seasonBackups = {};
                 for (const id of seasonIds) {
@@ -11369,6 +11523,7 @@ function getPlayerLastDelta(player) {
                     playersJson: JSON.stringify(clubData.players),
                     historyJson: JSON.stringify(clubData.history),
                     selectedMatch: { ...selected },
+                    restoredMatchScores: restoredScores,
                     seasons: seasonBackups
                 };
 
